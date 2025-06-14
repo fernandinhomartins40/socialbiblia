@@ -24,6 +24,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Biblical API routes - using content from PDF
+  app.get('/api/bible/books', async (req, res) => {
+    try {
+      const books = await storage.getBiblicalBooks();
+      res.json(books);
+    } catch (error) {
+      console.error("Error fetching biblical books:", error);
+      res.status(500).json({ message: "Failed to fetch biblical books" });
+    }
+  });
+
+  app.get('/api/bible/books/:bookId', async (req, res) => {
+    try {
+      const { bookId } = req.params;
+      const book = await storage.getBiblicalBook(bookId);
+      if (!book) {
+        return res.status(404).json({ message: "Book not found" });
+      }
+      res.json(book);
+    } catch (error) {
+      console.error("Error fetching biblical book:", error);
+      res.status(500).json({ message: "Failed to fetch biblical book" });
+    }
+  });
+
+  app.get('/api/bible/books/:bookId/chapters', async (req, res) => {
+    try {
+      const { bookId } = req.params;
+      const chapters = await storage.getBiblicalChapters(bookId);
+      res.json(chapters);
+    } catch (error) {
+      console.error("Error fetching biblical chapters:", error);
+      res.status(500).json({ message: "Failed to fetch biblical chapters" });
+    }
+  });
+
+  app.get('/api/bible/books/:bookId/verses', async (req, res) => {
+    try {
+      const { bookId } = req.params;
+      const { chapter } = req.query;
+      const verses = await storage.getBiblicalVerses(bookId, chapter ? parseInt(chapter as string) : undefined);
+      res.json(verses);
+    } catch (error) {
+      console.error("Error fetching biblical verses:", error);
+      res.status(500).json({ message: "Failed to fetch biblical verses" });
+    }
+  });
+
+  app.get('/api/bible/verses', async (req, res) => {
+    try {
+      const { bookId, chapter } = req.query;
+      const verses = await storage.getBiblicalVerses(
+        bookId as string,
+        chapter ? parseInt(chapter as string) : undefined
+      );
+      res.json(verses);
+    } catch (error) {
+      console.error("Error fetching verses:", error);
+      res.status(500).json({ message: "Failed to fetch verses" });
+    }
+  });
+
+  // Bookmarks for Bible verses
+  app.post('/api/bible/bookmarks', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const bookmark = await storage.createBookmark({
+        ...req.body,
+        userId,
+      });
+      res.json(bookmark);
+    } catch (error) {
+      console.error("Error creating bookmark:", error);
+      res.status(500).json({ message: "Failed to create bookmark" });
+    }
+  });
+
+  app.get('/api/bible/bookmarks', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const bookmarks = await storage.getUserBookmarks(userId);
+      res.json(bookmarks);
+    } catch (error) {
+      console.error("Error fetching bookmarks:", error);
+      res.status(500).json({ message: "Failed to fetch bookmarks" });
+    }
+  });
+
+  app.delete('/api/bible/bookmarks/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      const success = await storage.deleteBookmark(id, userId);
+      if (!success) {
+        return res.status(404).json({ message: "Bookmark not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting bookmark:", error);
+      res.status(500).json({ message: "Failed to delete bookmark" });
+    }
+  });
+
   // User routes
   app.put('/api/users/profile', isAuthenticated, async (req: any, res) => {
     try {
