@@ -99,6 +99,25 @@ This is a full-stack web application built with a modern React frontend and Expr
 - Environment variables for database connection and session secrets
 - Static file serving capability
 
+## Local LLM Integration
+
+### Phi-2 Model Implementation
+- **Server**: Flask-based LLM server on port 8080
+- **Model**: Phi-2 (2.7B parameters) specialized for biblical knowledge
+- **Integration**: Seamless fallback between local LLM and native AI engine
+- **Features**: Emotion detection, biblical verse recommendations, contextual responses
+
+### API Endpoints
+- `/api/llm/status` - Check LLM server status
+- `/api/llm/test` - Test LLM responses
+- `/api/ai/chat` - Enhanced with LLM integration
+
+### Deployment Components
+- `server/local_llm.py` - Local LLM server implementation
+- `start_llm.py` - Server initialization script
+- `README-LLM.md` - Complete documentation
+- `client/src/components/LocalLLMTest.tsx` - Testing interface
+
 ## Changelog
 
 ```
@@ -112,6 +131,13 @@ Changelog:
   * Enhanced AI chat interface with confidence metrics, intensity levels, and theme analysis
   * Added analytics dashboard for emotional patterns and spiritual growth tracking
   * Integrated feedback system that enriches ML model with contextual data
+- June 14, 2025. Implemented Local LLM Integration with Phi-2:
+  * Created complete Flask-based LLM server specialized in biblical knowledge
+  * Implemented emotion detection and biblical verse recommendation system
+  * Added seamless integration with fallback to native AI engine
+  * Built comprehensive testing interface and status monitoring
+  * Created documentation for deployment and usage
+  * Configured for Replit environment with optimized resource usage
 ```
 
 ## User Preferences
