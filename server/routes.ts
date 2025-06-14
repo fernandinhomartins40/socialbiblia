@@ -367,6 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let aiResponse;
       let selectedVerse = null;
       let emotionAnalysis;
+      let recommendations: any[] = [];
 
       try {
         // Call local LLM server
@@ -439,7 +440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
         
         // Convert matches to recommendations format
-        var currentRecommendations = verseMatches.slice(0, 5).map(match => ({
+        recommendations = verseMatches.slice(0, 5).map(match => ({
           verse: match.verse,
           relevanceScore: match.relevanceScore
         }));
@@ -467,7 +468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           verse: selectedVerse.verse,
           text: selectedVerse.text
         } : null,
-        recommendations: currentRecommendations?.slice(0, 3).map((r: any) => ({
+        recommendations: recommendations?.slice(0, 3).map((r: any) => ({
           verse: {
             book: r.verse.book,
             chapter: r.verse.chapter,
