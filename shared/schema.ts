@@ -108,16 +108,60 @@ export const aiInteractions = pgTable("ai_interactions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Biblical verses database
+// Complete Bible structure with books, chapters and verses
+export const biblicalBooks = pgTable("biblical_books", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name").notNull(),
+  abbreviation: varchar("abbreviation").notNull(),
+  testament: varchar("testament").notNull(), // "old" or "new"
+  order: integer("order").notNull(),
+  chapters: integer("chapters").notNull(),
+});
+
+export const biblicalChapters = pgTable("biblical_chapters", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  bookId: uuid("book_id").notNull().references(() => biblicalBooks.id),
+  chapterNumber: integer("chapter_number").notNull(),
+  verses: integer("verses").notNull(),
+});
+
 export const biblicalVerses = pgTable("biblical_verses", {
   id: uuid("id").primaryKey().defaultRandom(),
+  bookId: uuid("book_id").references(() => biblicalBooks.id),
+  chapterId: uuid("chapter_id").references(() => biblicalChapters.id),
   book: varchar("book").notNull(),
   chapter: integer("chapter").notNull(),
   verse: integer("verse").notNull(),
   text: text("text").notNull(),
-  translation: varchar("translation").notNull().default("NVI"),
+  translation: varchar("translation").notNull().default("ACF"),
   emotions: text("emotions").array(), // Array of emotions this verse addresses
   keywords: text("keywords").array(), // Array of keywords for search
+});
+
+// User bookmarks and notes
+export const biblicalBookmarks = pgTable("biblical_bookmarks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  verseId: uuid("verse_id").notNull().references(() => biblicalVerses.id),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const biblicalReadingPlans = pgTable("biblical_reading_plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  duration: integer("duration").notNull(), // days
+  verses: jsonb("verses").notNull(), // array of verse references
+});
+
+export const userReadingProgress = pgTable("user_reading_progress", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  planId: uuid("plan_id").references(() => biblicalReadingPlans.id),
+  completedVerses: jsonb("completed_verses").default([]),
+  startDate: timestamp("start_date").defaultNow(),
+  lastRead: timestamp("last_read").defaultNow(),
 });
 
 // Relations
@@ -165,6 +209,32 @@ export const aiInteractionsRelations = relations(aiInteractions, ({ one }) => ({
   user: one(users, { fields: [aiInteractions.userId], references: [users.id] }),
 }));
 
+export const biblicalBooksRelations = relations(biblicalBooks, ({ many }) => ({
+  chapters: many(biblicalChapters),
+  verses: many(biblicalVerses),
+}));
+
+export const biblicalChaptersRelations = relations(biblicalChapters, ({ one, many }) => ({
+  book: one(biblicalBooks, { fields: [biblicalChapters.bookId], references: [biblicalBooks.id] }),
+  verses: many(biblicalVerses),
+}));
+
+export const biblicalVersesRelations = relations(biblicalVerses, ({ one, many }) => ({
+  book: one(biblicalBooks, { fields: [biblicalVerses.bookId], references: [biblicalBooks.id] }),
+  chapter: one(biblicalChapters, { fields: [biblicalVerses.chapterId], references: [biblicalChapters.id] }),
+  bookmarks: many(biblicalBookmarks),
+}));
+
+export const biblicalBookmarksRelations = relations(biblicalBookmarks, ({ one }) => ({
+  user: one(users, { fields: [biblicalBookmarks.userId], references: [users.id] }),
+  verse: one(biblicalVerses, { fields: [biblicalBookmarks.verseId], references: [biblicalVerses.id] }),
+}));
+
+export const userReadingProgressRelations = relations(userReadingProgress, ({ one }) => ({
+  user: one(users, { fields: [userReadingProgress.userId], references: [users.id] }),
+  plan: one(biblicalReadingPlans, { fields: [userReadingProgress.planId], references: [biblicalReadingPlans.id] }),
+}));
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   id: true,
@@ -199,6 +269,23 @@ export const insertAIInteractionSchema = createInsertSchema(aiInteractions).omit
   createdAt: true,
 });
 
+export const insertBiblicalBookSchema = createInsertSchema(biblicalBooks).omit({
+  id: true,
+});
+
+export const insertBiblicalChapterSchema = createInsertSchema(biblicalChapters).omit({
+  id: true,
+});
+
+export const insertBiblicalVerseSchema = createInsertSchema(biblicalVerses).omit({
+  id: true,
+});
+
+export const insertBiblicalBookmarkSchema = createInsertSchema(biblicalBookmarks).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -210,7 +297,18 @@ export type Community = typeof communities.$inferSelect;
 export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
 export type AIInteraction = typeof aiInteractions.$inferSelect;
 export type InsertAIInteraction = z.infer<typeof insertAIInteractionSchema>;
+
+// Biblical types
+export type BiblicalBook = typeof biblicalBooks.$inferSelect;
+export type InsertBiblicalBook = z.infer<typeof insertBiblicalBookSchema>;
+export type BiblicalChapter = typeof biblicalChapters.$inferSelect;
+export type InsertBiblicalChapter = z.infer<typeof insertBiblicalChapterSchema>;
 export type BiblicalVerse = typeof biblicalVerses.$inferSelect;
+export type InsertBiblicalVerse = z.infer<typeof insertBiblicalVerseSchema>;
+export type BiblicalBookmark = typeof biblicalBookmarks.$inferSelect;
+export type InsertBiblicalBookmark = z.infer<typeof insertBiblicalBookmarkSchema>;
+export type BiblicalReadingPlan = typeof biblicalReadingPlans.$inferSelect;
+export type UserReadingProgress = typeof userReadingProgress.$inferSelect;
 
 // Extended types with relations
 export type PostWithUser = Post & {

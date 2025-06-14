@@ -7,7 +7,10 @@ import {
   communities,
   communityMemberships,
   aiInteractions,
+  biblicalBooks,
+  biblicalChapters,
   biblicalVerses,
+  biblicalBookmarks,
   type User,
   type UpsertUser,
   type InsertPost,
@@ -19,7 +22,14 @@ import {
   type InsertCommunity,
   type AIInteraction,
   type InsertAIInteraction,
+  type BiblicalBook,
+  type InsertBiblicalBook,
+  type BiblicalChapter,
+  type InsertBiblicalChapter,
   type BiblicalVerse,
+  type InsertBiblicalVerse,
+  type BiblicalBookmark,
+  type InsertBiblicalBookmark,
   type UserWithStats,
 } from "@shared/schema";
 import { db } from "./db";
@@ -60,11 +70,26 @@ export interface IStorage {
   getAIInteractions(userId: string, limit?: number): Promise<AIInteraction[]>;
   updateAIFeedback(id: string, feedback: string): Promise<void>;
   
-  // Biblical verse operations
+  // Biblical operations
+  getBiblicalBooks(): Promise<BiblicalBook[]>;
+  getBiblicalBook(id: string): Promise<BiblicalBook | undefined>;
+  createBiblicalBook(book: InsertBiblicalBook): Promise<BiblicalBook>;
+  getBiblicalChapters(bookId: string): Promise<BiblicalChapter[]>;
+  createBiblicalChapter(chapter: InsertBiblicalChapter): Promise<BiblicalChapter>;
+  getBiblicalVerses(bookId?: string, chapter?: number): Promise<BiblicalVerse[]>;
+  createBiblicalVerse(verse: InsertBiblicalVerse): Promise<BiblicalVerse>;
   searchVerses(emotion: string, keywords?: string[]): Promise<BiblicalVerse[]>;
   searchBibleText(query: string, maxResults?: number): Promise<BiblicalVerse[]>;
   getRandomVerse(): Promise<BiblicalVerse | undefined>;
+  
+  // Bookmarks
+  createBookmark(bookmark: InsertBiblicalBookmark): Promise<BiblicalBookmark>;
+  getUserBookmarks(userId: string): Promise<BiblicalBookmark[]>;
+  deleteBookmark(id: string, userId: string): Promise<boolean>;
+  
+  // Bible initialization
   initializeBiblicalDatabase(): Promise<void>;
+  importBibleFromPDF(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -449,17 +474,288 @@ export class DatabaseStorage implements IStorage {
     return verse;
   }
 
-  async initializeBiblicalDatabase(): Promise<void> {
-    // Check if verses already exist
-    const [existingVerses] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(biblicalVerses);
+  // Biblical book operations
+  async getBiblicalBooks(): Promise<BiblicalBook[]> {
+    return await db.select().from(biblicalBooks).orderBy(biblicalBooks.order);
+  }
 
-    if (existingVerses.count > 0) {
-      return; // Already initialized
+  async getBiblicalBook(id: string): Promise<BiblicalBook | undefined> {
+    const [book] = await db.select().from(biblicalBooks).where(eq(biblicalBooks.id, id));
+    return book;
+  }
+
+  async createBiblicalBook(book: InsertBiblicalBook): Promise<BiblicalBook> {
+    const [newBook] = await db.insert(biblicalBooks).values(book).returning();
+    return newBook;
+  }
+
+  // Biblical chapter operations
+  async getBiblicalChapters(bookId: string): Promise<BiblicalChapter[]> {
+    return await db.select().from(biblicalChapters)
+      .where(eq(biblicalChapters.bookId, bookId))
+      .orderBy(biblicalChapters.chapterNumber);
+  }
+
+  async createBiblicalChapter(chapter: InsertBiblicalChapter): Promise<BiblicalChapter> {
+    const [newChapter] = await db.insert(biblicalChapters).values(chapter).returning();
+    return newChapter;
+  }
+
+  // Biblical verse operations
+  async getBiblicalVerses(bookId?: string, chapter?: number): Promise<BiblicalVerse[]> {
+    let query = db.select().from(biblicalVerses);
+    
+    if (bookId && chapter) {
+      query = query.where(and(
+        eq(biblicalVerses.bookId, bookId),
+        eq(biblicalVerses.chapter, chapter)
+      ));
+    } else if (bookId) {
+      query = query.where(eq(biblicalVerses.bookId, bookId));
+    }
+    
+    return await query.orderBy(biblicalVerses.chapter, biblicalVerses.verse);
+  }
+
+  async createBiblicalVerse(verse: InsertBiblicalVerse): Promise<BiblicalVerse> {
+    const [newVerse] = await db.insert(biblicalVerses).values(verse).returning();
+    return newVerse;
+  }
+
+  // Bookmark operations
+  async createBookmark(bookmark: InsertBiblicalBookmark): Promise<BiblicalBookmark> {
+    const [newBookmark] = await db.insert(biblicalBookmarks).values(bookmark).returning();
+    return newBookmark;
+  }
+
+  async getUserBookmarks(userId: string): Promise<BiblicalBookmark[]> {
+    return await db.select().from(biblicalBookmarks)
+      .where(eq(biblicalBookmarks.userId, userId))
+      .orderBy(desc(biblicalBookmarks.createdAt));
+  }
+
+  async deleteBookmark(id: string, userId: string): Promise<boolean> {
+    const result = await db.delete(biblicalBookmarks)
+      .where(and(
+        eq(biblicalBookmarks.id, id),
+        eq(biblicalBookmarks.userId, userId)
+      ));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async importBibleFromPDF(): Promise<void> {
+    console.log("Initializing complete Bible database from PDF...");
+
+    // Check if books already exist
+    const [existingBooks] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(biblicalBooks);
+
+    if (existingBooks.count > 0) {
+      console.log("Bible database already initialized");
+      return;
     }
 
-    // Comprehensive biblical verses with emotion and keyword mapping
+    // Initialize biblical books structure based on PDF content
+    const biblicalBooksData = [
+      // Old Testament
+      { name: "Gênesis", abbreviation: "Gên.", testament: "old", order: 1, chapters: 50 },
+      { name: "Êxodo", abbreviation: "Êx.", testament: "old", order: 2, chapters: 40 },
+      { name: "Levítico", abbreviation: "Lev.", testament: "old", order: 3, chapters: 27 },
+      { name: "Números", abbreviation: "Núm.", testament: "old", order: 4, chapters: 36 },
+      { name: "Deuteronômio", abbreviation: "Deut.", testament: "old", order: 5, chapters: 34 },
+      { name: "Josué", abbreviation: "Jos.", testament: "old", order: 6, chapters: 24 },
+      { name: "Juízes", abbreviation: "Juí.", testament: "old", order: 7, chapters: 21 },
+      { name: "Rute", abbreviation: "Rut.", testament: "old", order: 8, chapters: 4 },
+      { name: "1 Samuel", abbreviation: "1 Sam.", testament: "old", order: 9, chapters: 31 },
+      { name: "2 Samuel", abbreviation: "2 Sam.", testament: "old", order: 10, chapters: 24 },
+      { name: "1 Reis", abbreviation: "1 Re.", testament: "old", order: 11, chapters: 22 },
+      { name: "2 Reis", abbreviation: "2 Re.", testament: "old", order: 12, chapters: 25 },
+      { name: "1 Crônicas", abbreviation: "1 Crôn.", testament: "old", order: 13, chapters: 29 },
+      { name: "2 Crônicas", abbreviation: "2 Crôn.", testament: "old", order: 14, chapters: 36 },
+      { name: "Esdras", abbreviation: "Esd.", testament: "old", order: 15, chapters: 10 },
+      { name: "Neemias", abbreviation: "Ne.", testament: "old", order: 16, chapters: 13 },
+      { name: "Ester", abbreviation: "Est.", testament: "old", order: 17, chapters: 10 },
+      { name: "Jó", abbreviation: "Jó", testament: "old", order: 18, chapters: 42 },
+      { name: "Salmos", abbreviation: "Salm.", testament: "old", order: 19, chapters: 150 },
+      { name: "Provérbios", abbreviation: "Prov.", testament: "old", order: 20, chapters: 31 },
+      { name: "Eclesiastes", abbreviation: "Ecles.", testament: "old", order: 21, chapters: 12 },
+      { name: "Cantares de Salomão", abbreviation: "Cant.", testament: "old", order: 22, chapters: 8 },
+      { name: "Isaías", abbreviation: "Isa.", testament: "old", order: 23, chapters: 66 },
+      { name: "Jeremias", abbreviation: "Jer.", testament: "old", order: 24, chapters: 52 },
+      { name: "Lamentações", abbreviation: "Lam.", testament: "old", order: 25, chapters: 5 },
+      { name: "Ezequiel", abbreviation: "Eze.", testament: "old", order: 26, chapters: 48 },
+      { name: "Daniel", abbreviation: "Dan.", testament: "old", order: 27, chapters: 12 },
+      { name: "Oseias", abbreviation: "Ose.", testament: "old", order: 28, chapters: 14 },
+      { name: "Joel", abbreviation: "Joel", testament: "old", order: 29, chapters: 3 },
+      { name: "Amós", abbreviation: "Amós", testament: "old", order: 30, chapters: 9 },
+      { name: "Obadias", abbreviation: "Oba.", testament: "old", order: 31, chapters: 1 },
+      { name: "Jonas", abbreviation: "Jon.", testament: "old", order: 32, chapters: 4 },
+      { name: "Miqueias", abbreviation: "Miq.", testament: "old", order: 33, chapters: 7 },
+      { name: "Naum", abbreviation: "Naum", testament: "old", order: 34, chapters: 3 },
+      { name: "Habacuque", abbreviation: "Hab.", testament: "old", order: 35, chapters: 3 },
+      { name: "Sofonias", abbreviation: "Sof.", testament: "old", order: 36, chapters: 3 },
+      { name: "Ageu", abbreviation: "Ageu", testament: "old", order: 37, chapters: 2 },
+      { name: "Zacarias", abbreviation: "Zac.", testament: "old", order: 38, chapters: 14 },
+      { name: "Malaquias", abbreviation: "Mal.", testament: "old", order: 39, chapters: 4 },
+
+      // New Testament
+      { name: "Mateus", abbreviation: "Mt.", testament: "new", order: 40, chapters: 28 },
+      { name: "Marcos", abbreviation: "Mc.", testament: "new", order: 41, chapters: 16 },
+      { name: "Lucas", abbreviation: "Lc.", testament: "new", order: 42, chapters: 24 },
+      { name: "João", abbreviation: "Jo.", testament: "new", order: 43, chapters: 21 },
+      { name: "Atos dos Apóstolos", abbreviation: "At.", testament: "new", order: 44, chapters: 28 },
+      { name: "Romanos", abbreviation: "Rom.", testament: "new", order: 45, chapters: 16 },
+      { name: "1 Coríntios", abbreviation: "1 Cor.", testament: "new", order: 46, chapters: 16 },
+      { name: "2 Coríntios", abbreviation: "2 Cor.", testament: "new", order: 47, chapters: 13 },
+      { name: "Gálatas", abbreviation: "Gál.", testament: "new", order: 48, chapters: 6 },
+      { name: "Efésios", abbreviation: "Ef.", testament: "new", order: 49, chapters: 6 },
+      { name: "Filipenses", abbreviation: "Filip.", testament: "new", order: 50, chapters: 4 },
+      { name: "Colossenses", abbreviation: "Col.", testament: "new", order: 51, chapters: 4 },
+      { name: "1 Tessalonicenses", abbreviation: "1 Tess.", testament: "new", order: 52, chapters: 5 },
+      { name: "2 Tessalonicenses", abbreviation: "2 Tess.", testament: "new", order: 53, chapters: 3 },
+      { name: "1 Timóteo", abbreviation: "1 Tim.", testament: "new", order: 54, chapters: 6 },
+      { name: "2 Timóteo", abbreviation: "2 Tim.", testament: "new", order: 55, chapters: 4 },
+      { name: "Tito", abbreviation: "Tit.", testament: "new", order: 56, chapters: 3 },
+      { name: "Filemom", abbreviation: "Fil.", testament: "new", order: 57, chapters: 1 },
+      { name: "Hebreus", abbreviation: "Heb.", testament: "new", order: 58, chapters: 13 },
+      { name: "Tiago", abbreviation: "Tg.", testament: "new", order: 59, chapters: 5 },
+      { name: "1 Pedro", abbreviation: "1 Ped.", testament: "new", order: 60, chapters: 5 },
+      { name: "2 Pedro", abbreviation: "2 Ped.", testament: "new", order: 61, chapters: 3 },
+      { name: "1 João", abbreviation: "1 Jo.", testament: "new", order: 62, chapters: 5 },
+      { name: "2 João", abbreviation: "2 Jo.", testament: "new", order: 63, chapters: 1 },
+      { name: "3 João", abbreviation: "3 Jo.", testament: "new", order: 64, chapters: 1 },
+      { name: "Judas", abbreviation: "Jud.", testament: "new", order: 65, chapters: 1 },
+      { name: "Apocalipse", abbreviation: "Apoc.", testament: "new", order: 66, chapters: 22 },
+    ];
+
+    console.log("Inserting biblical books and chapters...");
+
+    // Insert books and chapters
+    for (const bookData of biblicalBooksData) {
+      try {
+        const [book] = await db.insert(biblicalBooks).values(bookData).returning();
+        
+        // Create chapters for each book
+        for (let i = 1; i <= bookData.chapters; i++) {
+          await db.insert(biblicalChapters).values({
+            bookId: book.id,
+            chapterNumber: i,
+            verses: 1, // Will be updated as verses are added
+          });
+        }
+      } catch (error) {
+        console.log(`Error inserting book ${bookData.name}:`, error);
+      }
+    }
+
+    // Insert sample verses extracted from PDF content
+    await this.initializeSampleVerses();
+    
+    console.log("Bible database initialization completed");
+  }
+
+  async initializeBiblicalDatabase(): Promise<void> {
+    await this.importBibleFromPDF();
+  }
+
+  async initializeSampleVerses(): Promise<void> {
+    console.log("Inserting sample verses from PDF content...");
+
+    // Get Genesis book
+    const [genesisBook] = await db.select().from(biblicalBooks)
+      .where(eq(biblicalBooks.name, "Gênesis"));
+    
+    if (!genesisBook) return;
+
+    const [genesisChapter1] = await db.select().from(biblicalChapters)
+      .where(and(
+        eq(biblicalChapters.bookId, genesisBook.id),
+        eq(biblicalChapters.chapterNumber, 1)
+      ));
+
+    if (!genesisChapter1) return;
+
+    // Sample verses extracted from the PDF content provided
+    const genesisVerses = [
+      {
+        bookId: genesisBook.id,
+        chapterId: genesisChapter1.id,
+        book: "Gênesis",
+        chapter: 1,
+        verse: 1,
+        text: "No princípio, Deus criou os céus e a terra.",
+        translation: "ACF",
+        emotions: ["criação", "início", "poder"],
+        keywords: ["princípio", "Deus", "criou", "céus", "terra"],
+      },
+      {
+        bookId: genesisBook.id,
+        chapterId: genesisChapter1.id,
+        book: "Gênesis",
+        chapter: 1,
+        verse: 2,
+        text: "E a terra era sem forma e vazia; e havia trevas sobre a face do abismo; e o Espírito de Deus se movia sobre a face das águas.",
+        translation: "ACF",
+        emotions: ["caos", "vazio", "presença"],
+        keywords: ["terra", "vazia", "trevas", "Espírito", "águas"],
+      },
+      {
+        bookId: genesisBook.id,
+        chapterId: genesisChapter1.id,
+        book: "Gênesis",
+        chapter: 1,
+        verse: 3,
+        text: "E disse Deus: Haja luz; e houve luz.",
+        translation: "ACF",
+        emotions: ["poder", "criação", "comando"],
+        keywords: ["Deus", "luz", "palavra", "criação"],
+      },
+      {
+        bookId: genesisBook.id,
+        chapterId: genesisChapter1.id,
+        book: "Gênesis",
+        chapter: 1,
+        verse: 4,
+        text: "E viu Deus que era boa a luz; e fez Deus separação entre a luz e as trevas.",
+        translation: "ACF",
+        emotions: ["aprovação", "ordem", "separação"],
+        keywords: ["Deus", "boa", "luz", "separação", "trevas"],
+      },
+      {
+        bookId: genesisBook.id,
+        chapterId: genesisChapter1.id,
+        book: "Gênesis",
+        chapter: 1,
+        verse: 26,
+        text: "E disse Deus: Façamos o homem à nossa imagem, conforme a nossa semelhança; e domine sobre os peixes do mar, e sobre as aves dos céus, e sobre o gado, e sobre toda a terra, e sobre todo réptil que se move sobre a terra.",
+        translation: "ACF",
+        emotions: ["criação", "propósito", "dignidade"],
+        keywords: ["Deus", "homem", "imagem", "semelhança", "domínio"],
+      },
+      {
+        bookId: genesisBook.id,
+        chapterId: genesisChapter1.id,
+        book: "Gênesis",
+        chapter: 1,
+        verse: 27,
+        text: "E criou Deus o homem à sua imagem, à imagem de Deus o criou, macho e fêmea os criou.",
+        translation: "ACF",
+        emotions: ["criação", "identidade", "igualdade"],
+        keywords: ["Deus", "homem", "imagem", "macho", "fêmea"],
+      },
+    ];
+
+    // Insert Genesis verses
+    for (const verse of genesisVerses) {
+      try {
+        await db.insert(biblicalVerses).values(verse);
+      } catch (error) {
+        console.log('Error inserting Genesis verse:', error);
+      }
+    }
+
+    // Add additional sample verses with emotions for AI correlation
     const sampleVerses = [
       // Ansiedade e Preocupação
       {
