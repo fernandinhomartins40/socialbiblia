@@ -9,6 +9,7 @@ import Post from "@/components/Post";
 import AIChat from "@/components/AIChat";
 import Communities from "@/components/Communities";
 import AdvancedBibleSearch from "@/components/AdvancedBibleSearch";
+import LocalLLMTest from "@/components/LocalLLMTest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";

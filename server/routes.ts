@@ -470,6 +470,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Local LLM status and testing routes
+  app.get('/api/llm/status', async (req, res) => {
+    try {
+      const response = await fetch('http://localhost:8080/health');
+      const data = await response.json();
+      res.json({
+        available: true,
+        ...data
+      });
+    } catch (error) {
+      res.json({
+        available: false,
+        error: 'Local LLM server not running'
+      });
+    }
+  });
+
+  app.post('/api/llm/test', async (req, res) => {
+    try {
+      const { message } = req.body;
+      const response = await fetch('http://localhost:8080/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: message || 'Hello, how are you?',
+          context: 'test'
+        })
+      });
+      
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({
+        error: 'Failed to connect to local LLM',
+        message: error.message
+      });
+    }
+  });
+
   app.post('/api/ai/feedback', isAuthenticated, async (req: any, res) => {
     try {
       const { interactionId, feedback, verseId, emotion, context } = req.body;
