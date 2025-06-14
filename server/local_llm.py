@@ -300,8 +300,16 @@ def generate():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
+    import os
+    port = int(os.environ.get('LLM_PORT', 8080))
+    
     print(f"🤖 Starting Local LLM Server ({local_llm.model_name})")
     print(f"📚 Biblical AI Model Ready")
-    print(f"🔗 Server running on http://0.0.0.0:8080")
+    print(f"🔗 Server running on http://0.0.0.0:{port}")
     
-    app.run(host='0.0.0.0', port=8080, debug=False, threaded=True)
+    try:
+        app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+    except Exception as e:
+        print(f"❌ Error starting server: {e}")
+        import sys
+        sys.exit(1)
