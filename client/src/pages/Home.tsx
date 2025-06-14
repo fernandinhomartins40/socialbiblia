@@ -137,71 +137,55 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           
-          {/* Left Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* User Profile Card */}
+          {/* Left Sidebar - Compact */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* User Profile Card - Compact */}
             <Card>
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <Avatar className="h-16 w-16 mx-auto mb-4">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-10 w-10">
                     <AvatarImage src={user?.profileImageUrl || ""} />
-                    <AvatarFallback className="text-lg">{user?.firstName?.[0] || "U"}</AvatarFallback>
+                    <AvatarFallback className="text-sm">{user?.firstName?.[0] || "U"}</AvatarFallback>
                   </Avatar>
-                  <h3 className="font-semibold text-lg">{user?.firstName} {user?.lastName}</h3>
-                  <p className="text-sm text-muted-foreground">{user?.denomination || "Cristão"}</p>
-                  {user?.favoriteVerse && (
-                    <p className="text-xs text-blue-600 mt-2">{user.favoriteVerse}</p>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm truncate">{user?.firstName} {user?.lastName}</h3>
+                    <p className="text-xs text-muted-foreground truncate">{user?.denomination || "Cristão"}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Spiritual Progress */}
+            {/* Spiritual Progress - Compact */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-sm">
-                  <BookOpen className="w-4 h-4 text-blue-500 mr-2" />
-                  Progresso Espiritual
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span>Leitura Bíblica</span>
-                    <span className="text-blue-600 font-medium">65%</span>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <BookOpen className="w-4 h-4 text-blue-500 mr-2" />
+                    <span className="text-sm font-medium">Progresso</span>
                   </div>
-                  <Progress value={65} className="h-2" />
+                  <span className="text-xs text-blue-600">65%</span>
                 </div>
+                <Progress value={65} className="h-1.5" />
                 
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span>Dias Consecutivos</span>
-                    <span className="text-green-600 font-medium">12 dias</span>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Próxima leitura:</p>
-                  <p className="text-sm font-medium">Salmos 23</p>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>12 dias consecutivos</span>
+                  <span>Próximo: Salmos 23</span>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Daily Verse */}
+            {/* Daily Verse - Compact */}
             {randomVerse && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Versículo do Dia</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
-                    <p className="text-sm font-medium mb-2">
+                <CardContent className="p-3">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-md p-3 text-white">
+                    <p className="text-xs font-medium mb-1">
                       {randomVerse.book} {randomVerse.chapter}:{randomVerse.verse}
                     </p>
-                    <p className="text-sm italic">
+                    <p className="text-xs italic line-clamp-3">
                       "{randomVerse.text}"
                     </p>
                   </div>
@@ -209,42 +193,33 @@ export default function Home() {
               </Card>
             )}
 
-            {/* Quick Actions */}
+            {/* Quick Actions - Compact */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Ações Rápidas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="p-3 space-y-2">
                 <Button 
-                  className="w-full"
+                  size="sm"
+                  className="w-full h-8 text-xs"
                   onClick={() => setShowCreatePost(true)}
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-3 h-3 mr-1" />
                   Nova Publicação
                 </Button>
                 
                 <Button 
                   variant="outline"
-                  className="w-full"
+                  size="sm"
+                  className="w-full h-8 text-xs"
                   onClick={() => setShowAIChat(true)}
                 >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Conversar com IA
-                </Button>
-                
-                <Button 
-                  variant="outline"
-                  className="w-full"
-                >
-                  <HandHelping className="w-4 h-4 mr-2" />
-                  Lembrete de Oração
+                  <MessageCircle className="w-3 h-3 mr-1" />
+                  Chat IA
                 </Button>
               </CardContent>
             </Card>
           </div>
           
-          {/* Main Content Area */}
-          <div className="lg:col-span-3 space-y-6">
+          {/* Main Content Area - Expanded */}
+          <div className="lg:col-span-4 space-y-6">
             {/* Advanced Bible Search */}
             <Card>
               <CardHeader>
