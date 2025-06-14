@@ -430,6 +430,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Generate contextual response based on ML analysis
         aiResponse = aiEngine.generateContextualResponse(emotionAnalysis, selectedVerse || undefined);
+        
+        // Store recommendations in local variable for response
+        var currentRecommendations = recommendations;
       }
       
       const interactionData = insertAIInteractionSchema.parse({
@@ -454,7 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           verse: selectedVerse.verse,
           text: selectedVerse.text
         } : null,
-        recommendations: recommendations.slice(0, 3).map(r => ({
+        recommendations: currentRecommendations?.slice(0, 3).map((r: any) => ({
           verse: {
             book: r.verse.book,
             chapter: r.verse.chapter,
@@ -462,7 +465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             text: r.verse.text
           },
           relevanceScore: Math.round(r.relevanceScore * 100)
-        }))
+        })) || []
       });
     } catch (error) {
       console.error("Error in AI chat:", error);
