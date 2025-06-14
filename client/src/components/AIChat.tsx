@@ -23,6 +23,18 @@ interface Message {
     text: string;
   };
   emotion?: string;
+  confidence?: number;
+  intensity?: number;
+  themes?: string[];
+  recommendations?: Array<{
+    verse: {
+      book: string;
+      chapter: number;
+      verse: number;
+      text: string;
+    };
+    relevanceScore: number;
+  }>;
   timestamp: Date;
 }
 

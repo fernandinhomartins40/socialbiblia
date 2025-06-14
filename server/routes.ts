@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertPostSchema, insertCommentSchema, insertAIInteractionSchema } from "@shared/schema";
+import { aiEngine } from "./aiEngine";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -157,18 +158,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // If it's an emotional query, also provide AI response
+      // Use advanced AI engine for emotional analysis and verse recommendation
       if (type === 'emotion' || emotion) {
-        const aiResponse = await generateBiblicalResponse(query, emotion);
-        results.unshift({
-          id: `ai-${Date.now()}`,
-          type: 'ai_response',
-          aiResponse: {
-            text: aiResponse.text,
-            emotion: aiResponse.emotion || emotion || 'spiritual',
-            context: 'Resposta baseada na correlação com as Escrituras'
-          }
-        });
+        // Analyze emotion using machine learning
+        const emotionAnalysis = aiEngine.analyzeEmotion(query);
+        
+        // Get verse recommendations based on analysis
+        const verseRecommendations = aiEngine.recommendVerses(emotionAnalysis, verses);
+        
+        // Add top recommended verse as AI response
+        if (verseRecommendations.length > 0) {
+          const topRecommendation = verseRecommendations[0];
+          const contextualResponse = aiEngine.generateContextualResponse(emotionAnalysis, topRecommendation.verse);
+          
+          results.unshift({
+            id: `ai-${Date.now()}`,
+            type: 'ai_response',
+            aiResponse: {
+              text: contextualResponse,
+              emotion: emotionAnalysis.primaryEmotion,
+              context: `Análise: ${emotionAnalysis.primaryEmotion} (${Math.round(emotionAnalysis.confidence * 100)}% confiança)`
+            }
+          });
+          
+          // Add recommended verses with ML scores
+          verseRecommendations.slice(0, 5).forEach(recommendation => {
+            if (!results.find(r => r.verse?.id === recommendation.verse.id)) {
+              results.push({
+                id: recommendation.verse.id,
+                type: 'verse',
+                verse: {
+                  book: recommendation.verse.book,
+                  chapter: recommendation.verse.chapter,
+                  verse: recommendation.verse.verse,
+                  text: recommendation.verse.text,
+                  translation: recommendation.verse.translation
+                },
+                relevanceScore: recommendation.relevanceScore
+              });
+            }
+          });
+        }
       }
 
       // Sort results by relevance
@@ -326,23 +356,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message is required" });
       }
 
-      // Simple AI logic to correlate emotions with biblical verses
-      const response = await generateBiblicalResponse(message, emotion);
+      // Use advanced AI engine for emotional analysis
+      const emotionAnalysis = aiEngine.analyzeEmotion(message);
+      
+      // Get all verses for recommendation
+      const verses = await storage.getBiblicalVerses();
+      
+      // Get user's interaction history for context
+      const userHistory = await storage.getAIInteractions(userId, 20);
+      const historyIds = userHistory.map(h => h.id);
+      
+      // Get verse recommendations using machine learning
+      const recommendations = aiEngine.recommendVerses(emotionAnalysis, verses, historyIds);
+      
+      let selectedVerse = null;
+      if (recommendations.length > 0) {
+        selectedVerse = recommendations[0].verse;
+      }
+      
+      // Generate contextual response based on ML analysis
+      const aiResponse = aiEngine.generateContextualResponse(emotionAnalysis, selectedVerse);
       
       const interactionData = insertAIInteractionSchema.parse({
         userId,
         userMessage: message,
-        aiResponse: response.text,
-        emotion: response.emotion,
+        aiResponse: aiResponse,
+        emotion: emotionAnalysis.primaryEmotion,
       });
 
       const interaction = await storage.createAIInteraction(interactionData);
       
       res.json({
         id: interaction.id,
-        response: response.text,
-        verse: response.verse,
-        emotion: response.emotion,
+        response: aiResponse,
+        emotion: emotionAnalysis.primaryEmotion,
+        confidence: Math.round(emotionAnalysis.confidence * 100),
+        intensity: Math.round(emotionAnalysis.intensity * 100),
+        themes: emotionAnalysis.themes,
+        verse: selectedVerse ? {
+          book: selectedVerse.book,
+          chapter: selectedVerse.chapter,
+          verse: selectedVerse.verse,
+          text: selectedVerse.text
+        } : null,
+        recommendations: recommendations.slice(0, 3).map(r => ({
+          verse: {
+            book: r.verse.book,
+            chapter: r.verse.chapter,
+            verse: r.verse.verse,
+            text: r.verse.text
+          },
+          relevanceScore: Math.round(r.relevanceScore * 100)
+        }))
       });
     } catch (error) {
       console.error("Error in AI chat:", error);
@@ -352,13 +417,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/ai/feedback', isAuthenticated, async (req: any, res) => {
     try {
-      const { interactionId, feedback } = req.body;
+      const { interactionId, feedback, verseId, emotion, context } = req.body;
       
+      if (!interactionId || !feedback) {
+        return res.status(400).json({ message: "Interaction ID and feedback are required" });
+      }
+
+      // Update feedback in database
       await storage.updateAIFeedback(interactionId, feedback);
-      res.json({ success: true });
+      
+      // Update ML model with feedback for continuous learning
+      if (verseId && emotion) {
+        aiEngine.updateModelFromFeedback(verseId, emotion, feedback, context);
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Feedback received and AI model updated for improved recommendations" 
+      });
     } catch (error) {
       console.error("Error submitting feedback:", error);
       res.status(500).json({ message: "Failed to submit feedback" });
+    }
+  });
+
+  // New AI Analytics route for user insights
+  app.get('/api/ai/analytics', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const interactions = await storage.getAIInteractions(userId, 50);
+      
+      // Analyze user's emotional patterns using ML insights
+      const emotionCounts: Record<string, number> = {};
+      let totalInteractions = interactions.length;
+      
+      interactions.forEach(interaction => {
+        if (interaction.emotion) {
+          emotionCounts[interaction.emotion] = (emotionCounts[interaction.emotion] || 0) + 1;
+        }
+      });
+
+      // Calculate emotional trends and patterns
+      const emotionalProfile = Object.entries(emotionCounts)
+        .map(([emotion, count]) => ({
+          emotion,
+          frequency: (count as number) / totalInteractions,
+          count: count as number
+        }))
+        .sort((a, b) => b.frequency - a.frequency);
+
+      // Calculate spiritual growth metrics
+      const recentInteractions = interactions.slice(0, 10);
+      const positiveEmotions = ['joy', 'peace', 'hope', 'love', 'gratitude', 'faith', 'worship'];
+      const positiveCount = recentInteractions.filter(i => i.emotion && positiveEmotions.includes(i.emotion)).length;
+      const spiritualGrowthScore = Math.round((positiveCount / Math.min(recentInteractions.length, 10)) * 100);
+
+      res.json({
+        totalInteractions,
+        emotionalProfile,
+        recentInteractions: recentInteractions.map(i => ({
+          id: i.id,
+          emotion: i.emotion,
+          createdAt: i.createdAt,
+          userMessage: i.userMessage.substring(0, 100) + (i.userMessage.length > 100 ? '...' : '')
+        })),
+        insights: {
+          primaryEmotion: emotionalProfile[0]?.emotion || 'neutral',
+          emotionalDiversity: Object.keys(emotionCounts).length,
+          averageSessionsPerWeek: Math.round(totalInteractions / 4),
+          spiritualGrowthScore,
+          recommendation: spiritualGrowthScore > 70 
+            ? "Você está demonstrando um crescimento espiritual consistente!" 
+            : "Continue buscando a Palavra para fortalecer sua jornada espiritual."
+        }
+      });
+    } catch (error) {
+      console.error("Error generating AI analytics:", error);
+      res.status(500).json({ message: "Failed to generate analytics" });
     }
   });
 
