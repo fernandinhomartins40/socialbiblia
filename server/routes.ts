@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const emotionAnalysis = aiEngine.analyzeEmotion(query);
         
         // Get verse recommendations based on analysis
-        const verseRecommendations = aiEngine.recommendVerses(emotionAnalysis, verses);
+        const verseRecommendations = aiEngine.recommendVerses(emotionAnalysis, allVerses.slice(0, 200));
         
         // Add top recommended verse as AI response
         if (verseRecommendations.length > 0) {
@@ -187,9 +187,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Add recommended verses with ML scores
           verseRecommendations.slice(0, 5).forEach(recommendation => {
-            if (!results.find(r => r.verse?.id === recommendation.verse.id)) {
+            if (!results.find(r => r.verse && r.verse.book === recommendation.verse.book && 
+                                    r.verse.chapter === recommendation.verse.chapter && 
+                                    r.verse.verse === recommendation.verse.verse)) {
               results.push({
-                id: recommendation.verse.id,
+                id: `verse-ml-${recommendation.verse.id}`,
                 type: 'verse',
                 verse: {
                   book: recommendation.verse.book,
@@ -198,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   text: recommendation.verse.text,
                   translation: recommendation.verse.translation
                 },
-                relevanceScore: recommendation.relevanceScore
+                relevanceScore: Math.round(recommendation.relevanceScore)
               });
             }
           });
@@ -379,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Generate contextual response based on ML analysis
-      const aiResponse = aiEngine.generateContextualResponse(emotionAnalysis, selectedVerse);
+      const aiResponse = aiEngine.generateContextualResponse(emotionAnalysis, selectedVerse || undefined);
       
       const interactionData = insertAIInteractionSchema.parse({
         userId,
