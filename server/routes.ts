@@ -352,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Chat routes
+  // AI Chat routes with Local LLM Integration
   app.post('/api/ai/chat', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -362,26 +362,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message is required" });
       }
 
-      // Use advanced AI engine for emotional analysis
-      const emotionAnalysis = aiEngine.analyzeEmotion(message);
-      
-      // Get all verses for recommendation
-      const verses = await storage.getBiblicalVerses();
-      
-      // Get user's interaction history for context
-      const userHistory = await storage.getAIInteractions(userId, 20);
-      const historyIds = userHistory.map(h => h.id);
-      
-      // Get verse recommendations using machine learning
-      const recommendations = aiEngine.recommendVerses(emotionAnalysis, verses, historyIds);
-      
+      // Try to use local LLM first, fallback to built-in AI
+      let aiResponse;
       let selectedVerse = null;
-      if (recommendations.length > 0) {
-        selectedVerse = recommendations[0].verse;
+      let emotionAnalysis;
+
+      try {
+        // Call local LLM server
+        const llmResponse = await fetch('http://localhost:8080/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: message,
+            context: 'biblical'
+          })
+        });
+
+        if (llmResponse.ok) {
+          const llmData = await llmResponse.json();
+          aiResponse = llmData.data.response;
+          emotionAnalysis = {
+            primaryEmotion: llmData.data.emotion_detected,
+            confidence: llmData.data.confidence,
+            intensity: 0.8,
+            themes: ['biblical', 'spiritual'],
+            sentiment: 'neutral'
+          };
+          
+          // Parse biblical reference if available
+          if (llmData.data.biblical_reference) {
+            const verseMatch = llmData.data.biblical_reference.match(/\(([^)]+)\)/);
+            if (verseMatch) {
+              selectedVerse = {
+                id: `llm-${Date.now()}`,
+                book: verseMatch[1].split(' ')[0],
+                chapter: 1,
+                verse: 1,
+                text: llmData.data.biblical_reference.split('(')[0].trim(),
+                translation: 'NVI'
+              };
+            }
+          }
+        } else {
+          throw new Error('LLM server not available');
+        }
+      } catch (llmError) {
+        console.log('Local LLM not available, using built-in AI engine');
+        
+        // Fallback to built-in AI engine
+        emotionAnalysis = aiEngine.analyzeEmotion(message);
+        
+        // Get all verses for recommendation
+        const verses = await storage.getBiblicalVerses();
+        
+        // Get user's interaction history for context
+        const userHistory = await storage.getAIInteractions(userId, 20);
+        const historyIds = userHistory.map(h => h.id);
+        
+        // Get verse recommendations using machine learning
+        const recommendations = aiEngine.recommendVerses(emotionAnalysis, verses, historyIds);
+        
+        if (recommendations.length > 0) {
+          selectedVerse = recommendations[0].verse;
+        }
+        
+        // Generate contextual response based on ML analysis
+        aiResponse = aiEngine.generateContextualResponse(emotionAnalysis, selectedVerse || undefined);
       }
-      
-      // Generate contextual response based on ML analysis
-      const aiResponse = aiEngine.generateContextualResponse(emotionAnalysis, selectedVerse || undefined);
       
       const interactionData = insertAIInteractionSchema.parse({
         userId,
