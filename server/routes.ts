@@ -205,6 +205,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bible search routes
+  app.post('/api/bible/search', async (req, res) => {
+    try {
+      const { query, maxResults = 10 } = req.body;
+      
+      if (!query) {
+        return res.status(400).json({ message: "Query is required" });
+      }
+
+      const results = await storage.searchBibleText(query, maxResults);
+      
+      res.json({
+        results: results.map(verse => ({
+          id: verse.id,
+          type: 'verse',
+          verse: {
+            book: verse.book,
+            chapter: verse.chapter,
+            verse: verse.verse,
+            text: verse.text,
+            translation: verse.translation
+          },
+          relevanceScore: calculateRelevanceScore(query, verse.text)
+        }))
+      });
+    } catch (error) {
+      console.error("Error in bible search:", error);
+      res.status(500).json({ message: "Failed to search bible" });
+    }
+  });
+
+  app.post('/api/bible/ai-search', async (req, res) => {
+    try {
+      const { query } = req.body;
+      
+      if (!query) {
+        return res.status(400).json({ message: "Query is required" });
+      }
+
+      // Generate AI response with biblical correlation
+      const aiResponse = await generateAdvancedBiblicalResponse(query);
+      
+      const results = [
+        {
+          id: `ai-${Date.now()}`,
+          type: 'ai_response',
+          aiResponse: {
+            text: aiResponse.text,
+            emotion: aiResponse.emotion,
+            context: aiResponse.context
+          }
+        }
+      ];
+
+      // Add related verses
+      if (aiResponse.relatedVerses && aiResponse.relatedVerses.length > 0) {
+        for (const verse of aiResponse.relatedVerses) {
+          results.push({
+            id: verse.id,
+            type: 'verse',
+            verse: {
+              book: verse.book,
+              chapter: verse.chapter,
+              verse: verse.verse,
+              text: verse.text,
+              translation: verse.translation
+            },
+            relevanceScore: verse.relevanceScore || 0.9
+          });
+        }
+      }
+      
+      res.json({ results });
+    } catch (error) {
+      console.error("Error in AI bible search:", error);
+      res.status(500).json({ message: "Failed to process AI search" });
+    }
+  });
+
   // Random verse route
   app.get('/api/verses/random', async (req, res) => {
     try {

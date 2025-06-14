@@ -14,7 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { MessageCircle, Users, BookOpen, Bell, HandHelping, Calendar } from "lucide-react";
+import { MessageCircle, Users, BookOpen, Bell, HandHelping, Calendar, Search } from "lucide-react";
+import BibleSearchBar from "@/components/BibleSearchBar";
 import type { PostWithUser, Community } from "@shared/schema";
 
 export default function Home() {
@@ -93,6 +94,14 @@ export default function Home() {
               <Button variant="ghost" className="text-deep-blue-gray hover:text-spiritual-blue">
                 <BookOpen className="w-4 h-4 mr-2" />
                 Início
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="text-deep-blue-gray hover:text-spiritual-blue"
+                onClick={() => window.location.href = '/biblia'}
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Bíblia
               </Button>
               <Button 
                 variant="ghost" 
@@ -229,6 +238,25 @@ export default function Home() {
           
           {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Biblical Search Bar */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-spiritual-blue to-blue-600 rounded-full flex items-center justify-center">
+                    <Search className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-deep-blue-gray">Busca Bíblica Inteligente</h3>
+                    <p className="text-sm text-gray-600">
+                      Pesquise passagens, pergunte sobre sentimentos ou situações
+                    </p>
+                  </div>
+                </div>
+                
+                <BibleSearchBar />
+              </CardContent>
+            </Card>
+
             <CreatePost />
             
             <Separator />
