@@ -92,6 +92,8 @@ export class AIEngine {
   
   constructor() {
     this.initializeWeights();
+    // Load biblical data when engine starts
+    this.initializeBiblicalKnowledge();
   }
 
   private initializeWeights() {
@@ -103,6 +105,42 @@ export class AIEngine {
     // Initialize theme weights
     Object.keys(VERSE_THEMES).forEach(theme => {
       this.themeWeights.set(theme, 1.0);
+    });
+  }
+
+  private async initializeBiblicalKnowledge() {
+    try {
+      // Initialize with pre-defined verse associations
+      this.loadPreTrainedData();
+      console.log("📖 Biblical knowledge initialized");
+    } catch (error) {
+      console.error("Error initializing biblical knowledge:", error);
+    }
+  }
+
+  private loadPreTrainedData() {
+    // Pre-train with known good verse associations for common emotions
+    const preTrainedData = [
+      // Comfort and peace
+      { verseKey: "salmos_23_4", emotion: "fear", score: 0.9 },
+      { verseKey: "mateus_11_28", emotion: "sadness", score: 0.9 },
+      { verseKey: "joao_14_27", emotion: "anxiety", score: 0.9 },
+      
+      // Joy and hope
+      { verseKey: "salmos_30_5", emotion: "sadness", score: 0.8 },
+      { verseKey: "neemias_8_10", emotion: "sadness", score: 0.8 },
+      
+      // Guidance
+      { verseKey: "proverbios_3_5", emotion: "doubt", score: 0.9 },
+      { verseKey: "salmos_119_105", emotion: "doubt", score: 0.8 },
+      
+      // Forgiveness
+      { verseKey: "1_joao_1_9", emotion: "guilt", score: 0.9 },
+      { verseKey: "salmos_51_10", emotion: "guilt", score: 0.8 },
+    ];
+
+    preTrainedData.forEach(data => {
+      this.verseSuccessRates.set(`${data.verseKey}_${data.emotion}`, data.score);
     });
   }
 

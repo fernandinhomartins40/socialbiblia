@@ -137,24 +137,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Query is required" });
       }
 
-      const results = [];
+      const results: any[] = [];
       
-      // Search for verses based on text content
-      const verses = await storage.searchBibleText(query, 5);
+      // Use AI engine for emotion analysis and verse recommendations
+      const emotionAnalysis = aiEngine.analyzeEmotion(query);
+      const allVerses = await storage.getBiblicalVerses();
       
-      // Add verse results
-      for (const verse of verses) {
+      // Get AI recommendations using machine learning
+      const recommendations = aiEngine.recommendVerses(emotionAnalysis, allVerses.slice(0, 100));
+      
+      // Add top verse recommendations
+      for (const rec of recommendations.slice(0, 5)) {
         results.push({
-          id: `verse-${verse.id}`,
+          id: `verse-${rec.verse.id}`,
           type: 'verse',
           verse: {
-            book: verse.book,
-            chapter: verse.chapter,
-            verse: verse.verse,
-            text: verse.text,
-            translation: verse.translation
+            book: rec.verse.book,
+            chapter: rec.verse.chapter,
+            verse: rec.verse.verse,
+            text: rec.verse.text,
+            translation: rec.verse.translation
           },
-          relevanceScore: calculateRelevanceScore(query, verse.text)
+          relevanceScore: Math.round(rec.relevanceScore)
         });
       }
 

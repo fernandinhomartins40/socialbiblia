@@ -411,6 +411,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAIInteractions(userId: string, limit = 10): Promise<AIInteraction[]> {
+    // Allow "all" to get interactions from all users for ML training
+    if (userId === "all") {
+      return await db
+        .select()
+        .from(aiInteractions)
+        .orderBy(desc(aiInteractions.createdAt))
+        .limit(limit);
+    }
+    
     return await db
       .select()
       .from(aiInteractions)
