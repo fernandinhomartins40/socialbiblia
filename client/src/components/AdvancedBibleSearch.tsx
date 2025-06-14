@@ -69,6 +69,8 @@ export default function AdvancedBibleSearch() {
   const handleSearch = () => {
     if (!query.trim()) return;
     
+    // Clear previous results before starting new search
+    setResults([]);
     setIsSearching(true);
     
     // Detect if query contains emotional words for sentiment analysis

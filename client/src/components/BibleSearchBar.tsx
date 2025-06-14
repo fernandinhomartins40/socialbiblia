@@ -70,11 +70,15 @@ export default function BibleSearchBar() {
 
   const handleSearch = () => {
     if (!query.trim()) return;
+    // Clear previous results before starting new search
+    setResults([]);
     searchMutation.mutate(query.trim());
   };
 
   const handleQuickSearch = (quickQuery: string) => {
     setQuery(quickQuery);
+    // Clear previous results before starting new search
+    setResults([]);
     searchMutation.mutate(quickQuery);
   };
 
