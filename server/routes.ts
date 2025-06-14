@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertPostSchema, insertCommentSchema, insertAIInteractionSchema } from "@shared/schema";
 import { aiEngine } from "./aiEngine";
+import { intelligentAI } from "./intelligentAI";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -409,30 +410,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error('LLM server not available');
         }
       } catch (llmError) {
-        console.log('Local LLM not available, using built-in AI engine');
+        console.log('Local LLM not available, using intelligent AI engine');
         
-        // Fallback to built-in AI engine
-        emotionAnalysis = aiEngine.analyzeEmotion(message);
+        // Use intelligent AI system for real text analysis
+        const userAnalysis = intelligentAI.analyzeUserInput(message);
         
-        // Get all verses for recommendation
-        const verses = await storage.getBiblicalVerses();
+        // Get all verses for correlation
+        const allVerses = await storage.getBiblicalVerses();
         
-        // Get user's interaction history for context
-        const userHistory = await storage.getAIInteractions(userId, 20);
-        const historyIds = userHistory.map(h => h.id);
+        // Find relevant verses using intelligent matching
+        const verseMatches = intelligentAI.findRelevantVerses(userAnalysis, allVerses);
         
-        // Get verse recommendations using machine learning
-        const recommendations = aiEngine.recommendVerses(emotionAnalysis, verses, historyIds);
-        
-        if (recommendations.length > 0) {
-          selectedVerse = recommendations[0].verse;
+        // Set selected verse from top match
+        if (verseMatches.length > 0) {
+          selectedVerse = verseMatches[0].verse;
         }
         
-        // Generate contextual response based on ML analysis
-        aiResponse = aiEngine.generateContextualResponse(emotionAnalysis, selectedVerse || undefined);
+        // Generate intelligent contextual response
+        aiResponse = intelligentAI.generateIntelligentResponse(userAnalysis, selectedVerse || undefined);
         
-        // Store recommendations in local variable for response
-        var currentRecommendations = recommendations;
+        // Set emotion analysis for compatibility
+        emotionAnalysis = {
+          primaryEmotion: userAnalysis.primaryEmotion,
+          confidence: userAnalysis.confidence,
+          intensity: userAnalysis.intensity,
+          themes: userAnalysis.themes,
+          sentiment: userAnalysis.sentiment
+        };
+        
+        // Convert matches to recommendations format
+        var currentRecommendations = verseMatches.slice(0, 5).map(match => ({
+          verse: match.verse,
+          relevanceScore: match.relevanceScore
+        }));
       }
       
       const interactionData = insertAIInteractionSchema.parse({

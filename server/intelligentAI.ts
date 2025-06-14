@@ -253,7 +253,7 @@ export class IntelligentBiblicalAI {
   }
   
   private generateContext(primaryEmotion: string, themes: string[], keywords: string[]): string {
-    const contexts = {
+    const contexts: { [key: string]: string } = {
       tristeza: 'Momento de dor e necessidade de consolação',
       ansiedade: 'Situação de preocupação que precisa de paz',
       medo: 'Enfrentando incertezas que requerem coragem',
@@ -275,7 +275,7 @@ export class IntelligentBiblicalAI {
     
     // Score baseado em tags emocionais predefinidas
     const verseReference = `${verse.book} ${verse.chapter}:${verse.verse}`;
-    const verseTags = VERSE_EMOTIONAL_TAGS[verseReference] || [];
+    const verseTags = (VERSE_EMOTIONAL_TAGS as { [key: string]: string[] })[verseReference] || [];
     
     if (verseTags.includes(analysis.primaryEmotion)) {
       score += 0.5;
@@ -301,7 +301,7 @@ export class IntelligentBiblicalAI {
   
   private calculateEmotionalMatch(analysis: EmotionalAnalysis, verse: BiblicalVerse): number {
     const verseReference = `${verse.book} ${verse.chapter}:${verse.verse}`;
-    const verseTags = VERSE_EMOTIONAL_TAGS[verseReference] || [];
+    const verseTags = (VERSE_EMOTIONAL_TAGS as { [key: string]: string[] })[verseReference] || [];
     
     return verseTags.includes(analysis.primaryEmotion) ? 1 : 0;
   }
@@ -325,7 +325,7 @@ export class IntelligentBiblicalAI {
   }
   
   private generateGeneralEncouragement(emotion: string): string {
-    const encouragements = {
+    const encouragements: { [key: string]: string } = {
       tristeza: "Nos momentos de tristeza, lembre-se de que Deus está próximo aos quebrantados de coração. Ele conhece sua dor e tem palavras de consolação para você.",
       ansiedade: "Quando a ansiedade tenta dominar seus pensamentos, entregue suas preocupações a Deus. Ele cuida de você e tem o controle de todas as situações.",
       medo: "O medo não vem de Deus. Ele nos deu espírito de poder, amor e moderação. Confie na proteção divina sobre sua vida.",
@@ -337,7 +337,7 @@ export class IntelligentBiblicalAI {
   }
   
   private getEmotionalResponseTemplates(emotion: string): string[] {
-    const templates = {
+    const templates: { [key: string]: string[] } = {
       tristeza: [
         "Entendo que você está passando por um momento difícil. A Palavra de Deus nos lembra: {verse}. {context} - Deus está próximo a você neste momento.",
         "Nos momentos de dor, Deus tem palavras especiais de consolação. Veja o que Ele diz: {verse}. Você não está sozinho nesta jornada."
