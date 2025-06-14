@@ -164,9 +164,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: `ai-${Date.now()}`,
           type: 'ai_response',
           aiResponse: {
-            text: aiResponse.response,
+            text: aiResponse.text,
             emotion: aiResponse.emotion || emotion || 'spiritual',
-            context: aiResponse.context || 'Resposta baseada na correlação com as Escrituras'
+            context: 'Resposta baseada na correlação com as Escrituras'
           }
         });
       }

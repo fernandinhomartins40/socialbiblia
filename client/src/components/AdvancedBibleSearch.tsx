@@ -37,10 +37,19 @@ export default function AdvancedBibleSearch() {
   // Search mutation using internal AI system
   const searchMutation = useMutation({
     mutationFn: async (searchData: { query: string; type: string; emotion?: string }) => {
-      return await apiRequest("/api/bible/ai-search", {
+      const response = await fetch("/api/bible/ai-search", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(searchData),
       });
+      
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.statusText}`);
+      }
+      
+      return await response.json();
     },
     onSuccess: (data) => {
       setResults(data.results || []);
