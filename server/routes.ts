@@ -127,6 +127,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Advanced Bible AI Search
+  app.post('/api/bible/ai-search', async (req, res) => {
+    try {
+      const { query, type, emotion } = req.body;
+      
+      if (!query) {
+        return res.status(400).json({ message: "Query is required" });
+      }
+
+      const results = [];
+      
+      // Search for verses based on text content
+      const verses = await storage.searchBibleText(query, 5);
+      
+      // Add verse results
+      for (const verse of verses) {
+        results.push({
+          id: `verse-${verse.id}`,
+          type: 'verse',
+          verse: {
+            book: verse.book,
+            chapter: verse.chapter,
+            verse: verse.verse,
+            text: verse.text,
+            translation: verse.translation
+          },
+          relevanceScore: calculateRelevanceScore(query, verse.text)
+        });
+      }
+
+      // If it's an emotional query, also provide AI response
+      if (type === 'emotion' || emotion) {
+        const aiResponse = await generateBiblicalResponse(query, emotion);
+        results.unshift({
+          id: `ai-${Date.now()}`,
+          type: 'ai_response',
+          aiResponse: {
+            text: aiResponse.response,
+            emotion: aiResponse.emotion || emotion || 'spiritual',
+            context: aiResponse.context || 'Resposta baseada na correlação com as Escrituras'
+          }
+        });
+      }
+
+      // Sort results by relevance
+      results.sort((a, b) => (b.relevanceScore || 1) - (a.relevanceScore || 1));
+
+      res.json({ results });
+    } catch (error) {
+      console.error("Bible AI search error:", error);
+      res.status(500).json({ message: "Failed to perform Bible search" });
+    }
+  });
+
   // User routes
   app.put('/api/users/profile', isAuthenticated, async (req: any, res) => {
     try {

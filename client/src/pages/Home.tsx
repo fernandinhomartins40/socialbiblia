@@ -4,18 +4,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import UserProfile from "@/components/UserProfile";
 import CreatePost from "@/components/CreatePost";
 import Post from "@/components/Post";
 import AIChat from "@/components/AIChat";
 import Communities from "@/components/Communities";
+import AdvancedBibleSearch from "@/components/AdvancedBibleSearch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { MessageCircle, Users, BookOpen, Bell, HandHelping, Calendar, Search } from "lucide-react";
-import BibleSearchBar from "@/components/BibleSearchBar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MessageCircle, Users, BookOpen, Bell, HandHelping, Calendar, Plus, Heart } from "lucide-react";
 import type { PostWithUser, Community } from "@shared/schema";
 
 export default function Home() {
@@ -24,13 +24,14 @@ export default function Home() {
   const queryClient = useQueryClient();
   const [showAIChat, setShowAIChat] = useState(false);
   const [showCommunities, setShowCommunities] = useState(false);
+  const [showCreatePost, setShowCreatePost] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
       toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
+        title: "Não autorizado",
+        description: "Você foi desconectado. Redirecionando...",
         variant: "destructive",
       });
       setTimeout(() => {
@@ -62,10 +63,8 @@ export default function Home() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-spiritual-blue rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <HandHelping className="w-8 h-8 text-white" />
-          </div>
-          <p className="text-gray-600">Carregando...</p>
+          <BookOpen className="h-12 w-12 mx-auto mb-4 text-blue-500 animate-pulse" />
+          <p className="text-muted-foreground">Carregando BibliaConnect...</p>
         </div>
       </div>
     );
@@ -76,50 +75,37 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-light-background">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-spiritual-blue rounded-full flex items-center justify-center">
-                  <HandHelping className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-xl font-bold text-spiritual-blue">BibliaConnect</span>
-              </div>
+              <h1 className="text-2xl font-bold text-blue-600">BibliaConnect</h1>
+              <nav className="hidden md:flex space-x-1">
+                <Button 
+                  variant="ghost" 
+                  onClick={() => window.location.href = '/biblia'}
+                >
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Bíblia
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setShowAIChat(true)}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Chat IA
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setShowCommunities(true)}
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Comunidades
+                </Button>
+              </nav>
             </div>
-            
-            <nav className="hidden md:flex items-center space-x-8">
-              <Button variant="ghost" className="text-deep-blue-gray hover:text-spiritual-blue">
-                <BookOpen className="w-4 h-4 mr-2" />
-                Início
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="text-deep-blue-gray hover:text-spiritual-blue"
-                onClick={() => window.location.href = '/biblia'}
-              >
-                <BookOpen className="w-4 h-4 mr-2" />
-                Bíblia
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="text-deep-blue-gray hover:text-spiritual-blue"
-                onClick={() => setShowAIChat(true)}
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Chat IA
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="text-deep-blue-gray hover:text-spiritual-blue"
-                onClick={() => setShowCommunities(true)}
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Comunidades
-              </Button>
-            </nav>
             
             <div className="flex items-center space-x-4">
               <Button variant="ghost" size="sm" className="relative">
@@ -130,13 +116,12 @@ export default function Home() {
               </Button>
               
               <div className="flex items-center space-x-2">
-                <img 
-                  src={user.profileImageUrl || "https://via.placeholder.com/32"} 
-                  alt="Profile" 
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-                <span className="text-deep-blue-gray font-medium">
-                  {user.firstName} {user.lastName}
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.profileImageUrl || ""} />
+                  <AvatarFallback>{user?.firstName?.[0] || "U"}</AvatarFallback>
+                </Avatar>
+                <span className="hidden md:block text-sm font-medium">
+                  {user?.firstName} {user?.lastName}
                 </span>
               </div>
 
@@ -152,67 +137,56 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           {/* Left Sidebar */}
           <div className="lg:col-span-1 space-y-6">
-            <UserProfile user={user} />
-            
+            {/* User Profile Card */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <Avatar className="h-16 w-16 mx-auto mb-4">
+                    <AvatarImage src={user?.profileImageUrl || ""} />
+                    <AvatarFallback className="text-lg">{user?.firstName?.[0] || "U"}</AvatarFallback>
+                  </Avatar>
+                  <h3 className="font-semibold text-lg">{user?.firstName} {user?.lastName}</h3>
+                  <p className="text-sm text-muted-foreground">{user?.denomination || "Cristão"}</p>
+                  {user?.favoriteVerse && (
+                    <p className="text-xs text-blue-600 mt-2">{user.favoriteVerse}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Spiritual Progress */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center text-deep-blue-gray">
-                  <BookOpen className="w-5 h-5 text-spiritual-blue mr-2" />
+                <CardTitle className="flex items-center text-sm">
+                  <BookOpen className="w-4 h-4 text-blue-500 mr-2" />
                   Progresso Espiritual
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">Leitura Bíblica</span>
-                    <span className="text-spiritual-blue font-medium">65%</span>
+                    <span>Leitura Bíblica</span>
+                    <span className="text-blue-600 font-medium">65%</span>
                   </div>
                   <Progress value={65} className="h-2" />
                 </div>
                 
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">Dias Consecutivos</span>
-                    <span className="text-hope-green font-medium">12 dias</span>
+                    <span>Dias Consecutivos</span>
+                    <span className="text-green-600 font-medium">12 dias</span>
                   </div>
                 </div>
                 
-                <div className="bg-light-background rounded-lg p-3">
-                  <p className="text-xs text-gray-600 mb-1">Próxima leitura:</p>
-                  <p className="text-sm font-medium text-deep-blue-gray">Salmos 23</p>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-muted-foreground mb-1">Próxima leitura:</p>
+                  <p className="text-sm font-medium">Salmos 23</p>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-deep-blue-gray">Ações Rápidas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button 
-                  className="w-full bg-spiritual-blue hover:bg-blue-600 text-white"
-                  onClick={() => setShowAIChat(true)}
-                >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Conversar com IA
-                </Button>
-                
-                <Button className="w-full bg-divine-gold hover:bg-yellow-600 text-white">
-                  <HandHelping className="w-4 h-4 mr-2" />
-                  Lembrete de Oração
-                </Button>
-                
-                <Button className="w-full bg-hope-green hover:bg-green-600 text-white">
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Estudo Bíblico
-                </Button>
               </CardContent>
             </Card>
 
@@ -220,130 +194,150 @@ export default function Home() {
             {randomVerse && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-deep-blue-gray">Versículo do Dia</CardTitle>
+                  <CardTitle className="text-sm">Versículo do Dia</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-gradient-to-r from-spiritual-blue to-blue-600 rounded-lg p-4 text-white">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
                     <p className="text-sm font-medium mb-2">
                       {randomVerse.book} {randomVerse.chapter}:{randomVerse.verse}
                     </p>
-                    <p className="text-sm italic font-scripture">
+                    <p className="text-sm italic">
                       "{randomVerse.text}"
                     </p>
                   </div>
                 </CardContent>
               </Card>
             )}
+
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Ações Rápidas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button 
+                  className="w-full"
+                  onClick={() => setShowCreatePost(true)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nova Publicação
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowAIChat(true)}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Conversar com IA
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                >
+                  <HandHelping className="w-4 h-4 mr-2" />
+                  Lembrete de Oração
+                </Button>
+              </CardContent>
+            </Card>
           </div>
           
           {/* Main Content Area */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Biblical Search Bar */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Advanced Bible Search */}
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 bg-gradient-to-r from-spiritual-blue to-blue-600 rounded-full flex items-center justify-center">
-                    <Search className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-deep-blue-gray">Busca Bíblica Inteligente</h3>
-                    <p className="text-sm text-gray-600">
-                      Pesquise passagens, pergunte sobre sentimentos ou situações
-                    </p>
-                  </div>
-                </div>
-                
-                <BibleSearchBar />
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <BookOpen className="w-5 h-5 text-blue-500 mr-2" />
+                  Busca Bíblica Inteligente
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Pesquise versículos, compartilhe sentimentos ou faça perguntas espirituais
+                </p>
+              </CardHeader>
+              <CardContent>
+                <AdvancedBibleSearch />
               </CardContent>
             </Card>
 
-            <CreatePost />
-            
-            <Separator />
-            
-            {/* Posts Feed */}
+            {/* Create Post Section */}
+            {showCreatePost && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Compartilhe sua Fé</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CreatePost />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Social Feed */}
             <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Feed da Comunidade</h2>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowCreatePost(!showCreatePost)}
+                >
+                  {showCreatePost ? "Cancelar" : "Nova Publicação"}
+                </Button>
+              </div>
+
               {postsLoading ? (
                 <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <Card key={i} className="animate-pulse">
-                      <CardContent className="p-6">
-                        <div className="flex items-start space-x-4">
-                          <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                          <div className="flex-1 space-y-2">
-                            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="p-6">
+                      <div className="animate-pulse">
+                        <div className="flex items-center space-x-3 mb-4">
+                          <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
+                          <div className="space-y-2">
+                            <div className="h-4 bg-gray-200 rounded w-24"></div>
+                            <div className="h-3 bg-gray-200 rounded w-16"></div>
                           </div>
                         </div>
-                      </CardContent>
+                        <div className="space-y-2">
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                      </div>
                     </Card>
                   ))}
                 </div>
-              ) : posts.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                      Nenhum post ainda
-                    </h3>
-                    <p className="text-gray-500">
-                      Seja o primeiro a compartilhar uma reflexão ou versículo!
-                    </p>
-                  </CardContent>
-                </Card>
+              ) : posts.length > 0 ? (
+                <div className="space-y-6">
+                  {posts.map((post) => (
+                    <Post key={post.id} post={post} />
+                  ))}
+                </div>
               ) : (
-                posts.map((post) => (
-                  <Post key={post.id} post={post} />
-                ))
+                <Card className="p-8 text-center">
+                  <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold mb-2">Nenhuma publicação ainda</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Seja o primeiro a compartilhar sua fé com a comunidade
+                  </p>
+                  <Button onClick={() => setShowCreatePost(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar primeira publicação
+                  </Button>
+                </Card>
               )}
             </div>
           </div>
         </div>
       </main>
 
-      {/* AI Chat Modal */}
-      {showAIChat && (
-        <AIChat onClose={() => setShowAIChat(false)} />
-      )}
-
-      {/* Communities Modal */}
+      {/* Modals */}
+      {showAIChat && <AIChat onClose={() => setShowAIChat(false)} />}
       {showCommunities && (
         <Communities 
-          communities={communities}
+          communities={communities} 
           onClose={() => setShowCommunities(false)} 
         />
       )}
-
-      {/* Mobile Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
-        <div className="flex justify-around py-2">
-          <Button variant="ghost" className="flex flex-col items-center py-2 px-3 text-spiritual-blue">
-            <BookOpen className="w-5 h-5" />
-            <span className="text-xs mt-1">Início</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            className="flex flex-col items-center py-2 px-3 text-gray-600"
-            onClick={() => setShowAIChat(true)}
-          >
-            <MessageCircle className="w-5 h-5" />
-            <span className="text-xs mt-1">IA</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            className="flex flex-col items-center py-2 px-3 text-gray-600"
-            onClick={() => setShowCommunities(true)}
-          >
-            <Users className="w-5 h-5" />
-            <span className="text-xs mt-1">Grupos</span>
-          </Button>
-          <Button variant="ghost" className="flex flex-col items-center py-2 px-3 text-gray-600">
-            <Calendar className="w-5 h-5" />
-            <span className="text-xs mt-1">Perfil</span>
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
