@@ -473,12 +473,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Local LLM status and testing routes
   app.get('/api/llm/status', async (req, res) => {
     try {
-      const response = await fetch('http://localhost:8080/health');
-      const data = await response.json();
-      res.json({
-        available: true,
-        ...data
+      const response = await fetch('http://127.0.0.1:8080/health', {
+        method: 'GET',
+        timeout: 5000
       });
+      
+      if (response.ok) {
+        const data = await response.json();
+        res.json({
+          available: true,
+          ...data
+        });
+      } else {
+        throw new Error('LLM server responded with error');
+      }
     } catch (error) {
       res.json({
         available: false,
