@@ -299,6 +299,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
+function calculateRelevanceScore(query: string, text: string): number {
+  const queryWords = query.toLowerCase().split(/\s+/);
+  const textWords = text.toLowerCase().split(/\s+/);
+  
+  let matches = 0;
+  for (const queryWord of queryWords) {
+    if (queryWord.length > 2) { // Skip very short words
+      for (const textWord of textWords) {
+        if (textWord.includes(queryWord) || queryWord.includes(textWord)) {
+          matches++;
+          break;
+        }
+      }
+    }
+  }
+  
+  return Math.min(matches / Math.max(queryWords.length, 1), 1);
+}
+
+async function generateAdvancedBiblicalResponse(query: string): Promise<{
+  text: string;
+  emotion: string;
+  context: string;
+  relatedVerses?: any[];
+}> {
+  // Detect emotion and theme from query
+  const emotions = {
+    ansiedade: ["ansioso", "preocupado", "medo", "nervoso", "estresse"],
+    tristeza: ["triste", "deprimido", "desanimado", "melancólico", "abatido"],
+    esperança: ["esperança", "fé", "confiança", "otimismo", "expectativa"],
+    amor: ["amor", "amar", "carinho", "afeto", "paixão"],
+    perdão: ["perdão", "perdoar", "reconciliação", "misericórdia"],
+    força: ["força", "coragem", "determinação", "resistência", "poder"],
+    paz: ["paz", "tranquilidade", "serenidade", "calma", "descanso"],
+    gratidão: ["grato", "agradecer", "reconhecimento", "gratidão"],
+    sabedoria: ["sabedoria", "conhecimento", "entendimento", "discernimento"]
+  };
+
+  let detectedEmotion = "esperança";
+  const queryLower = query.toLowerCase();
+  
+  for (const [emotion, keywords] of Object.entries(emotions)) {
+    if (keywords.some(keyword => queryLower.includes(keyword))) {
+      detectedEmotion = emotion;
+      break;
+    }
+  }
+
+  // Search for related verses
+  const relatedVerses = await storage.searchVerses(detectedEmotion, queryLower.split(/\s+/));
+  
+  // Generate contextual response
+  let responseText = "";
+  let context = "";
+  
+  switch (detectedEmotion) {
+    case "ansiedade":
+      responseText = "Compreendo sua ansiedade. A Palavra de Deus nos ensina que podemos lançar sobre Ele toda a nossa ansiedade, porque Ele tem cuidado de nós. Não estamos sozinhos em nossas preocupações.";
+      context = "Quando sentimos ansiedade, Deus nos convida a confiar em Sua providência e cuidado paternal.";
+      break;
+    case "tristeza":
+      responseText = "Sinto muito por este momento difícil. Deus está próximo dos quebrantados de coração e salva os contritos de espírito. Sua tristeza não é ignorada por Ele.";
+      context = "Nos momentos de tristeza, encontramos consolo na presença constante de Deus e em Suas promessas.";
+      break;
+    case "esperança":
+      responseText = "Que bela busca pela esperança! A esperança que temos em Deus é firme e segura, uma âncora para a alma que não falha.";
+      context = "A verdadeira esperança está fundamentada nas promessas fiéis de Deus para conosco.";
+      break;
+    case "amor":
+      responseText = "O amor é o maior de todos os mandamentos. Deus nos amou primeiro, e esse amor deve transbordar em nossos relacionamentos.";
+      context = "O amor divino é a fonte e o modelo para todo amor verdadeiro em nossas vidas.";
+      break;
+    case "perdão":
+      responseText = "O perdão é um dos maiores atos de amor e liberdade. Assim como Cristo nos perdoou, somos chamados a perdoar uns aos outros.";
+      context = "O perdão nos liberta do peso do ressentimento e reflete o caráter misericordioso de Deus.";
+      break;
+    case "força":
+      responseText = "Quando nos sentimos fracos, é quando Deus manifesta Sua força em nós. Podemos todas as coisas nAquele que nos fortalece.";
+      context = "Nossa força vem do Senhor, que renova as forças dos que nEle esperam.";
+      break;
+    case "paz":
+      responseText = "A paz que Deus oferece excede todo entendimento. É uma paz que não depende das circunstâncias externas.";
+      context = "A verdadeira paz é fruto da reconciliação com Deus e da confiança em Sua soberania.";
+      break;
+    default:
+      responseText = "Deus tem uma palavra especial para cada situação de nossa vida. Ele nos conhece intimamente e cuida de cada detalhe.";
+      context = "Em toda circunstância, podemos confiar no amor e cuidado paternal de Deus.";
+  }
+
+  return {
+    text: responseText,
+    emotion: detectedEmotion,
+    context: context,
+    relatedVerses: relatedVerses.slice(0, 3)
+  };
+}
+
 // Simple AI logic for biblical correlation
 async function generateBiblicalResponse(message: string, emotion?: string): Promise<{
   text: string;

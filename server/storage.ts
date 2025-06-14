@@ -62,6 +62,7 @@ export interface IStorage {
   
   // Biblical verse operations
   searchVerses(emotion: string, keywords?: string[]): Promise<BiblicalVerse[]>;
+  searchBibleText(query: string, maxResults?: number): Promise<BiblicalVerse[]>;
   getRandomVerse(): Promise<BiblicalVerse | undefined>;
   initializeBiblicalDatabase(): Promise<void>;
 }
@@ -417,6 +418,28 @@ export class DatabaseStorage implements IStorage {
     return await query.limit(5);
   }
 
+  async searchBibleText(query: string, maxResults = 10): Promise<BiblicalVerse[]> {
+    const searchTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 2);
+    
+    if (searchTerms.length === 0) {
+      return await db.select().from(biblicalVerses).limit(maxResults);
+    }
+
+    const textSearchConditions = searchTerms.map(term => 
+      sql`LOWER(${biblicalVerses.text}) LIKE ${'%' + term + '%'}`
+    );
+
+    const bookSearchConditions = searchTerms.map(term => 
+      sql`LOWER(${biblicalVerses.book}) LIKE ${'%' + term + '%'}`
+    );
+
+    return await db
+      .select()
+      .from(biblicalVerses)
+      .where(or(...textSearchConditions, ...bookSearchConditions))
+      .limit(maxResults);
+  }
+
   async getRandomVerse(): Promise<BiblicalVerse | undefined> {
     const [verse] = await db
       .select()
@@ -436,8 +459,9 @@ export class DatabaseStorage implements IStorage {
       return; // Already initialized
     }
 
-    // Sample biblical verses with emotion and keyword mapping
+    // Comprehensive biblical verses with emotion and keyword mapping
     const sampleVerses = [
+      // Ansiedade e Preocupação
       {
         book: "Filipenses",
         chapter: 4,
@@ -446,6 +470,294 @@ export class DatabaseStorage implements IStorage {
         translation: "NVI",
         emotions: ["ansiedade", "preocupação", "medo"],
         keywords: ["oração", "paz", "confiança", "descanso"],
+      },
+      {
+        book: "Filipenses",
+        chapter: 4,
+        verse: 7,
+        text: "E a paz de Deus, que excede todo o entendimento, guardará o coração e a mente de vocês em Cristo Jesus.",
+        translation: "NVI",
+        emotions: ["ansiedade", "paz"],
+        keywords: ["paz", "proteção", "Cristo", "entendimento"],
+      },
+      {
+        book: "1 Pedro",
+        chapter: 5,
+        verse: 7,
+        text: "Lancem sobre ele toda a sua ansiedade, porque ele tem cuidado de vocês.",
+        translation: "NVI",
+        emotions: ["ansiedade", "preocupação"],
+        keywords: ["cuidado", "confiança", "entrega"],
+      },
+      {
+        book: "Mateus",
+        chapter: 6,
+        verse: 26,
+        text: "Observem as aves do céu: não semeiam nem colhem nem armazenam em celeiros; contudo, o Pai celestial as alimenta. Não têm vocês muito mais valor do que elas?",
+        translation: "NVI",
+        emotions: ["ansiedade", "preocupação"],
+        keywords: ["provisão", "valor", "cuidado", "confiança"],
+      },
+      {
+        book: "Mateus",
+        chapter: 11,
+        verse: 28,
+        text: "Venham a mim, todos os que estão cansados e sobrecarregados, e eu darei descanso a vocês.",
+        translation: "NVI",
+        emotions: ["cansaço", "fardo", "ansiedade"],
+        keywords: ["descanso", "alívio", "Jesus", "convite"],
+      },
+      
+      // Tristeza e Luto
+      {
+        book: "Salmos",
+        chapter: 34,
+        verse: 18,
+        text: "O Senhor está perto dos que têm o coração quebrantado e salva os de espírito abatido.",
+        translation: "NVI",
+        emotions: ["tristeza", "desânimo", "quebrantamento"],
+        keywords: ["proximidade", "salvação", "consolo", "presença"],
+      },
+      {
+        book: "Salmos",
+        chapter: 23,
+        verse: 4,
+        text: "Mesmo quando eu andar pelo vale da sombra da morte, não temerei mal algum, pois tu estás comigo; a tua vara e o teu cajado me consolam.",
+        translation: "NVI",
+        emotions: ["medo", "tristeza", "morte"],
+        keywords: ["proteção", "consolo", "presença", "coragem"],
+      },
+      {
+        book: "Isaías",
+        chapter: 61,
+        verse: 3,
+        text: "E dar-lhes uma coroa em vez de cinzas, óleo de alegria em vez de pranto, e manto de louvor em vez de espírito angustiado.",
+        translation: "NVI",
+        emotions: ["tristeza", "luto", "angústia"],
+        keywords: ["restauração", "alegria", "louvor", "transformação"],
+      },
+      {
+        book: "João",
+        chapter: 16,
+        verse: 33,
+        text: "Disse-lhes isso para que em mim vocês tenham paz. No mundo vocês terão aflições; contudo, tenham ânimo! Eu venci o mundo.",
+        translation: "NVI",
+        emotions: ["aflição", "tribulação", "desânimo"],
+        keywords: ["paz", "vitória", "ânimo", "superação"],
+      },
+      
+      // Esperança e Fé
+      {
+        book: "Jeremias",
+        chapter: 29,
+        verse: 11,
+        text: "Porque eu bem sei os pensamentos que tenho a vosso respeito, diz o Senhor; pensamentos de paz e não de mal, para vos dar o fim que esperais.",
+        translation: "NVI",
+        emotions: ["esperança", "futuro", "planos"],
+        keywords: ["planos", "prosperidade", "futuro", "bem-estar"],
+      },
+      {
+        book: "Romanos",
+        chapter: 8,
+        verse: 28,
+        text: "Sabemos que Deus age em todas as coisas para o bem daqueles que o amam, dos que foram chamados de acordo com o seu propósito.",
+        translation: "NVI",
+        emotions: ["esperança", "confiança"],
+        keywords: ["propósito", "bem", "soberania", "chamado"],
+      },
+      {
+        book: "Hebreus",
+        chapter: 11,
+        verse: 1,
+        text: "Ora, a fé é a certeza daquilo que esperamos e a prova das coisas que não vemos.",
+        translation: "NVI",
+        emotions: ["fé", "esperança"],
+        keywords: ["certeza", "esperança", "invisível", "confiança"],
+      },
+      {
+        book: "Isaías",
+        chapter: 40,
+        verse: 31,
+        text: "Mas aqueles que esperam no Senhor renovam as suas forças. Voam alto como águias; correm e não ficam exaustos, andam e não se cansam.",
+        translation: "NVI",
+        emotions: ["cansaço", "esperança", "força"],
+        keywords: ["renovação", "força", "esperança", "resistência"],
+      },
+      
+      // Amor e Relacionamentos
+      {
+        book: "1 Coríntios",
+        chapter: 13,
+        verse: 4,
+        text: "O amor é paciente, o amor é bondoso. Não inveja, não se vangloria, não se orgulha.",
+        translation: "NVI",
+        emotions: ["amor", "relacionamento"],
+        keywords: ["paciência", "bondade", "humildade", "caráter"],
+      },
+      {
+        book: "1 João",
+        chapter: 4,
+        verse: 19,
+        text: "Nós amamos porque ele nos amou primeiro.",
+        translation: "NVI",
+        emotions: ["amor", "gratidão"],
+        keywords: ["amor", "primeiro", "resposta", "iniciativa"],
+      },
+      {
+        book: "João",
+        chapter: 3,
+        verse: 16,
+        text: "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.",
+        translation: "NVI",
+        emotions: ["amor", "salvação"],
+        keywords: ["amor", "sacrifício", "vida eterna", "fé"],
+      },
+      {
+        book: "Romanos",
+        chapter: 8,
+        verse: 38,
+        text: "Pois estou convencido de que nem morte nem vida, nem anjos nem demônios, nem o presente nem o futuro, nem quaisquer poderes,",
+        translation: "NVI",
+        emotions: ["amor", "segurança"],
+        keywords: ["separação", "amor", "certeza", "eternidade"],
+      },
+      
+      // Perdão e Reconciliação
+      {
+        book: "1 João",
+        chapter: 1,
+        verse: 9,
+        text: "Se confessarmos os nossos pecados, ele é fiel e justo para perdoar os nossos pecados e nos purificar de toda injustiça.",
+        translation: "NVI",
+        emotions: ["culpa", "perdão", "purificação"],
+        keywords: ["confissão", "perdão", "purificação", "fidelidade"],
+      },
+      {
+        book: "Efésios",
+        chapter: 4,
+        verse: 32,
+        text: "Sejam bondosos e compassivos uns para com os outros, perdoando-se mutuamente, assim como Deus os perdoou em Cristo.",
+        translation: "NVI",
+        emotions: ["perdão", "relacionamento"],
+        keywords: ["bondade", "compaixão", "perdão", "mutualidade"],
+      },
+      {
+        book: "Mateus",
+        chapter: 6,
+        verse: 14,
+        text: "Pois, se perdoarem as ofensas uns dos outros, o Pai celestial também lhes perdoará.",
+        translation: "NVI",
+        emotions: ["perdão", "ofensa"],
+        keywords: ["perdão", "reciprocidade", "ofensa", "celestial"],
+      },
+      
+      // Força e Coragem
+      {
+        book: "Filipenses",
+        chapter: 4,
+        verse: 13,
+        text: "Posso todas as coisas naquele que me fortalece.",
+        translation: "NVI",
+        emotions: ["força", "capacidade", "confiança"],
+        keywords: ["força", "capacidade", "Cristo", "poder"],
+      },
+      {
+        book: "Josué",
+        chapter: 1,
+        verse: 9,
+        text: "Não foi isso que eu lhe ordenei? Seja forte e corajoso! Não se apavore nem desanime, pois o Senhor, o seu Deus, estará com você por onde você andar.",
+        translation: "NVI",
+        emotions: ["medo", "coragem", "força"],
+        keywords: ["coragem", "presença", "força", "acompanhamento"],
+      },
+      {
+        book: "Isaías",
+        chapter: 41,
+        verse: 10,
+        text: "Não temas, porque eu sou contigo; não te assombres, porque eu sou o teu Deus; eu te fortaleço, e te ajudo, e te sustento com a minha destra fiel.",
+        translation: "NVI",
+        emotions: ["medo", "força", "sustento"],
+        keywords: ["fortalecimento", "ajuda", "sustento", "fidelidade"],
+      },
+      
+      // Paz e Tranquilidade
+      {
+        book: "João",
+        chapter: 14,
+        verse: 27,
+        text: "Deixo-lhes a paz; a minha paz lhes dou. Não a dou como o mundo a dá. Não se perturbe o seu coração, nem tenham medo.",
+        translation: "NVI",
+        emotions: ["paz", "medo", "perturbação"],
+        keywords: ["paz", "coração", "perturbação", "diferença"],
+      },
+      {
+        book: "Salmos",
+        chapter: 46,
+        verse: 10,
+        text: "Aquietem-se e saibam que eu sou Deus! Serei exaltado entre as nações, serei exaltado na terra.",
+        translation: "NVI",
+        emotions: ["paz", "quietude", "reconhecimento"],
+        keywords: ["quietude", "conhecimento", "exaltação", "soberania"],
+      },
+      
+      // Sabedoria e Discernimento
+      {
+        book: "Provérbios",
+        chapter: 3,
+        verse: 5,
+        text: "Confie no Senhor de todo o seu coração e não se apoie em seu próprio entendimento.",
+        translation: "NVI",
+        emotions: ["confiança", "sabedoria"],
+        keywords: ["confiança", "coração", "entendimento", "dependência"],
+      },
+      {
+        book: "Tiago",
+        chapter: 1,
+        verse: 5,
+        text: "Se algum de vocês tem falta de sabedoria, peça-a a Deus, que a todos dá livremente, de boa vontade; e lhe será concedida.",
+        translation: "NVI",
+        emotions: ["sabedoria", "necessidade"],
+        keywords: ["sabedoria", "pedido", "generosidade", "concessão"],
+      },
+      
+      // Gratidão e Louvor
+      {
+        book: "Salmos",
+        chapter: 100,
+        verse: 4,
+        text: "Entrem por suas portas com ação de graças e em seus átrios com louvor; deem-lhe graças e bendigam o seu nome.",
+        translation: "NVI",
+        emotions: ["gratidão", "louvor", "alegria"],
+        keywords: ["gratidão", "louvor", "entrada", "bênção"],
+      },
+      {
+        book: "1 Tessalonicenses",
+        chapter: 5,
+        verse: 18,
+        text: "Deem graças em todas as circunstâncias, pois esta é a vontade de Deus para vocês em Cristo Jesus.",
+        translation: "NVI",
+        emotions: ["gratidão", "contentamento"],
+        keywords: ["gratidão", "circunstâncias", "vontade", "Cristo"],
+      },
+      
+      // Versículos adicionais para completar a base de dados
+      {
+        book: "Salmos",
+        chapter: 23,
+        verse: 1,
+        text: "O Senhor é o meu pastor; nada me faltará.",
+        translation: "NVI",
+        emotions: ["confiança", "provisão", "cuidado"],
+        keywords: ["pastor", "provisão", "cuidado", "suficiência"],
+      },
+      {
+        book: "Salmos",
+        chapter: 139,
+        verse: 14,
+        text: "Eu te louvo porque me fizeste de modo especial e admirável. Tuas obras são maravilhosas! Disso tenho plena certeza.",
+        translation: "NVI",
+        emotions: ["autoestima", "identidade", "louvor"],
+        keywords: ["criação", "especial", "maravilhoso", "certeza"],
       },
       {
         book: "Filipenses",
@@ -530,7 +842,13 @@ export class DatabaseStorage implements IStorage {
       },
     ];
 
-    await db.insert(biblicalVerses).values(sampleVerses);
+    // Insert verses into database
+    for (const verse of biblicalVerses) {
+      await db
+        .insert(biblicalVerses)
+        .values(verse)
+        .onConflictDoNothing();
+    }
   }
 }
 
