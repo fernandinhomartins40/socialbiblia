@@ -843,11 +843,15 @@ export class DatabaseStorage implements IStorage {
     ];
 
     // Insert verses into database
-    for (const verse of biblicalVerses) {
-      await db
-        .insert(biblicalVerses)
-        .values(verse)
-        .onConflictDoNothing();
+    for (const verse of sampleVerses) {
+      try {
+        await db
+          .insert(biblicalVerses)
+          .values(verse)
+          .onConflictDoNothing();
+      } catch (error) {
+        console.log('Error inserting verse:', error);
+      }
     }
   }
 }
