@@ -80,6 +80,10 @@ export default function AIChat({ onClose }: AIChatProps) {
         content: data.response,
         verse: data.verse,
         emotion: data.emotion,
+        confidence: data.confidence,
+        intensity: data.intensity,
+        themes: data.themes,
+        recommendations: data.recommendations,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, aiMessage]);
@@ -105,13 +109,19 @@ export default function AIChat({ onClose }: AIChatProps) {
   });
 
   const feedbackMutation = useMutation({
-    mutationFn: async (data: { interactionId: string; feedback: string }) => {
+    mutationFn: async (data: { 
+      interactionId: string; 
+      feedback: string; 
+      verseId?: string; 
+      emotion?: string; 
+      context?: string; 
+    }) => {
       await apiRequest("POST", "/api/ai/feedback", data);
     },
     onSuccess: () => {
       toast({
         title: "Feedback enviado!",
-        description: "Obrigado por nos ajudar a melhorar.",
+        description: "Sua avaliação ajuda nosso AI a melhorar as recomendações bíblicas.",
       });
     },
     onError: (error) => {
@@ -158,9 +168,19 @@ export default function AIChat({ onClose }: AIChatProps) {
   };
 
   const handleFeedback = (messageId: string, feedback: 'useful' | 'not_useful') => {
+    // Find the message to get context for ML learning
+    const message = messages.find(m => m.id === messageId);
+    if (!message) return;
+
+    // Map feedback to ML-compatible values
+    const mlFeedback = feedback === 'useful' ? 'helpful' : 'not_helpful';
+    
     feedbackMutation.mutate({
       interactionId: messageId,
-      feedback,
+      feedback: mlFeedback,
+      verseId: message.verse?.book ? `${message.verse.book}_${message.verse.chapter}_${message.verse.verse}` : undefined,
+      emotion: message.emotion,
+      context: message.content,
     });
   };
 
@@ -223,12 +243,70 @@ export default function AIChat({ onClose }: AIChatProps) {
                           </div>
                         )}
 
-                        {/* Emotion Badge */}
-                        {message.emotion && (
-                          <div className="mt-2">
-                            <Badge variant="secondary" className="text-xs">
-                              {emotions.find(e => e.key === message.emotion)?.label || message.emotion}
-                            </Badge>
+                        {/* Advanced ML Analytics Display */}
+                        {message.type === 'ai' && message.emotion && (
+                          <div className="mt-3 space-y-2">
+                            {/* Emotion Analysis */}
+                            <div className="flex items-center space-x-2">
+                              <Badge variant="secondary" className="text-xs">
+                                {emotions.find(e => e.key === message.emotion)?.label || message.emotion}
+                              </Badge>
+                              {message.confidence && (
+                                <span className="text-xs text-gray-500">
+                                  {message.confidence}% confiança
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Intensity and Themes */}
+                            {(message.intensity || message.themes) && (
+                              <div className="bg-blue-50 p-2 rounded text-xs">
+                                {message.intensity && (
+                                  <div className="flex items-center space-x-1 mb-1">
+                                    <span className="text-gray-600">Intensidade:</span>
+                                    <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+                                      <div 
+                                        className="bg-spiritual-blue h-1.5 rounded-full transition-all"
+                                        style={{ width: `${message.intensity}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-gray-500">{message.intensity}%</span>
+                                  </div>
+                                )}
+                                {message.themes && message.themes.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    <span className="text-gray-600">Temas:</span>
+                                    {message.themes.map((theme, idx) => (
+                                      <Badge key={idx} variant="outline" className="text-xs py-0">
+                                        {theme}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Additional Verse Recommendations */}
+                            {message.recommendations && message.recommendations.length > 0 && (
+                              <div className="mt-2">
+                                <p className="text-xs text-gray-600 mb-2">Versículos recomendados:</p>
+                                <div className="space-y-1">
+                                  {message.recommendations.slice(0, 2).map((rec, idx) => (
+                                    <div key={idx} className="bg-spiritual-light p-2 rounded text-xs border-l-2 border-spiritual-blue">
+                                      <div className="flex justify-between items-center mb-1">
+                                        <span className="font-medium text-spiritual-blue">
+                                          {rec.verse.book} {rec.verse.chapter}:{rec.verse.verse}
+                                        </span>
+                                        <span className="text-gray-500">{rec.relevanceScore}% relevante</span>
+                                      </div>
+                                      <p className="text-gray-700 italic">
+                                        "{rec.verse.text.substring(0, 100)}{rec.verse.text.length > 100 ? '...' : ''}"
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
 
