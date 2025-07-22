@@ -94,19 +94,76 @@ jobs:
         run: |
           echo "📦 Instalando dependências do frontend..."
           cd apps/web
-          # Clean install to fix Rollup optional dependencies issue
-          rm -rf node_modules 2>/dev/null || true
-          # Install dependencies with platform-specific fixes
+          # Complete clean start for Rollup optional dependencies
+          rm -rf node_modules package-lock.json 2>/dev/null || true
+          # Clear npm cache to avoid corrupted optional dependencies
+          npm cache clean --force 2>/dev/null || true
+          # Install dependencies with explicit platform support
+          PLATFORM=$(node -e "console.log(process.platform)")
+          ARCH=$(node -e "console.log(process.arch)")
+          echo "Detecting platform: $PLATFORM-$ARCH"
+          
+          # Install base dependencies first
           npm install --no-fund --no-audit --prefer-dedupe
-          # Ensure Rollup platform binary is available
-          npm rebuild rollup --no-fund --no-audit || true
-          echo "✅ Dependências do frontend instaladas"
+          
+          # Force install Rollup platform-specific binary
+          if [ "$PLATFORM" = "linux" ] && [ "$ARCH" = "x64" ]; then
+            echo "Installing Linux x64 specific Rollup binary..."
+            npm install @rollup/rollup-linux-x64-gnu --save-optional --no-fund --no-audit || {
+              echo "Direct install failed, trying with legacy peer deps..."
+              npm install @rollup/rollup-linux-x64-gnu --save-optional --legacy-peer-deps --no-fund --no-audit || true
+            }
+          fi
+          
+          # Rebuild native modules to ensure binaries are linked correctly
+          npm rebuild --no-fund --no-audit || true
+          
+          # Verify Rollup installation
+          echo "Verifying Rollup installation..."
+          npx rollup --version || {
+            echo "Rollup verification failed, forcing complete reinstall..."
+            rm -rf node_modules
+            npm install --no-fund --no-audit
+            npm install @rollup/rollup-linux-x64-gnu --save-optional --force || true
+          }
+          
+          echo "✅ Dependências do frontend instaladas com suporte completo Rollup"
 
       - name: 🏗️ Build Frontend
         run: |
           echo "🔨 Fazendo build do frontend..."
           cd apps/web
-          npm run build
+          
+          # Final verification before build
+          echo "Verificando dependências críticas antes do build..."
+          node -e "
+            try {
+              const rollup = require('rollup');
+              console.log('✅ Rollup core module encontrado');
+            } catch (e) {
+              console.error('❌ Rollup core module não encontrado:', e.message);
+              process.exit(1);
+            }
+          " || {
+            echo "❌ Rollup não encontrado, tentando instalação de emergência..."
+            npm install rollup vite --force --no-fund --no-audit
+            npm install @rollup/rollup-linux-x64-gnu --save-optional --force --no-fund --no-audit || true
+          }
+          
+          # Execute build with error handling
+          npm run build || {
+            echo "❌ Build falhou, tentando diagnóstico..."
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            echo "Platform: $(node -e 'console.log(process.platform + \"-\" + process.arch)')"
+            echo ""
+            echo "Rollup modules installed:"
+            find node_modules -name "*rollup*" -type d | head -10 || echo "Nenhum módulo Rollup encontrado"
+            echo ""
+            echo "Tentando build com verbose..."
+            npm run build --verbose || exit 1
+          }
+          
           echo "✅ Build do frontend concluído"
 
       - name: 🧪 Validate TypeScript (Backend)
