@@ -26,7 +26,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = "login" }: Aut
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md p-0 bg-white dark:bg-gray-900">
+      <DialogContent className={`${currentTab === 'register' ? 'sm:max-w-lg' : 'sm:max-w-md'} max-w-[90vw] mx-4 p-0 bg-white dark:bg-gray-900`}>
         {currentTab === "login" ? (
           <LoginForm 
             onSuccess={handleSuccess}

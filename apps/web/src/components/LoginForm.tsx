@@ -60,7 +60,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto card-modern overflow-hidden bg-white dark:bg-gray-900 border-0 shadow-none">
+    <Card className="w-full card-modern overflow-hidden bg-white dark:bg-gray-900 border-0 shadow-none">
       {/* Background Decoration */}
       <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-spiritual-blue via-blue-600 to-purple-700 opacity-5"></div>
       
