@@ -8,7 +8,8 @@
       "Bash(npm audit:*)",
       "Bash(npm run build:*)",
       "Bash(npm run copyfiles:*)",
-      "Bash(bash:*)"
+      "Bash(bash:*)",
+      "Bash(npm run:*)"
     ],
     "deny": []
   }

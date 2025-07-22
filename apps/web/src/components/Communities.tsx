@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Users, Sprout, Heart, BookOpen, HandHelping, Star, Calendar, Music } from "lucide-react";
-import type { Community } from "@shared/schema";
+import type { Community } from "@/lib/shared-types";
 
 interface CommunitiesProps {
   communities: Community[];
@@ -44,7 +44,7 @@ export default function Communities({ communities, onClose }: CommunitiesProps) 
       const response = await apiRequest("POST", `/api/communities/${communityId}/join`);
       return response.json();
     },
-    onSuccess: (data, communityId) => {
+    onSuccess: (data, _communityId) => {
       if (data.joined) {
         toast({
           title: "Bem-vindo!",
@@ -91,7 +91,7 @@ export default function Communities({ communities, onClose }: CommunitiesProps) 
       icon: 'fas fa-seedling',
       color: 'hope-green',
       memberCount: 1200,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     },
     {
       id: '2',
@@ -100,7 +100,7 @@ export default function Communities({ communities, onClose }: CommunitiesProps) 
       icon: 'fas fa-heart',
       color: 'divine-gold',
       memberCount: 856,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     },
     {
       id: '3',
@@ -109,7 +109,7 @@ export default function Communities({ communities, onClose }: CommunitiesProps) 
       icon: 'fas fa-book-open',
       color: 'spiritual-blue',
       memberCount: 2100,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     },
     {
       id: '4',
@@ -118,7 +118,7 @@ export default function Communities({ communities, onClose }: CommunitiesProps) 
       icon: 'fas fa-praying-hands',
       color: 'red-500',
       memberCount: 3400,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     },
     {
       id: '5',
@@ -127,7 +127,7 @@ export default function Communities({ communities, onClose }: CommunitiesProps) 
       icon: 'fas fa-heart',
       color: 'purple-500',
       memberCount: 978,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     },
     {
       id: '6',
@@ -136,7 +136,7 @@ export default function Communities({ communities, onClose }: CommunitiesProps) 
       icon: 'fas fa-music',
       color: 'indigo-500',
       memberCount: 1456,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     },
   ];
 
@@ -172,7 +172,7 @@ export default function Communities({ communities, onClose }: CommunitiesProps) 
                         <h4 className="font-semibold text-deep-blue-gray">{community.name}</h4>
                         <div className="flex items-center space-x-2">
                           <Badge variant="secondary" className="text-xs">
-                            {community.memberCount.toLocaleString()} membros
+                            {community.memberCount?.toLocaleString() || 0} membros
                           </Badge>
                         </div>
                       </div>

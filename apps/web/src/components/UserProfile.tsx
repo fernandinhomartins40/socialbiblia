@@ -1,8 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { User, Edit } from "lucide-react";
-import type { UserWithStats } from "@shared/schema";
+import { Edit } from "lucide-react";
+import type { UserWithStats } from "@/lib/shared-types";
 
 interface UserProfileProps {
   user: UserWithStats;

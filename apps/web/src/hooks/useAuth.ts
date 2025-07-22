@@ -1,14 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
-// Temporary: Using local type definition
-// import type { UserWithStats } from '@socialbiblia/shared';
-
-interface UserWithStats {
-  id: string;
-  email: string;
-  name: string;
-  phone?: string;
-}
+import type { UserWithStats } from "@/lib/shared-types";
 
 export function useAuth() {
   const { data: user, isLoading, error } = useQuery<UserWithStats>({

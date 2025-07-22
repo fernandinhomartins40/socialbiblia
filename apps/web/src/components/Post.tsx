@@ -8,14 +8,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Heart, MessageCircle, Share, Bookmark, Send, Quote, HandHelping } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { PostWithUser } from "@shared/schema";
+import type { PostWithDetails } from "@/lib/shared-types";
 
 interface PostProps {
-  post: PostWithUser;
+  post: PostWithDetails;
 }
 
 export default function Post({ post }: PostProps) {
@@ -25,10 +24,10 @@ export default function Post({ post }: PostProps) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
 
-  const authorName = `${post.user.firstName || ''} ${post.user.lastName || ''}`.trim() || 
-                    post.user.email || 'Usuário';
+  const authorName = `${post.user?.firstName || ''} ${post.user?.lastName || ''}`.trim() || 
+                    post.user?.name || 'Usuário';
 
-  const isLiked = post.likes.some(like => like.userId === user?.id);
+  const isLiked = post.likes?.some((like: any) => like.userId === user?.id) || false;
 
   const toggleLikeMutation = useMutation({
     mutationFn: async () => {
@@ -123,7 +122,7 @@ export default function Post({ post }: PostProps) {
       <CardContent className="p-6">
         <div className="flex items-start space-x-4">
           <img 
-            src={post.user.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=4A90E2&color=fff`} 
+            src={post.user?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=4A90E2&color=fff`} 
             alt={`${authorName} profile`} 
             className="w-12 h-12 rounded-full object-cover"
           />
@@ -131,9 +130,9 @@ export default function Post({ post }: PostProps) {
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-2">
               <h4 className="font-semibold text-deep-blue-gray">{authorName}</h4>
-              {post.user.denomination && (
+              {post.user?.denomination && (
                 <Badge variant="secondary" className="text-xs">
-                  {post.user.denomination}
+                  {post.user?.denomination}
                 </Badge>
               )}
               <span className="text-gray-500 text-sm">{timeAgo}</span>
@@ -195,7 +194,7 @@ export default function Post({ post }: PostProps) {
               className={`space-x-2 ${isLiked ? 'text-red-500 hover:text-red-600' : 'text-gray-600 hover:text-red-500'}`}
             >
               <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-              <span>{post._count.likes}</span>
+              <span>{post._count?.likes || 0}</span>
             </Button>
             
             <Button
@@ -205,7 +204,7 @@ export default function Post({ post }: PostProps) {
               className="text-gray-600 hover:text-spiritual-blue space-x-2"
             >
               <MessageCircle className="w-4 h-4" />
-              <span>{post._count.comments}</span>
+              <span>{post._count?.comments || 0}</span>
             </Button>
             
             <Button
@@ -232,9 +231,9 @@ export default function Post({ post }: PostProps) {
         {showComments && (
           <div className="mt-4 pt-4 border-t border-gray-100 bg-gray-50 -mx-6 -mb-6 px-6 pb-6">
             <div className="space-y-3 mb-4">
-              {post.comments.map((comment) => {
-                const commentAuthor = `${comment.user.firstName || ''} ${comment.user.lastName || ''}`.trim() || 
-                                     comment.user.email || 'Usuário';
+              {post.comments?.map((comment: any) => {
+                const commentAuthor = `${comment.user?.firstName || ''} ${comment.user?.lastName || ''}`.trim() || 
+                                     comment.user?.name || 'Usuário';
                 const commentTimeAgo = formatDistanceToNow(new Date(comment.createdAt), {
                   addSuffix: true,
                   locale: ptBR,
@@ -270,7 +269,7 @@ export default function Post({ post }: PostProps) {
             {user && (
               <div className="flex items-center space-x-3">
                 <img 
-                  src={user.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.firstName || user.email || 'User')}&background=4A90E2&color=fff`} 
+                  src={user?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.firstName || user?.name || 'User')}&background=4A90E2&color=fff`} 
                   alt="Your profile" 
                   className="w-8 h-8 rounded-full object-cover"
                 />

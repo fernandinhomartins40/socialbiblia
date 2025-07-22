@@ -1,28 +1,23 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import CreatePost from "@/components/CreatePost";
 import Post from "@/components/Post";
 import AIChat from "@/components/AIChat";
 import Communities from "@/components/Communities";
 import AdvancedBibleSearch from "@/components/AdvancedBibleSearch";
-import LocalLLMTest from "@/components/LocalLLMTest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageCircle, Users, BookOpen, Bell, HandHelping, Calendar, Plus, Heart } from "lucide-react";
-import type { PostWithUser, Community } from "@shared/schema";
+import { MessageCircle, Users, BookOpen, Bell, Plus } from "lucide-react";
+import type { PostWithUser, Community, RandomVerse } from "@/lib/shared-types";
 
 export default function Home() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [showAIChat, setShowAIChat] = useState(false);
   const [showCommunities, setShowCommunities] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -55,7 +50,7 @@ export default function Home() {
   });
 
   // Fetch random verse
-  const { data: randomVerse } = useQuery({
+  const { data: randomVerse } = useQuery<RandomVerse>({
     queryKey: ["/api/verses/random"],
     enabled: !!user,
   });

@@ -86,7 +86,7 @@ export default function CreatePost() {
       <CardContent className="p-6">
         <div className="flex items-start space-x-4">
           <img 
-            src={user.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.firstName || user.email || 'User')}&background=4A90E2&color=fff`} 
+            src={user?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.firstName || user?.name || 'User')}&background=4A90E2&color=fff`} 
             alt="Profile picture" 
             className="w-10 h-10 rounded-full object-cover"
           />

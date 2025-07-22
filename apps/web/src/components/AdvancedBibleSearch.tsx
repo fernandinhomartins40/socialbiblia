@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { Search, Sparkles, BookOpen, Camera, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface SearchResult {
@@ -97,8 +95,8 @@ export default function AdvancedBibleSearch() {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target?.result as string;
+      reader.onload = () => {
+        // const base64 = reader.result as string;
         // For now, we'll treat image search as text search with description
         setQuery("Analisar imagem enviada para encontrar versículos relacionados");
         setSearchType("image");

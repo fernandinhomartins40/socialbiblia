@@ -48,6 +48,10 @@ interface UserWithStats {
   email: string;
   name: string;
   phone?: string;
+  firstName?: string;
+  lastName?: string;
+  profileImageUrl?: string;
+  denomination?: string;
 }
 
 interface CreatePostData {
@@ -121,10 +125,6 @@ interface LLMStatusResponse {
   status: string;
 }
 
-interface AIInteraction {
-  id: string;
-  message: string;
-}
 
 const API_BASE_URL = '/api';
 

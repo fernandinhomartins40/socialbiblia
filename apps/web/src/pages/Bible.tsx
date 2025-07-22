@@ -1,11 +1,9 @@
-import { useState, useEffect } from "react";
-import { Book, ChevronRight, Search, Bookmark, Share2, ChevronLeft, Heart, BookOpen } from "lucide-react";
+import { useState } from "react";
+import { Book, ChevronRight, Search, BookOpen, Share2, ChevronLeft, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -19,12 +17,6 @@ interface BiblicalBook {
   chapters: number;
 }
 
-interface BiblicalChapter {
-  id: string;
-  bookId: string;
-  chapterNumber: number;
-  verses: number;
-}
 
 interface BiblicalVerse {
   id: string;
@@ -60,11 +52,11 @@ export default function Bible() {
     queryKey: ["/api/bible/books"],
   });
 
-  // Fetch chapters for selected book
-  const { data: chapters = [] } = useQuery({
-    queryKey: ["/api/bible/books", selectedBook?.id, "chapters"],
-    enabled: !!selectedBook,
-  });
+  // Fetch chapters for selected book (using selectedBook.chapters instead)
+  // const { data: chapters = [] } = useQuery({
+  //   queryKey: ["/api/bible/books", selectedBook?.id, "chapters"],
+  //   enabled: !!selectedBook,
+  // });
 
   // Fetch verses for selected book and chapter
   const { data: verses = [] } = useQuery({
@@ -80,10 +72,7 @@ export default function Bible() {
   // Create bookmark mutation
   const createBookmarkMutation = useMutation({
     mutationFn: async (data: { verseId: string; note?: string }) => {
-      return await apiRequest("/api/bible/bookmarks", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("POST", "/api/bible/bookmarks", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bible/bookmarks"] });
@@ -104,9 +93,7 @@ export default function Bible() {
   // Delete bookmark mutation
   const deleteBookmarkMutation = useMutation({
     mutationFn: async (bookmarkId: string) => {
-      return await apiRequest(`/api/bible/bookmarks/${bookmarkId}`, {
-        method: "DELETE",
-      });
+      return await apiRequest("DELETE", `/api/bible/bookmarks/${bookmarkId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bible/bookmarks"] });
@@ -129,7 +116,7 @@ export default function Bible() {
   };
 
   const handleBookmark = (verse: BiblicalVerse) => {
-    const existingBookmark = bookmarks.find((b: BiblicalBookmark) => b.verseId === verse.id);
+    const existingBookmark = (bookmarks as BiblicalBookmark[]).find((b: BiblicalBookmark) => b.verseId === verse.id);
     
     if (existingBookmark) {
       deleteBookmarkMutation.mutate(existingBookmark.id);
@@ -139,7 +126,7 @@ export default function Bible() {
   };
 
   const isBookmarked = (verseId: string) => {
-    return bookmarks.some((b: BiblicalBookmark) => b.verseId === verseId);
+    return (bookmarks as BiblicalBookmark[]).some((b: BiblicalBookmark) => b.verseId === verseId);
   };
 
   const shareVerse = (verse: BiblicalVerse) => {
@@ -164,8 +151,8 @@ export default function Bible() {
     }
   };
 
-  const oldTestamentBooks = books.filter((book: BiblicalBook) => book.testament === "old");
-  const newTestamentBooks = books.filter((book: BiblicalBook) => book.testament === "new");
+  const oldTestamentBooks = (books as BiblicalBook[]).filter((book: BiblicalBook) => book.testament === "old");
+  const newTestamentBooks = (books as BiblicalBook[]).filter((book: BiblicalBook) => book.testament === "new");
 
   if (booksLoading) {
     return (
@@ -292,7 +279,7 @@ export default function Bible() {
         </div>
       )}
 
-      {view === "verses" && selectedBook && verses.length > 0 && (
+      {view === "verses" && selectedBook && (verses as BiblicalVerse[]).length > 0 && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold">
@@ -321,7 +308,7 @@ export default function Bible() {
           </div>
 
           <div className="space-y-4">
-            {verses.map((verse: BiblicalVerse) => (
+            {(verses as BiblicalVerse[]).map((verse: BiblicalVerse) => (
               <Card key={verse.id} className="p-6">
                 <div className="flex items-start gap-4">
                   <Badge variant="secondary" className="mt-1 font-mono">
@@ -374,7 +361,7 @@ export default function Bible() {
         </div>
       )}
 
-      {view === "verses" && selectedBook && verses.length === 0 && (
+      {view === "verses" && selectedBook && (verses as BiblicalVerse[]).length === 0 && (
         <div className="text-center py-12">
           <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-lg font-semibold mb-2">Capítulo não disponível</h3>

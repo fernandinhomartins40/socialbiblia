@@ -339,7 +339,7 @@ export default function AIChat({ onClose }: AIChatProps) {
                   
                   {message.type === 'user' && (
                     <img 
-                      src={user.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.firstName || user.email || 'User')}&background=4A90E2&color=fff`} 
+                      src={user?.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.firstName || user?.name || 'User')}&background=4A90E2&color=fff`} 
                       alt="Your profile" 
                       className="w-8 h-8 rounded-full object-cover order-1 mr-2"
                     />

@@ -39,14 +39,8 @@ export default function LocalLLMTest() {
   // Test LLM mutation
   const testMutation = useMutation({
     mutationFn: async (message: string) => {
-      const response = await apiRequest('/api/llm/test', {
-        method: 'POST',
-        body: JSON.stringify({ message }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      return response as LLMResponse;
+      const response = await apiRequest('POST', '/api/llm/test', { message });
+      return await response.json() as LLMResponse;
     },
   });
 
