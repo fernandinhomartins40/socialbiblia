@@ -9,7 +9,7 @@
 //   AIInteractionData,
 //   AIFeedbackData,
 //   UpdateUserProfileData
-// } from '@socialbiblia/shared';
+// } from '@biblicai/shared';
 // import type {
 //   ApiResponse,
 //   UserWithStats,
@@ -22,7 +22,7 @@
 //   BookmarkData,
 //   RandomVerseResponse,
 //   LLMStatusResponse
-// } from '@socialbiblia/shared';
+// } from '@biblicai/shared';
 
 // Local type definitions for testing
 interface LoginData {

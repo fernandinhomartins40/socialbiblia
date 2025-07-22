@@ -1,7 +1,7 @@
 {
-    "name": "express-prisma-ts-boilerplate",
+    "name": "@biblicai/backend",
     "version": "1.0.1",
-    "description": "A starter project written in TypeScript for quickly building Express RESTful APIs using ORM, loggers, schema validator, authentication, unit test coverage, and much more.",
+    "description": "Biblicai - Backend API TypeScript com Express, Prisma, autenticação JWT e muito mais.",
     "author": {
         "name": "Vincent Jean",
         "email": "vincent.queimado@gmail.com",

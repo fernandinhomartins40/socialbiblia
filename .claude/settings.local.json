@@ -9,7 +9,8 @@
       "Bash(npm run build:*)",
       "Bash(npm run copyfiles:*)",
       "Bash(bash:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(npm ci:*)"
     ],
     "deny": []
   }
