@@ -36,12 +36,13 @@ out/
 .env.*.local
 
 # ⚠️ MANTER: .env.production é essencial para deploy
-# !.env.production
+!.env.production
 
 # ============================================
 # LOGS
 # ============================================
-logs/
+# Ignore log files but not log directories structure
+*.log
 # Exception: Allow logs route, controller, view, and service files
 !apps/backend/src/routes/commons/logs/
 !apps/backend/src/controllers/commons/logs/
@@ -94,8 +95,8 @@ apps/backend/dist/
 # Prisma
 apps/backend/prisma/.env
 
-# Logs específicos do backend
-apps/backend/logs/
+# Logs específicos do backend - permitir estrutura, ignorar apenas arquivos .log
+# apps/backend/logs/
 
 # ============================================
 # DATABASE
@@ -247,3 +248,20 @@ yarn.lock
 !docker-compose.new.yml
 !deploy-vps.sh
 !.env.production
+# Arquivos de configuração essenciais
+!**/tsconfig.json
+!**/vite.config.ts
+!**/tailwind.config.ts
+!**/postcss.config.js
+!**/components.json
+!**/nodemon.json
+!**/jest.config.ts
+# Dockerfiles e configurações
+!**/Dockerfile*
+!**/docker/
+!configs/docker/
+# Arquivos source essenciais
+!**/src/
+!**/public/
+!**/prisma/
+!index.html
