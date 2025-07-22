@@ -1,0 +1,170 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: socialbiblia_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-socialbiblia_db}
+      POSTGRES_USER: ${POSTGRES_USER:-socialbiblia_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-socialbiblia_secure_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - socialbiblia_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-socialbiblia_user} -d ${POSTGRES_DB:-socialbiblia_db}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Backend API - Vincent Queimado Boilerplate
+  api:
+    build:
+      context: ./apps/backend
+      dockerfile: ../../configs/docker/Dockerfile.backend
+      args:
+        NODE_ENV: production
+    container_name: socialbiblia_api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Database Configuration
+      DATABASE_URL: postgresql://${POSTGRES_USER:-socialbiblia_user}:${POSTGRES_PASSWORD:-socialbiblia_secure_password}@postgres:5432/${POSTGRES_DB:-socialbiblia_db}?schema=public
+      
+      # App Configuration
+      APP_URL_HOST: 0.0.0.0
+      APP_URL_PORT: 3344
+      SSL_ALLOW: false
+      
+      # API Configuration
+      API_PREFIX: api
+      API_JSON_LIMIT: 5mb
+      API_EXT_URLENCODED: false
+      CORS_ALLOW_ORIGIN: "*"
+      
+      # JWT Configuration
+      JWT_SECRET_USER: ${JWT_SECRET_USER:-your-very-secure-jwt-secret-user-2024}
+      JWT_SECRET_DEVICE: ${JWT_SECRET_DEVICE:-your-very-secure-jwt-secret-device-2024}
+      JWT_EXPIRED_IN: 24h
+      
+      # Security
+      BCRYPT_SALTROUNDS: 10
+      RATE_LIMIT_MAX: 1000
+      RATE_LIMIT_WINDOW: 15
+      
+      # Debug Configuration
+      DEBUG_HTTP_REQUEST: false
+      DEBUG_HTTP_CONNECTION: false
+      
+      # Email Configuration (opcional)
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      EMAIL_SERVICE: ${EMAIL_SERVICE:-gmail}
+      EMAIL_OAUTH_CLIENT_ID: ${EMAIL_OAUTH_CLIENT_ID:-}
+      EMAIL_OAUTH_CLIENT_SECRET: ${EMAIL_OAUTH_CLIENT_SECRET:-}
+      EMAIL_OAUTH_REFRESH_TOKEN: ${EMAIL_OAUTH_REFRESH_TOKEN:-}
+      EMAIL_OAUTH_REDIRECT: https://developers.google.com/oauthplayground
+      
+    ports:
+      - "${API_PORT:-3344}:3344"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - api_logs:/app/logs
+      - api_uploads:/app/uploads
+    networks:
+      - socialbiblia_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3344/api/info || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Frontend Web
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: ../../configs/docker/Dockerfile.web
+      args:
+        NODE_ENV: production
+        VITE_API_URL: http://localhost:3344
+    container_name: socialbiblia_web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - socialbiblia_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: socialbiblia_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./configs/docker/nginx-vps.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+      - web
+    networks:
+      - socialbiblia_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # pgAdmin (Administração do banco)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: socialbiblia_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGLADMIN_DEFAULT_EMAIL:-admin@socialbiblia.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin_socialbiblia_2024}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "${PGADMIN_PORT:-8080}:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - pgadmin_data:/var/lib/pgladmin
+    networks:
+      - socialbiblia_network
+
+volumes:
+  postgres_data:
+    name: socialbiblia_postgres_data
+  pgadmin_data:
+    name: socialbiblia_pgladmin_data
+  api_logs:
+    name: socialbiblia_api_logs
+  api_uploads:
+    name: socialbiblia_api_uploads
+
+networks:
+  socialbiblia_network:
+    name: socialbiblia_network
+    driver: bridge

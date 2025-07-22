@@ -5,25 +5,29 @@
   "type": "module",
   "license": "MIT",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:api-new\" \"npm run dev:web\"",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:web\"",
     "dev:web": "npm run dev --workspace=apps/web",
-    "dev:api": "npm run dev --workspace=apps/api",
-    "dev:api-new": "npm run dev --workspace=apps/api-new",
-    "build": "npm run build --workspace=apps/web && npm run build --workspace=apps/api-new",
+    "dev:backend": "npm run start:dev --workspace=apps/backend",
+    "build": "npm run build:backend && npm run build:web",
     "build:web": "npm run build --workspace=apps/web",
-    "build:api": "npm run build --workspace=apps/api",
-    "build:api-new": "npm run build --workspace=apps/api-new",
-    "start": "npm run start --workspace=apps/api-new",
-    "start:api-new": "npm run start --workspace=apps/api-new",
+    "build:backend": "npm run build --workspace=apps/backend",
+    "start": "npm run start:prod --workspace=apps/backend",
+    "start:backend": "npm run start:prod --workspace=apps/backend",
     "lint": "npm run lint --workspaces",
+    "lint:backend": "npm run lint:check --workspace=apps/backend",
     "typecheck": "npm run typecheck --workspaces",
+    "typecheck:backend": "npm run build --workspace=apps/backend",
     "test": "npm run test --workspaces",
-    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
-    "install-all": "npm install && npm install --workspaces"
+    "test:backend": "npm run test --workspace=apps/backend",
+    "clean": "rm -rf node_modules apps/*/node_modules",
+    "install-all": "npm install && npm install --workspaces",
+    "docker:build": "docker-compose -f docker-compose.new.yml build",
+    "docker:up": "docker-compose -f docker-compose.new.yml up -d",
+    "docker:down": "docker-compose -f docker-compose.new.yml down",
+    "docker:logs": "docker-compose -f docker-compose.new.yml logs -f"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

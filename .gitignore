@@ -1,6 +1,244 @@
-node_modules
-dist
-.DS_Store
-server/public
+# ============================================
+# GITIGNORE OTIMIZADO - SOCIAL BÍBLIA MONOREPO
+# ============================================
+
+# ============================================
+# NODE.JS
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ============================================
+# BUILD OUTPUTS
+# ============================================
+dist/
+build/
+out/
+*.tsbuildinfo
+.turbo/
+
+# ============================================
+# ENVIRONMENT FILES
+# ============================================
+.env
+.env.local
+.env.development
+.env.test
+.env.production.local
+.env.*.local
+
+# ⚠️ MANTER: .env.production é essencial para deploy
+# !.env.production
+
+# ============================================
+# LOGS
+# ============================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================
+# RUNTIME
+# ============================================
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# ============================================
+# COVERAGE E TESTES
+# ============================================
+coverage/
+.nyc_output
+.coverage
+*.lcov
+test-results/
+junit.xml
+
+# ============================================
+# FRONTEND (VITE/REACT)
+# ============================================
+# Build outputs
+apps/web/dist/
+apps/web/build/
+apps/web/.vite/
+
+# Vite temp files
 vite.config.ts.*
+.vite/
+
+# ============================================
+# BACKEND (EXPRESS + PRISMA)
+# ============================================
+# Build outputs
+apps/backend/build/
+apps/backend/dist/
+
+# Prisma
+apps/backend/prisma/.env
+
+# Logs específicos do backend
+apps/backend/logs/
+
+# ============================================
+# DATABASE
+# ============================================
+*.sqlite
+*.sqlite3
+*.db
+
+# ============================================
+# DOCKER
+# ============================================
+# Não ignorar Dockerfiles e docker-compose
+# Apenas arquivos temporários
+.docker/
+docker-compose.override.yml
+*.log
+
+# ============================================
+# EDITOR/IDE
+# ============================================
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IntelliJ IDEA
+.idea/
+*.swp
+*.swo
+
+# Vim
+*~
+*.tmp
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# ============================================
+# SISTEMA OPERACIONAL
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+
+# ============================================
+# ARQUIVOS TEMPORÁRIOS
+# ============================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.backup
+*~
+
+# Arquivos comprimidos
+*.zip
 *.tar.gz
+*.rar
+*.7z
+
+# ============================================
+# ESPECÍFICOS DO PROJETO
+# ============================================
+# Arquivos de documentação temporários (já removidos)
+attached_assets/
+
+# Scripts de deploy locais (manter deploy-vps.sh)
+deploy-local.sh
+test-local.sh
+
+# Arquivos de configuração local
+config.local.*
+
+# ============================================
+# CERTIFICADOS E CHAVES
+# ============================================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# ============================================
+# ARQUIVOS GRANDES / MEDIA
+# ============================================
+*.mp4
+*.avi
+*.mov
+*.webm
+*.gif
+*.pdf
+*.doc
+*.docx
+
+# ⚠️ MANTER: Favicons e imagens essenciais do projeto
+# !apps/backend/public/assets/images/favicons/
+# !apps/backend/public/assets/images/icon.png
+# !apps/backend/public/assets/images/logo.png
+
+# ============================================
+# MONOREPO ESPECÍFICO
+# ============================================
+# Turbo cache
+.turbo
+
+# Package manager locks que não queremos comittar
+# (manter apenas package-lock.json principal e dos workspaces)
+pnpm-lock.yaml
+yarn.lock
+
+# ============================================
+# GITHUB ACTIONS
+# ============================================
+# Manter todos os workflows
+# !.github/workflows/
+
+# ============================================
+# MANTER ARQUIVOS ESSENCIAIS
+# ============================================
+!.gitkeep
+!README.md
+!LICENSE
+!package.json
+!docker-compose.new.yml
+!deploy-vps.sh
+!.env.production

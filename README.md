@@ -5,14 +5,35 @@ Uma aplicação de rede social cristã com integração de IA para orientação 
 ## 🏗️ Arquitetura do Monorepo
 
 ```
-/
-├── apps/
-│   ├── web/               # Frontend React + Vite
-│   └── api/               # Backend Express + TypeScript + Prisma
-├── packages/
-│   └── shared/            # Types, schemas e utilitários compartilhados
-├── docker-compose.yml     # Ambiente de desenvolvimento
-└── package.json          # Configuração do workspace
+socialbiblia/                          # 📦 Monorepo Root
+├── 📱 apps/                           # Applications
+│   ├── 🔧 backend/                    # Vincent Queimado Express + Prisma + TypeScript
+│   │   ├── src/                       # Source code
+│   │   ├── prisma/                    # Database schema & migrations  
+│   │   ├── __test__/                  # Unit tests
+│   │   └── docs/                      # API documentation (Swagger)
+│   │
+│   └── 🌐 web/                        # React + Vite Frontend
+│       ├── src/                       # Source code
+│       │   ├── components/            # React components
+│       │   ├── pages/                 # Route pages  
+│       │   ├── hooks/                 # Custom hooks
+│       │   └── lib/                   # Utilities & API client
+│       └── dist/                      # Build output (ignored)
+│
+├── ⚙️ configs/                        # Configuration files
+│   └── 🐳 docker/                     # Docker configurations
+│       ├── Dockerfile.backend         # Backend container
+│       ├── Dockerfile.web            # Frontend container
+│       └── nginx-vps.conf            # Nginx reverse proxy
+│
+├── 📜 scripts/                        # Automation scripts
+│   ├── deploy-vps.sh                 # VPS deployment
+│   └── test-local.sh                 # Local testing
+│
+├── 📚 docs/                          # Documentation
+├── 🐳 docker-compose.new.yml         # Production Docker setup
+└── 📦 package.json                   # Monorepo configuration
 ```
 
 ## 🚀 Início Rápido
@@ -44,13 +65,13 @@ docker-compose up -d postgres
 4. **Configure as variáveis de ambiente:**
 ```bash
 # Backend
-cp apps/api/.env.example apps/api/.env
-# Edite apps/api/.env com suas configurações
+cp apps/backend/.env.example apps/backend/.env
+# Edite apps/backend/.env com suas configurações
 ```
 
 5. **Execute as migrações do banco:**
 ```bash
-npm run prisma:migrate --workspace=apps/api
+cd apps/backend && npm run prisma:migrate
 ```
 
 6. **Inicie o ambiente de desenvolvimento:**

@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(git clone:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git log:*)",
+      "Bash(npm install:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run copyfiles:*)",
+      "Bash(bash:*)"
     ],
     "deny": []
   }

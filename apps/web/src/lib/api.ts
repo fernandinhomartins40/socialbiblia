@@ -1,27 +1,130 @@
-import { 
-  LoginData, 
-  RegisterData, 
-  CreatePostData, 
-  CreateCommentData,
-  BibleSearchData,
-  BibleAISearchData,
-  AIInteractionData,
-  AIFeedbackData,
-  UpdateUserProfileData
-} from '@socialbiblia/shared';
-import type {
-  ApiResponse,
-  UserWithStats,
-  PostWithDetails,
-  Community,
-  AIInteraction,
-  BibleSearchResponse,
-  AISearchResponse,
-  AIAnalyticsResponse,
-  BookmarkData,
-  RandomVerseResponse,
-  LLMStatusResponse
-} from '@socialbiblia/shared';
+// Temporary: Defining types locally instead of using shared package
+// import { 
+//   LoginData, 
+//   RegisterData, 
+//   CreatePostData, 
+//   CreateCommentData,
+//   BibleSearchData,
+//   BibleAISearchData,
+//   AIInteractionData,
+//   AIFeedbackData,
+//   UpdateUserProfileData
+// } from '@socialbiblia/shared';
+// import type {
+//   ApiResponse,
+//   UserWithStats,
+//   PostWithDetails,
+//   Community,
+//   AIInteraction,
+//   BibleSearchResponse,
+//   AISearchResponse,
+//   AIAnalyticsResponse,
+//   BookmarkData,
+//   RandomVerseResponse,
+//   LLMStatusResponse
+// } from '@socialbiblia/shared';
+
+// Local type definitions for testing
+interface LoginData {
+  email: string;
+  password: string;
+}
+
+interface RegisterData {
+  email: string;
+  password: string;
+  name: string;
+  phone?: string;
+}
+
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+  data?: any;
+}
+
+interface UserWithStats {
+  id: string;
+  email: string;
+  name: string;
+  phone?: string;
+}
+
+interface CreatePostData {
+  content: string;
+  communityId?: string;
+}
+
+interface CreateCommentData {
+  content: string;
+  postId: string;
+}
+
+interface PostWithDetails {
+  id: string;
+  content: string;
+  createdAt: string;
+  userId: string;
+}
+
+interface Community {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface BibleSearchData {
+  query: string;
+}
+
+interface BibleAISearchData {
+  query: string;
+}
+
+interface AIInteractionData {
+  message: string;
+}
+
+interface AIFeedbackData {
+  rating: number;
+  comment?: string;
+}
+
+interface UpdateUserProfileData {
+  name?: string;
+  phone?: string;
+}
+
+interface BibleSearchResponse {
+  results: any[];
+}
+
+interface AISearchResponse {
+  response: string;
+}
+
+interface AIAnalyticsResponse {
+  stats: any;
+}
+
+interface BookmarkData {
+  id: string;
+  verseId: string;
+}
+
+interface RandomVerseResponse {
+  verse: string;
+  reference: string;
+}
+
+interface LLMStatusResponse {
+  status: string;
+}
+
+interface AIInteraction {
+  id: string;
+  message: string;
+}
 
 const API_BASE_URL = '/api';
 
@@ -56,35 +159,35 @@ class ApiClient {
     }
   }
 
-  // Auth endpoints
+  // Auth endpoints - Adapted for Vincent Queimado's API structure
   async login(data: LoginData): Promise<ApiResponse> {
-    return this.request('/auth/login', {
+    return this.request('/client/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async register(data: RegisterData): Promise<ApiResponse> {
-    return this.request('/auth/register', {
+    return this.request('/client/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async logout(): Promise<ApiResponse> {
-    return this.request('/auth/logout', {
+    return this.request('/client/auth/logout', {
       method: 'GET',
     });
   }
 
   async getCurrentUser(): Promise<UserWithStats> {
-    return this.request('/auth/user');
+    return this.request('/client/user/me');
   }
 
-  // User endpoints
+  // User endpoints - Adapted for Vincent Queimado's API structure
   async updateProfile(data: UpdateUserProfileData): Promise<UserWithStats> {
-    return this.request('/users/profile', {
-      method: 'PUT',
+    return this.request('/client/user/me', {
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
