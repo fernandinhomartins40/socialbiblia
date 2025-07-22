@@ -201,8 +201,35 @@ jobs:
           # ====================================
           log "🚀 ETAPA 6: Fazendo build e iniciando containers..."
           
+          # Verificar estrutura necessária
+          log "🔍 Verificando estrutura do projeto..."
+          REQUIRED_FILES="docker-compose.production.yml docker/Dockerfile.api docker/Dockerfile.web apps/api/package.json apps/web/package.json packages/shared/package.json"
+          for file in $REQUIRED_FILES; do
+            if [ ! -f "$file" ]; then
+              log "❌ Arquivo obrigatório não encontrado: $file"
+              ls -la $(dirname "$file")/
+              exit 1
+            else
+              log "✅ Encontrado: $file"
+            fi
+          done
+          
           # Build e iniciar aplicação com isolamento
-          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml --env-file .env.production up -d --build
+          log "🔨 Iniciando build dos containers..."
+          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml --env-file .env.production build --no-cache --progress=plain 2>&1 | tee build.log || {
+            log "❌ Falha no build dos containers!"
+            log "📋 Últimas linhas do build log:"
+            tail -50 build.log
+            exit 1
+          }
+          
+          log "🚀 Iniciando containers..."
+          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml --env-file .env.production up -d 2>&1 | tee startup.log || {
+            log "❌ Falha ao iniciar containers!"
+            log "📋 Log de startup:"
+            cat startup.log
+            exit 1
+          }
           
           # ====================================
           # ETAPA 7: CONFIGURAÇÃO DO BANCO

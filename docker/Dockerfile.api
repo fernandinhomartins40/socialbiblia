@@ -45,8 +45,12 @@ WORKDIR /app/apps/api
 RUN npx prisma generate
 
 # Build da aplicação
-RUN npm run build
-RUN npm run copyfiles
+RUN echo "🔨 Iniciando build do TypeScript..." && \
+    npm run build && \
+    echo "✅ Build do TypeScript concluído" && \
+    npm run copyfiles && \
+    echo "✅ Copyfiles concluído" && \
+    ls -la build/
 
 # Stage 3: Production
 FROM node:20-alpine AS production
