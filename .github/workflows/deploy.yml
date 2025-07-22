@@ -28,9 +28,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: |
-            apps/backend/package-lock.json
-            apps/web/package-lock.json
+          cache-dependency-path: 'package-lock.json'
 
       - name: 🔍 Verify project structure
         run: |
@@ -61,6 +59,12 @@ jobs:
           done
           
           echo "✅ Estrutura do projeto validada"
+
+      - name: 🏗️ Install Root Dependencies  
+        run: |
+          echo "📦 Instalando dependências do root..."
+          npm ci --verbose
+          echo "✅ Dependências do root instaladas"
 
       - name: 🏗️ Install Backend Dependencies
         run: |
