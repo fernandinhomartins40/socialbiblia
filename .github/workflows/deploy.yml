@@ -1,4 +1,4 @@
-name: 🚀 Deploy Social Bíblia to VPS
+name: 🚀 Deploy Biblicai to VPS
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
 env:
   VPS_HOST: '31.97.85.98'
   VPS_USER: 'root'
-  APP_DIR: '/opt/socialbiblia'
-  COMPOSE_PROJECT_NAME: 'socialbiblia'
+  APP_DIR: '/opt/biblicai'
+  COMPOSE_PROJECT_NAME: 'biblicai'
 
 jobs:
   # ====================================
@@ -215,7 +215,7 @@ jobs:
             # ====================================
             # ETAPA 1: PREPARAR AMBIENTE
             # ====================================
-            log "🚀 INICIANDO DEPLOY SOCIAL BÍBLIA"
+            log "🚀 INICIANDO DEPLOY BIBLICAI"
             log "Backend: Vincent Queimado Express + Prisma + TypeScript"
             log "Database: PostgreSQL"
             log "Frontend: React + Vite"
@@ -311,16 +311,16 @@ jobs:
                 log "📝 Criando arquivo .env de produção..."
                 cat > .env << 'EOF'
             # ==============================================
-            # CONFIGURAÇÕES DE PRODUÇÃO - SOCIAL BÍBLIA
+            # CONFIGURAÇÕES DE PRODUÇÃO - BIBLICAI
             # Backend: Vincent Queimado Express + Prisma + TypeScript
             # ==============================================
             
             # Database Configuration (PostgreSQL)
-            POSTGRES_DB=socialbiblia_db
-            POSTGRES_USER=socialbiblia_user
-            POSTGRES_PASSWORD=SocialBiblia@2024#SecureDB!VPS
+            POSTGRES_DB=biblicai_db
+            POSTGRES_USER=biblicai_user
+            POSTGRES_PASSWORD=Biblicai@2024#SecureDB!VPS
             POSTGRES_PORT=5432
-            DATABASE_URL=postgresql://socialbiblia_user:SocialBiblia@2024#SecureDB!VPS@postgres:5432/socialbiblia_db?schema=public
+            DATABASE_URL=postgresql://biblicai_user:Biblicai@2024#SecureDB!VPS@postgres:5432/biblicai_db?schema=public
             
             # API Configuration (Vincent Queimado Backend)
             APP_URL_HOST=0.0.0.0
@@ -332,8 +332,8 @@ jobs:
             CORS_ALLOW_ORIGIN=*
             
             # JWT Configuration (Vincent Queimado Format)
-            JWT_SECRET_USER=SocialBiblia@VincentQueimado#UserJWT2024!VPS#Secure
-            JWT_SECRET_DEVICE=SocialBiblia@VincentQueimado#DeviceJWT2024!VPS#Secure
+            JWT_SECRET_USER=Biblicai@VincentQueimado#UserJWT2024!VPS#Secure
+            JWT_SECRET_DEVICE=Biblicai@VincentQueimado#DeviceJWT2024!VPS#Secure
             JWT_EXPIRED_IN=24h
             
             # Security Configuration
@@ -351,11 +351,11 @@ jobs:
             PGLADMIN_PORT=8080
             
             # pgAdmin Configuration
-            PGLADMIN_DEFAULT_EMAIL=admin@socialbiblia.com
-            PGLADMIN_DEFAULT_PASSWORD=SocialBiblia@Admin2024!VPS
+            PGLADMIN_DEFAULT_EMAIL=admin@biblicai.com.br
+            PGLADMIN_DEFAULT_PASSWORD=Biblicai@Admin2024!VPS
             
             # Email Configuration (Optional)
-            EMAIL_USER=admin@socialbiblia.com
+            EMAIL_USER=admin@biblicai.com.br
             EMAIL_PASSWORD=
             EMAIL_SERVICE=gmail
             EMAIL_OAUTH_CLIENT_ID=
@@ -402,10 +402,10 @@ jobs:
             docker compose -f docker-compose.new.yml down --remove-orphans 2>/dev/null || true
             
             # Limpar apenas imagens do projeto
-            docker images --format "table {{.Repository}}:{{.Tag}}" | grep -E "(socialbiblia|backend|web)" | awk '{print $1}' | xargs -r docker rmi -f 2>/dev/null || true
+            docker images --format "table {{.Repository}}:{{.Tag}}" | grep -E "(biblicai|backend|web)" | awk '{print $1}' | xargs -r docker rmi -f 2>/dev/null || true
             
             # Limpar volumes órfãos do projeto
-            docker volume ls --format "{{.Name}}" | grep "socialbiblia" | xargs -r docker volume rm 2>/dev/null || true
+            docker volume ls --format "{{.Name}}" | grep "biblicai" | xargs -r docker volume rm 2>/dev/null || true
             
             log "✅ Ambiente limpo"
             
@@ -443,7 +443,7 @@ jobs:
             log "🐘 Aguardando PostgreSQL..."
             timeout=120
             while [ $timeout -gt 0 ]; do
-              if docker compose -f docker-compose.new.yml exec -T postgres pg_isready -U socialbiblia_user -d socialbiblia_db >/dev/null 2>&1; then
+              if docker compose -f docker-compose.new.yml exec -T postgres pg_isready -U biblicai_user -d biblicai_db >/dev/null 2>&1; then
                 log "✅ PostgreSQL pronto!"
                 break
               fi
@@ -550,7 +550,7 @@ jobs:
             fi
             
             # Verificar se containers estão rodando
-            EXPECTED_CONTAINERS="socialbiblia_postgres socialbiblia_api socialbiblia_web"
+            EXPECTED_CONTAINERS="biblicai_postgres biblicai_api biblicai_web"
             for container in $EXPECTED_CONTAINERS; do
               if docker ps --format "{{.Names}}" | grep -q "$container"; then
                 log "✅ Container $container: Rodando"
@@ -566,11 +566,51 @@ jobs:
             if [ -n "$HEALTH_ISSUES" ]; then
               log "❌ DEPLOY CONCLUÍDO COM PROBLEMAS!"
               log "🔍 Serviços com problemas: $HEALTH_ISSUES"
-              log "📋 Logs dos containers:"
-              docker compose -f docker-compose.new.yml logs --tail=50
+              
+              # ====================================
+              # RELATÓRIO DE DEBUG REDUZIDO
+              # ====================================
+              log "📋 GERANDO RELATÓRIO DE DEBUG REDUZIDO..."
+              echo ""
+              echo "==========================================="
+              echo "🔍 BIBLICAI DEPLOY FAILURE REPORT"
+              echo "==========================================="
+              echo "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
+              echo "Issues: $HEALTH_ISSUES"
+              echo ""
+              
+              # Sistema
+              echo "📊 SISTEMA:"
+              echo "  Memory: $(free -h | grep '^Mem:' | awk '{print $3"/"$2}')"
+              echo "  Disk: $(df -h / | tail -1 | awk '{print $3"/"$2}')"
+              echo ""
+              
+              # Containers
+              echo "📦 CONTAINERS STATUS:"
+              docker ps -a --format "{{.Names}} {{.Status}}" | grep biblicai | head -5 || echo "  Nenhum container biblicai encontrado"
+              echo ""
+              
+              # Logs críticos (apenas últimas 5 linhas de cada)
+              echo "📋 LOGS CRÍTICOS:"
+              for container in biblicai_postgres biblicai_api biblicai_web; do
+                echo "--- $container ---"
+                docker logs $container 2>&1 | tail -5 2>/dev/null || echo "Container não encontrado"
+                echo ""
+              done
+              
+              # Health checks
+              echo "🔍 HEALTH STATUS:"
+              curl -f http://localhost:3344/api/info >/dev/null 2>&1 && echo "  API: ✅" || echo "  API: ❌"
+              curl -f http://localhost:3000 >/dev/null 2>&1 && echo "  Frontend: ✅" || echo "  Frontend: ❌"
+              echo ""
+              
+              echo "==========================================="
+              echo "🏁 FIM DO RELATÓRIO DE FALHA"
+              echo "==========================================="
+              
               exit 1
             else
-              log "🎉 DEPLOY DA SOCIAL BÍBLIA CONCLUÍDO COM SUCESSO!"
+              log "🎉 DEPLOY DA BIBLICAI CONCLUÍDO COM SUCESSO!"
               log ""
               log "🌐 APLICAÇÃO DISPONÍVEL EM:"
               log "   ✅ Frontend (React):     http://${{ env.VPS_HOST }}:3000"
@@ -585,9 +625,9 @@ jobs:
               log "   • Container: Docker + Docker Compose"
               log ""
               log "📊 RESUMO:"
-              log "   • Containers ativos: $(docker ps --format '{{.Names}}' | grep socialbiblia | wc -l)"
-              log "   • Volumes: $(docker volume ls --format '{{.Name}}' | grep socialbiblia | wc -l)"
-              log "   • Networks: $(docker network ls --format '{{.Name}}' | grep socialbiblia | wc -l)"
+              log "   • Containers ativos: $(docker ps --format '{{.Names}}' | grep biblicai | wc -l)"
+              log "   • Volumes: $(docker volume ls --format '{{.Name}}' | grep biblicai | wc -l)"
+              log "   • Networks: $(docker network ls --format '{{.Name}}' | grep biblicai | wc -l)"
               log ""
               log "💾 USO DE RECURSOS:"
               docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" | head -5
@@ -609,7 +649,7 @@ jobs:
         run: |
           if [ "${{ needs.deploy.result }}" == "success" ]; then
             echo "✅ Deploy realizado com sucesso!"
-            echo "🌐 Social Bíblia disponível em: http://${{ env.VPS_HOST }}:3000"
+            echo "🌐 Biblicai disponível em: http://${{ env.VPS_HOST }}:3000"
           else
             echo "❌ Deploy falhou!"
             exit 1

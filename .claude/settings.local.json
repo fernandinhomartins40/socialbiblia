@@ -10,7 +10,10 @@
       "Bash(npm run copyfiles:*)",
       "Bash(bash:*)",
       "Bash(npm run:*)",
-      "Bash(npm ci:*)"
+      "Bash(npm ci:*)",
+      "Bash(ls:*)",
+      "Bash(docker compose:*)",
+      "Bash(git push:*)"
     ],
     "deny": []
   }

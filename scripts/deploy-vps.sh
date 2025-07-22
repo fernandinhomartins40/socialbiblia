@@ -1,15 +1,15 @@
 #!/bin/bash
-# Deploy Script para VPS Ubuntu 22.04 - Social Bíblia
+# Deploy Script para VPS Ubuntu 22.04 - Biblicai
 # Vincent Queimado Express + Prisma + TypeScript Backend
 
 set -e  # Exit on any error
 
 # Configurações
-PROJECT_NAME="socialbiblia"
+PROJECT_NAME="biblicai"
 DOCKER_COMPOSE_FILE="docker-compose.new.yml"
 ENV_FILE=".env.production"
 
-echo "🚀 INICIANDO DEPLOY - SOCIAL BÍBLIA VPS"
+echo "🚀 INICIANDO DEPLOY - BIBLICAI VPS"
 echo "========================================"
 
 # Verificar se Docker e Docker Compose estão instalados
@@ -64,7 +64,7 @@ docker compose -f $DOCKER_COMPOSE_FILE up -d
 echo "⏳ AGUARDANDO INICIALIZAÇÃO DO POSTGRESQL..."
 timeout=60
 counter=0
-while ! docker compose -f $DOCKER_COMPOSE_FILE exec -T postgres pg_isready -U socialbiblia_user -d socialbiblia_db; do
+while ! docker compose -f $DOCKER_COMPOSE_FILE exec -T postgres pg_isready -U biblicai_user -d biblicai_db; do
     sleep 1
     counter=$((counter+1))
     if [ $counter -ge $timeout ]; then
@@ -151,7 +151,7 @@ fi
 echo ""
 echo "🎉 DEPLOY CONCLUÍDO COM SUCESSO!"
 echo "========================================"
-echo "A aplicação Social Bíblia está rodando na VPS"
+echo "A aplicação Biblicai está rodando na VPS"
 echo "Backend: Vincent Queimado Express + Prisma + TypeScript"
 echo "Database: PostgreSQL 15"
 echo "Ambiente: Produção"
