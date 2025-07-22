@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Heart, Sparkles, ArrowRight, Users, Shield } from "lucide-react";
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -108,138 +108,180 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl text-spiritual-blue">Criar Conta</CardTitle>
-        <p className="text-gray-600">Junte-se à comunidade BibliaConnect</p>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome completo *</Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="Seu nome completo"
-              value={formData.name}
-              onChange={(e) => handleInputChange("name", e.target.value)}
-              disabled={registerMutation.isPending}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email *</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
-              value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
-              disabled={registerMutation.isPending}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone">Telefone (opcional)</Label>
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="(11) 99999-9999"
-              value={formData.phone}
-              onChange={(e) => handleInputChange("phone", e.target.value)}
-              disabled={registerMutation.isPending}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha *</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                disabled={registerMutation.isPending}
-                required
-                minLength={6}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-                disabled={registerMutation.isPending}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-gray-500" />
-                ) : (
-                  <Eye className="h-4 w-4 text-gray-500" />
-                )}
-              </Button>
+    <Card className="w-full max-w-lg mx-auto card-modern overflow-hidden">
+      {/* Background Decoration */}
+      <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-divine-gold via-orange-500 to-red-500 opacity-5"></div>
+      
+      <CardHeader className="text-center relative z-10 pb-8">
+        <div className="flex items-center justify-center mb-6">
+          <div className="relative">
+            <div className="w-16 h-16 bg-gradient-to-br from-divine-gold to-orange-600 rounded-2xl flex items-center justify-center shadow-strong">
+              <Users className="w-8 h-8 text-white" />
+            </div>
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-hope-green rounded-full flex items-center justify-center">
+              <Shield className="w-3 h-3 text-white" />
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirmar Senha *</Label>
-            <div className="relative">
+        </div>
+        
+        <CardTitle className="text-3xl font-black bg-gradient-to-r from-divine-gold via-orange-600 to-red-500 bg-clip-text text-transparent mb-3">
+          Junte-se à Comunidade
+        </CardTitle>
+        <p className="text-muted-foreground text-lg">
+          Crie sua conta e inicie sua jornada espiritual conosco
+        </p>
+      </CardHeader>
+      <CardContent className="px-8 pb-8">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid grid-cols-1 gap-5">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-semibold text-deep-blue-gray">
+                Nome Completo *
+              </Label>
               <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                id="name"
+                type="text"
+                placeholder="Digite seu nome completo"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
                 disabled={registerMutation.isPending}
+                className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20"
                 required
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-semibold text-deep-blue-gray">
+                Endereço de Email *
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Digite seu melhor email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
                 disabled={registerMutation.isPending}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4 text-gray-500" />
-                ) : (
-                  <Eye className="h-4 w-4 text-gray-500" />
-                )}
-              </Button>
+                className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-sm font-semibold text-deep-blue-gray">
+                Telefone (opcional)
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="(11) 99999-9999"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                disabled={registerMutation.isPending}
+                className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20"
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-semibold text-deep-blue-gray">
+                Senha *
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Mínimo 6 caracteres"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  disabled={registerMutation.isPending}
+                  className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20 pr-11"
+                  required
+                  minLength={6}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 rounded-lg"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={registerMutation.isPending}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-500" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-500" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-sm font-semibold text-deep-blue-gray">
+                Confirmar Senha *
+              </Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Digite novamente"
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                  disabled={registerMutation.isPending}
+                  className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20 pr-11"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 rounded-lg"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={registerMutation.isPending}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-500" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-500" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
 
           <Button 
             type="submit" 
-            className="w-full bg-spiritual-blue hover:bg-blue-600"
+            className="w-full h-12 text-base font-semibold group bg-gradient-to-r from-divine-gold to-orange-600 hover:from-divine-gold-light hover:to-orange-500 text-white shadow-medium hover:shadow-strong transition-all duration-300"
             disabled={registerMutation.isPending}
           >
             {registerMutation.isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Criando conta...
+                <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                Criando sua conta...
               </>
             ) : (
-              "Criar Conta"
+              <>
+                <Users className="mr-2 h-5 w-5" />
+                <span className="mr-2">Criar Minha Conta</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </>
             )}
           </Button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Já tem uma conta?{" "}
-            <button
-              type="button"
-              onClick={onSwitchToLogin}
-              className="text-spiritual-blue hover:underline font-medium"
-              disabled={registerMutation.isPending}
-            >
-              Fazer login
-            </button>
+        <div className="mt-8 text-center pt-6 border-t border-gray-100">
+          <p className="text-base text-muted-foreground mb-4">
+            Já faz parte da família BibliaConnect?
           </p>
+          <button
+            type="button"
+            onClick={onSwitchToLogin}
+            className="text-spiritual-blue hover:text-spiritual-blue-dark font-semibold text-base hover:underline transition-all duration-200 inline-flex items-center gap-2"
+            disabled={registerMutation.isPending}
+          >
+            <span>Fazer login</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </CardContent>
     </Card>

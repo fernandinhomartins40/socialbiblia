@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Heart, Sparkles, ArrowRight } from "lucide-react";
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -60,43 +60,67 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl text-spiritual-blue">Login</CardTitle>
-        <p className="text-gray-600">Entre na sua conta BibliaConnect</p>
+    <Card className="w-full max-w-md mx-auto card-modern overflow-hidden">
+      {/* Background Decoration */}
+      <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-spiritual-blue via-blue-600 to-purple-700 opacity-5"></div>
+      
+      <CardHeader className="text-center relative z-10 pb-8">
+        <div className="flex items-center justify-center mb-6">
+          <div className="relative">
+            <div className="w-16 h-16 bg-gradient-spiritual rounded-2xl flex items-center justify-center shadow-strong">
+              <Heart className="w-8 h-8 text-white" />
+            </div>
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-divine-gold rounded-full flex items-center justify-center">
+              <Sparkles className="w-3 h-3 text-white" />
+            </div>
+          </div>
+        </div>
+        
+        <CardTitle className="text-3xl font-black bg-gradient-to-r from-spiritual-blue to-purple-600 bg-clip-text text-transparent mb-3">
+          Bem-vindo de volta!
+        </CardTitle>
+        <p className="text-muted-foreground text-lg">
+          Entre na sua conta e continue sua jornada espiritual
+        </p>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+      <CardContent className="px-8 pb-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-3">
+            <Label htmlFor="email" className="text-sm font-semibold text-deep-blue-gray">
+              Endereço de Email
+            </Label>
             <Input
               id="email"
               type="email"
-              placeholder="seu@email.com"
+              placeholder="Digite seu email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loginMutation.isPending}
+              className="h-12 text-base rounded-xl border-gray-200 focus:border-spiritual-blue focus:ring-spiritual-blue/20"
               required
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
+          <div className="space-y-3">
+            <Label htmlFor="password" className="text-sm font-semibold text-deep-blue-gray">
+              Senha
+            </Label>
             <div className="relative">
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
+                placeholder="Digite sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loginMutation.isPending}
+                className="h-12 text-base rounded-xl border-gray-200 focus:border-spiritual-blue focus:ring-spiritual-blue/20 pr-12"
                 required
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100 rounded-lg"
                 onClick={() => setShowPassword(!showPassword)}
                 disabled={loginMutation.isPending}
               >
@@ -111,32 +135,36 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
 
           <Button 
             type="submit" 
-            className="w-full bg-spiritual-blue hover:bg-blue-600"
+            className="w-full btn-primary h-12 text-base font-semibold group"
             disabled={loginMutation.isPending}
           >
             {loginMutation.isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Entrando...
+                <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                Entrando na sua conta...
               </>
             ) : (
-              "Entrar"
+              <>
+                <span className="mr-2">Entrar na minha conta</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </>
             )}
           </Button>
         </form>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Ainda não tem conta?{" "}
-            <button
-              type="button"
-              onClick={onSwitchToRegister}
-              className="text-spiritual-blue hover:underline font-medium"
-              disabled={loginMutation.isPending}
-            >
-              Criar conta
-            </button>
+        <div className="mt-8 text-center pt-6 border-t border-gray-100">
+          <p className="text-base text-muted-foreground mb-4">
+            Primeira vez no BibliaConnect?
           </p>
+          <button
+            type="button"
+            onClick={onSwitchToRegister}
+            className="text-spiritual-blue hover:text-spiritual-blue-dark font-semibold text-base hover:underline transition-all duration-200 inline-flex items-center gap-2"
+            disabled={loginMutation.isPending}
+          >
+            <span>Criar conta gratuita</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </CardContent>
     </Card>

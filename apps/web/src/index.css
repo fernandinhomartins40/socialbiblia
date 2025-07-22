@@ -4,33 +4,48 @@
 
 :root {
   --background: hsl(0, 0%, 100%);
-  --foreground: hsl(220, 14.3%, 4.1%);
-  --muted: hsl(210, 40%, 96%);
-  --muted-foreground: hsl(215, 25.3%, 44.7%);
+  --foreground: hsl(220, 14%, 4%);
+  --muted: hsl(210, 40%, 98%);
+  --muted-foreground: hsl(215, 25%, 45%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(220, 14.3%, 4.1%);
+  --popover-foreground: hsl(220, 14%, 4%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(220, 14.3%, 4.1%);
+  --card-foreground: hsl(220, 14%, 4%);
   --border: hsl(214, 32%, 91%);
   --input: hsl(214, 32%, 91%);
-  --primary: hsl(207, 90%, 54%);
+  --primary: hsl(221, 83%, 53%);
   --primary-foreground: hsl(210, 40%, 98%);
   --secondary: hsl(210, 40%, 96%);
-  --secondary-foreground: hsl(222, 84%, 4.9%);
+  --secondary-foreground: hsl(222, 84%, 5%);
   --accent: hsl(210, 40%, 96%);
-  --accent-foreground: hsl(222, 47.4%, 11.2%);
-  --destructive: hsl(0, 84.2%, 60.2%);
+  --accent-foreground: hsl(222, 47%, 11%);
+  --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(210, 40%, 98%);
-  --ring: hsl(215, 20.2%, 65.1%);
-  --radius: 0.5rem;
+  --ring: hsl(221, 83%, 53%);
+  --radius: 0.75rem;
 
-  /* Custom spiritual colors */
-  --spiritual-blue: hsl(207, 90%, 54%);
-  --divine-gold: hsl(45, 85%, 50%);
-  --deep-blue-gray: hsl(214, 32%, 25%);
-  --hope-green: hsl(145, 63%, 42%);
-  --pure-white: hsl(0, 0%, 97%);
-  --light-background: hsl(210, 40%, 98%);
+  /* Enhanced spiritual color palette */
+  --spiritual-blue: hsl(221, 83%, 53%);
+  --spiritual-blue-light: hsl(221, 83%, 63%);
+  --spiritual-blue-dark: hsl(221, 83%, 43%);
+  --divine-gold: hsl(43, 88%, 58%);
+  --divine-gold-light: hsl(43, 88%, 68%);
+  --deep-blue-gray: hsl(215, 25%, 27%);
+  --hope-green: hsl(142, 76%, 36%);
+  --hope-green-light: hsl(142, 76%, 46%);
+  --pure-white: hsl(0, 0%, 98%);
+  --light-background: hsl(210, 40%, 99%);
+  --gradient-start: hsl(221, 83%, 53%);
+  --gradient-end: hsl(262, 83%, 58%);
+  
+  /* Glass morphism */
+  --glass-bg: hsla(0, 0%, 100%, 0.8);
+  --glass-border: hsla(255, 255%, 255%, 0.2);
+  
+  /* Shadows */
+  --shadow-soft: 0 2px 8px -2px hsla(221, 83%, 53%, 0.08);
+  --shadow-medium: 0 8px 30px -12px hsla(221, 83%, 53%, 0.25);
+  --shadow-strong: 0 32px 64px -12px hsla(221, 83%, 53%, 0.35);
 }
 
 .dark {
@@ -72,48 +87,83 @@
 }
 
 @layer components {
-  .text-spiritual-blue {
-    color: var(--spiritual-blue);
+  /* Modern spiritual color utilities */
+  .text-spiritual-blue { color: var(--spiritual-blue); }
+  .bg-spiritual-blue { background-color: var(--spiritual-blue); }
+  .text-spiritual-blue-light { color: var(--spiritual-blue-light); }
+  .bg-spiritual-blue-light { background-color: var(--spiritual-blue-light); }
+  .text-spiritual-blue-dark { color: var(--spiritual-blue-dark); }
+  .bg-spiritual-blue-dark { background-color: var(--spiritual-blue-dark); }
+  
+  .text-divine-gold { color: var(--divine-gold); }
+  .bg-divine-gold { background-color: var(--divine-gold); }
+  .text-divine-gold-light { color: var(--divine-gold-light); }
+  .bg-divine-gold-light { background-color: var(--divine-gold-light); }
+  
+  .text-deep-blue-gray { color: var(--deep-blue-gray); }
+  .bg-deep-blue-gray { background-color: var(--deep-blue-gray); }
+  .text-hope-green { color: var(--hope-green); }
+  .bg-hope-green { background-color: var(--hope-green); }
+  .text-hope-green-light { color: var(--hope-green-light); }
+  .bg-hope-green-light { background-color: var(--hope-green-light); }
+  
+  .text-pure-white { color: var(--pure-white); }
+  .bg-pure-white { background-color: var(--pure-white); }
+  .bg-light-background { background-color: var(--light-background); }
+
+  /* Modern gradient utilities */
+  .bg-gradient-spiritual {
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
   }
   
-  .bg-spiritual-blue {
-    background-color: var(--spiritual-blue);
+  .bg-gradient-divine {
+    background: linear-gradient(135deg, var(--divine-gold) 0%, var(--spiritual-blue) 100%);
+  }
+
+  /* Glass morphism utilities */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
   }
   
-  .text-divine-gold {
-    color: var(--divine-gold);
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-soft);
+  }
+
+  /* Modern shadow utilities */
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-medium { box-shadow: var(--shadow-medium); }
+  .shadow-strong { box-shadow: var(--shadow-strong); }
+
+  /* Enhanced button styles */
+  .btn-primary {
+    @apply bg-spiritual-blue hover:bg-spiritual-blue-dark text-white font-semibold px-6 py-3 rounded-xl shadow-medium hover:shadow-strong transition-all duration-300;
   }
   
-  .bg-divine-gold {
-    background-color: var(--divine-gold);
+  .btn-secondary {
+    @apply bg-white/90 hover:bg-white text-spiritual-blue font-semibold px-6 py-3 rounded-xl border border-spiritual-blue/20 hover:border-spiritual-blue/40 shadow-soft hover:shadow-medium transition-all duration-300;
   }
   
-  .text-deep-blue-gray {
-    color: var(--deep-blue-gray);
+  .btn-ghost {
+    @apply bg-transparent hover:bg-spiritual-blue/10 text-spiritual-blue font-medium px-4 py-2 rounded-lg transition-all duration-200;
+  }
+
+  /* Modern card styles */
+  .card-modern {
+    @apply bg-white rounded-2xl shadow-soft hover:shadow-medium transition-all duration-300 border border-gray-100;
   }
   
-  .bg-deep-blue-gray {
-    background-color: var(--deep-blue-gray);
+  .card-glass {
+    @apply glass-card rounded-2xl;
   }
-  
-  .text-hope-green {
-    color: var(--hope-green);
-  }
-  
-  .bg-hope-green {
-    background-color: var(--hope-green);
-  }
-  
-  .text-pure-white {
-    color: var(--pure-white);
-  }
-  
-  .bg-pure-white {
-    background-color: var(--pure-white);
-  }
-  
-  .bg-light-background {
-    background-color: var(--light-background);
+
+  /* Enhanced modal backdrop */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-50;
   }
 }
 

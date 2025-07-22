@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Sprout, Heart, BookOpen, HandHelping, Star, Calendar, Music } from "lucide-react";
+import { Users, Sprout, Heart, BookOpen, HandHelping, Star, Calendar, Music, Plus, Sparkles, ArrowRight } from "lucide-react";
 import type { Community } from "@/lib/shared-types";
 
 interface CommunitiesProps {
@@ -144,70 +144,149 @@ export default function Communities({ communities, onClose }: CommunitiesProps) 
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col p-0">
-        <DialogHeader className="bg-gradient-to-r from-spiritual-blue to-blue-600 text-white p-6 rounded-t-lg">
-          <div className="flex items-center space-x-2">
-            <Users className="w-6 h-6" />
-            <DialogTitle className="text-xl">Comunidades</DialogTitle>
+      <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col p-0 overflow-hidden">
+        {/* Header Moderno */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-spiritual-blue via-blue-600 to-purple-700 p-8">
+          {/* Background decoration */}
+          <div className="absolute inset-0">
+            <div className="absolute top-4 right-4 w-20 h-20 bg-white/10 rounded-full"></div>
+            <div className="absolute bottom-4 left-4 w-16 h-16 bg-white/5 rounded-full"></div>
+            <div className="absolute top-8 left-8 w-12 h-12 bg-divine-gold/20 rounded-full"></div>
           </div>
-          <p className="text-blue-100 text-sm">
-            Conecte-se com irmãos que compartilham seus interesses espirituais
-          </p>
-        </DialogHeader>
+          
+          <DialogHeader className="relative z-10">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-3xl font-black text-white mb-2">
+                  Comunidades
+                </DialogTitle>
+                <p className="text-blue-100 text-lg font-medium">
+                  Conecte-se com irmãos que compartilham sua jornada de fé
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-6 text-white/80 text-sm">
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4" />
+                <span>+50 Comunidades Ativas</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Heart className="w-4 h-4" />
+                <span>Ambiente Acolhedor</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                <span>Crescimento Espiritual</span>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
 
-        <ScrollArea className="flex-1 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ScrollArea className="flex-1 p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayCommunities.map((community) => {
               const IconComponent = communityIcons[community.icon as keyof typeof communityIcons] || Users;
               const colorClass = communityColors[community.color as keyof typeof communityColors] || 'bg-spiritual-blue';
 
               return (
-                <Card key={community.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className={`w-12 h-12 ${colorClass} rounded-full flex items-center justify-center`}>
-                        <IconComponent className="w-6 h-6 text-white" />
+                <Card key={community.id} className="card-modern group hover:scale-105 transition-all duration-300 overflow-hidden">
+                  <CardContent className="p-0">
+                    {/* Header do Card */}
+                    <div className={`${colorClass} p-4 relative overflow-hidden`}>
+                      <div className="absolute top-2 right-2 opacity-20">
+                        <Sparkles className="w-6 h-6 text-white" />
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-deep-blue-gray">{community.name}</h4>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {community.memberCount?.toLocaleString() || 0} membros
-                          </Badge>
+                      <div className="flex items-center space-x-3 relative z-10">
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                          <IconComponent className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-white text-lg truncate">{community.name}</h4>
+                          <div className="flex items-center space-x-2">
+                            <Badge className="bg-white/20 text-white text-xs px-2 py-1">
+                              <Users className="w-3 h-3 mr-1" />
+                              {community.memberCount?.toLocaleString() || 0} membros
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                      {community.description}
-                    </p>
-                    
-                    <Button 
-                      className="w-full bg-spiritual-blue hover:bg-blue-600 text-white"
-                      onClick={() => handleJoinCommunity(community.id)}
-                      disabled={joinCommunityMutation.isPending}
-                    >
-                      {joinCommunityMutation.isPending ? "Entrando..." : "Participar"}
-                    </Button>
+                    {/* Conteúdo do Card */}
+                    <div className="p-5">
+                      <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-3">
+                        {community.description}
+                      </p>
+                      
+                      <Button 
+                        className="w-full btn-primary group"
+                        onClick={() => handleJoinCommunity(community.id)}
+                        disabled={joinCommunityMutation.isPending}
+                      >
+                        {joinCommunityMutation.isPending ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                            Entrando...
+                          </>
+                        ) : (
+                          <>
+                            <Heart className="w-4 h-4 mr-2" />
+                            <span>Participar</span>
+                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );
             })}
           </div>
 
-          {/* Create Community CTA */}
-          <Card className="mt-6 border-2 border-dashed border-gray-300">
-            <CardContent className="p-6 text-center">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                Não encontrou sua comunidade?
+          {/* Create Community CTA - Modern */}
+          <Card className="mt-8 border-2 border-dashed border-spiritual-blue/30 bg-gradient-to-br from-spiritual-blue/5 to-purple-50 card-modern">
+            <CardContent className="p-8 text-center">
+              <div className="relative mx-auto mb-6">
+                <div className="w-16 h-16 bg-gradient-spiritual rounded-2xl flex items-center justify-center shadow-medium mx-auto">
+                  <Plus className="w-8 h-8 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-6 h-6 bg-divine-gold rounded-full flex items-center justify-center">
+                  <Sparkles className="w-3 h-3 text-white" />
+                </div>
+              </div>
+              
+              <h3 className="text-2xl font-bold text-deep-blue-gray mb-3">
+                Não encontrou sua comunidade ideal?
               </h3>
-              <p className="text-gray-500 mb-4">
-                Que tal criar uma nova comunidade para conectar pessoas com interesses similares?
+              <p className="text-muted-foreground mb-6 leading-relaxed max-w-md mx-auto">
+                Seja o pioneiro! Crie uma nova comunidade e conecte pessoas que compartilham 
+                dos mesmos interesses espirituais que você.
               </p>
-              <Button variant="outline">
-                Criar Comunidade
+              
+              <Button className="btn-primary group px-8">
+                <Plus className="w-4 h-4 mr-2" />
+                <span>Criar Minha Comunidade</span>
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
+              
+              <div className="flex items-center justify-center gap-6 mt-6 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Star className="w-3 h-3" />
+                  <span>Totalmente gratuito</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  <span>Ferramentas completas</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Heart className="w-3 h-3" />
+                  <span>Suporte dedicado</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </ScrollArea>

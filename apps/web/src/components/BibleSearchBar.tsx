@@ -114,80 +114,100 @@ export default function BibleSearchBar() {
   ];
 
   return (
-    <div className="space-y-4">
-      {/* Search Input */}
-      <div className="flex items-center space-x-2">
-        <div className="flex-1 relative">
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={
-              searchMode === "ai" 
-                ? "Como estou me sentindo ansioso..." 
-                : "Pesquisar versículos, palavras ou referências..."
-            }
-            className="pr-10"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleSearch();
+    <div className="space-y-6">
+      {/* Search Input - Modern */}
+      <div className="relative">
+        <div className="flex items-center space-x-3">
+          <div className="flex-1 relative">
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={
+                searchMode === "ai" 
+                  ? "Como estou me sentindo ansioso hoje..." 
+                  : "Pesquise versículos, palavras ou referências bíblicas..."
               }
-            }}
-          />
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            {searchMode === "ai" ? (
-              <Sparkles className="w-4 h-4 text-spiritual-blue" />
-            ) : (
-              <Search className="w-4 h-4 text-gray-400" />
-            )}
+              className="h-14 text-base rounded-2xl border-gray-200 focus:border-spiritual-blue focus:ring-spiritual-blue/20 pl-6 pr-16 bg-white shadow-soft"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
+              }}
+            />
+            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+              {searchMode === "ai" ? (
+                <div className="w-8 h-8 bg-gradient-spiritual rounded-xl flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+              ) : (
+                <Search className="w-5 h-5 text-spiritual-blue" />
+              )}
+            </div>
           </div>
+          <Button
+            onClick={handleSearch}
+            disabled={searchMutation.isPending || !query.trim()}
+            className="btn-primary h-14 px-8 rounded-2xl"
+          >
+            {searchMutation.isPending ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <span className="font-semibold">Buscar</span>
+            )}
+          </Button>
         </div>
-        <Button
-          onClick={handleSearch}
-          disabled={searchMutation.isPending || !query.trim()}
-          className="bg-spiritual-blue hover:bg-blue-600 text-white"
-        >
-          {searchMutation.isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            "Buscar"
-          )}
-        </Button>
       </div>
 
-      {/* Search Mode Toggle */}
-      <div className="flex items-center space-x-2">
+      {/* Search Mode Toggle - Modern */}
+      <div className="flex items-center justify-center space-x-3 p-2 bg-gray-50 rounded-2xl">
         <Button
-          variant={searchMode === "search" ? "default" : "outline"}
+          variant="ghost"
           size="sm"
           onClick={() => setSearchMode("search")}
-          className={searchMode === "search" ? "bg-spiritual-blue hover:bg-blue-600" : ""}
+          className={searchMode === "search" 
+            ? "bg-white text-spiritual-blue shadow-soft font-semibold px-6 py-3 rounded-xl" 
+            : "text-gray-600 hover:text-spiritual-blue px-6 py-3 rounded-xl"
+          }
         >
           <BookOpen className="w-4 h-4 mr-2" />
           Busca Tradicional
         </Button>
         <Button
-          variant={searchMode === "ai" ? "default" : "outline"}
+          variant="ghost"
           size="sm"
           onClick={() => setSearchMode("ai")}
-          className={searchMode === "ai" ? "bg-spiritual-blue hover:bg-blue-600" : ""}
+          className={searchMode === "ai" 
+            ? "bg-white text-spiritual-blue shadow-soft font-semibold px-6 py-3 rounded-xl" 
+            : "text-gray-600 hover:text-spiritual-blue px-6 py-3 rounded-xl"
+          }
         >
           <Sparkles className="w-4 h-4 mr-2" />
           Busca com IA
         </Button>
       </div>
 
-      {/* Quick Searches */}
+      {/* Quick Searches - Modern */}
       {results.length === 0 && (
-        <div>
-          <p className="text-sm text-gray-600 mb-3">Sugestões populares:</p>
-          <div className="flex flex-wrap gap-2">
+        <div className="space-y-4">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-deep-blue-gray mb-2">
+              {searchMode === "ai" ? "Compartilhe seus sentimentos" : "Explore temas populares"}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {searchMode === "ai" 
+                ? "Nossa IA encontrará versículos que falam ao seu coração"
+                : "Clique em um tema para começar sua busca"
+              }
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-3">
             {quickSearches.map((item) => (
               <Button
                 key={item.label}
                 variant="outline"
                 size="sm"
                 onClick={() => handleQuickSearch(item.query)}
-                className="text-xs h-7"
+                className="btn-secondary text-sm h-10 px-4 rounded-xl hover:scale-105 transition-all duration-200"
               >
                 {item.label}
               </Button>
@@ -196,21 +216,31 @@ export default function BibleSearchBar() {
         </div>
       )}
 
-      {/* Search Results */}
+      {/* Search Results - Modern */}
       {results.length > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="font-semibold text-deep-blue-gray">
-                Resultados da busca
-              </h4>
-              <Badge variant="secondary">
+        <Card className="card-modern">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-spiritual rounded-xl flex items-center justify-center">
+                  <BookOpen className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-lg text-deep-blue-gray">
+                    Resultados Encontrados
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {searchMode === "ai" ? "Respostas da IA Bíblica" : "Versículos relacionados"}
+                  </p>
+                </div>
+              </div>
+              <Badge className="bg-spiritual-blue/10 text-spiritual-blue font-semibold px-3 py-1">
                 {results.length} {results.length === 1 ? 'resultado' : 'resultados'}
               </Badge>
             </div>
             
             <ScrollArea className="max-h-96">
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {results.map((result, index) => (
                   <div key={result.id || index}>
                     {result.type === 'verse' && result.verse && (
