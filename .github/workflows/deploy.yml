@@ -62,15 +62,15 @@ jobs:
 
       - name: 🏗️ Install Root Dependencies  
         run: |
-          echo "📦 Instalando dependências do root..."
-          npm ci --verbose
-          echo "✅ Dependências do root instaladas"
+          echo "📦 Instalando dependências do monorepo..."
+          npm ci --ignore-scripts
+          echo "✅ Dependências do monorepo instaladas"
 
       - name: 🏗️ Install Backend Dependencies
         run: |
           echo "📦 Instalando dependências do backend..."
           cd apps/backend
-          npm ci --verbose
+          npm ci --ignore-scripts
           echo "✅ Dependências do backend instaladas"
 
       - name: 🔧 Generate Prisma Client
@@ -92,7 +92,7 @@ jobs:
         run: |
           echo "📦 Instalando dependências do frontend..."
           cd apps/web
-          npm ci --verbose
+          npm ci --ignore-scripts
           echo "✅ Dependências do frontend instaladas"
 
       - name: 🏗️ Build Frontend

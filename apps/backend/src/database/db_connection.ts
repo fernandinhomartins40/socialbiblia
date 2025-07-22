@@ -8,7 +8,7 @@ const checkConnection = async () => {
         .then(() => {
             return { success: true, error: null };
         })
-        .catch((err) => {
+        .catch((err: any) => {
             return { success: false, error: err };
         })
         .finally(async () => {
