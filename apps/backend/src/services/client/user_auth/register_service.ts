@@ -69,7 +69,6 @@ export default async (data: any) => {
 const checkRequiredDatas = (datas: any) => /* istanbul ignore next */ {
     if (!datas.email) return false;
     if (!datas.name) return false;
-    if (!datas.phone) return false;
     if (!datas.password) return false;
 
     return true;
