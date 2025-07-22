@@ -52,11 +52,40 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Custom spiritual colors
+        'spiritual-blue': {
+          DEFAULT: 'hsl(221, 83%, 53%)',
+          light: 'hsl(221, 83%, 63%)',
+          dark: 'hsl(221, 83%, 43%)',
+        },
+        'divine-gold': {
+          DEFAULT: 'hsl(43, 88%, 58%)',
+          light: 'hsl(43, 88%, 68%)',
+          dark: 'hsl(43, 88%, 48%)',
+        },
+        'hope-green': {
+          DEFAULT: 'hsl(142, 76%, 36%)',
+          light: 'hsl(142, 76%, 46%)',
+          dark: 'hsl(142, 76%, 26%)',
+        },
+        'deep-blue-gray': 'hsl(215, 25%, 27%)',
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      backgroundImage: {
+        'gradient-spiritual': 'linear-gradient(135deg, hsl(221, 83%, 53%), hsl(43, 88%, 58%))',
+        'gradient-divine': 'linear-gradient(135deg, hsl(43, 88%, 58%), hsl(142, 76%, 36%))',
+      },
+      fontFamily: {
+        'scripture': ['Georgia', 'Times New Roman', 'serif'],
+      },
+      boxShadow: {
+        'soft': '0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        'medium': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        'strong': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
       },
       keyframes: {
         "accordion-down": {
