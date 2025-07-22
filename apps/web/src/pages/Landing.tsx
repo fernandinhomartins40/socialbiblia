@@ -1,8 +1,23 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Users, MessageCircle, BookOpen } from "lucide-react";
+import AuthModal from "@/components/AuthModal";
 
 export default function Landing() {
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authTab, setAuthTab] = useState<"login" | "register">("login");
+
+  const handleLogin = () => {
+    setAuthTab("login");
+    setShowAuthModal(true);
+  };
+
+  const handleRegister = () => {
+    setAuthTab("register");
+    setShowAuthModal(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Hero Section */}
@@ -20,12 +35,21 @@ export default function Landing() {
             Uma rede social cristã que conecta pessoas através da palavra de Deus, 
             oferecendo suporte espiritual através de inteligência artificial.
           </p>
-          <Button 
-            className="bg-spiritual-blue hover:bg-blue-600 text-white px-8 py-3 text-lg"
-            onClick={() => window.location.href = '/api/login'}
-          >
-            Entrar com Replit
-          </Button>
+          <div className="space-x-4">
+            <Button 
+              className="bg-spiritual-blue hover:bg-blue-600 text-white px-8 py-3 text-lg"
+              onClick={handleLogin}
+            >
+              Entrar
+            </Button>
+            <Button 
+              variant="outline"
+              className="border-spiritual-blue text-spiritual-blue hover:bg-spiritual-blue hover:text-white px-8 py-3 text-lg"
+              onClick={handleRegister}
+            >
+              Criar Conta
+            </Button>
+          </div>
         </div>
 
         {/* Features Section */}
@@ -107,12 +131,18 @@ export default function Landing() {
           </p>
           <Button 
             className="bg-white text-spiritual-blue hover:bg-gray-100 px-8 py-3 text-lg"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={handleRegister}
           >
             Criar Conta Gratuita
           </Button>
         </div>
       </div>
+      
+      <AuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        defaultTab={authTab}
+      />
     </div>
   );
 }

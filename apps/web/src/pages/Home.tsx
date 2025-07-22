@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageCircle, Users, BookOpen, Bell, Plus } from "lucide-react";
+import { redirectToAuth } from "@/lib/authUtils";
 import type { PostWithUser, Community, RandomVerse } from "@/lib/shared-types";
 
 export default function Home() {
@@ -31,7 +32,7 @@ export default function Home() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        redirectToAuth();
       }, 500);
       return;
     }
