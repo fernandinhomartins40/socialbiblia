@@ -95,7 +95,7 @@ export default function BibleSearchBar() {
     const text = `"${verse.text}" - ${verse.book} ${verse.chapter}:${verse.verse}`;
     if (navigator.share) {
       navigator.share({
-        title: `BibliaConnect - ${verse.book} ${verse.chapter}:${verse.verse}`,
+        title: `Biblicai - ${verse.book} ${verse.chapter}:${verse.verse}`,
         text: text,
         url: window.location.href,
       });

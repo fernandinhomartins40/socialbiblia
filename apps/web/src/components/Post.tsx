@@ -99,7 +99,7 @@ export default function Post({ post }: PostProps) {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'BibliaConnect - Post',
+        title: 'Biblicai - Post',
         text: post.content,
         url: window.location.href,
       });

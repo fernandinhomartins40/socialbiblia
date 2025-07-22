@@ -61,7 +61,7 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <BookOpen className="h-12 w-12 mx-auto mb-4 text-blue-500 animate-pulse" />
-          <p className="text-muted-foreground">Carregando BibliaConnect...</p>
+          <p className="text-muted-foreground">Carregando Biblicai...</p>
         </div>
       </div>
     );
@@ -82,9 +82,9 @@ export default function Home() {
                 <div className="w-10 h-10 bg-gradient-spiritual rounded-xl flex items-center justify-center shadow-medium">
                   <Heart className="w-5 h-5 text-white" />
                 </div>
-                <h1 className="text-2xl font-black bg-gradient-to-r from-spiritual-blue to-purple-600 bg-clip-text text-transparent">
-                  BibliaConnect
-                </h1>
+                                 <h1 className="text-2xl font-black bg-gradient-to-r from-spiritual-blue to-purple-600 bg-clip-text text-transparent">
+                   Biblicai
+                 </h1>
               </div>
               
               <nav className="hidden md:flex space-x-1">

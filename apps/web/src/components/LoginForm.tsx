@@ -154,7 +154,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
 
         <div className="mt-8 text-center pt-6 border-t border-gray-100">
           <p className="text-base text-muted-foreground mb-4">
-            Primeira vez no BibliaConnect?
+            Primeira vez no Biblicai?
           </p>
           <button
             type="button"

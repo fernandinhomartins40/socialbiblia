@@ -42,7 +42,7 @@ export default function Landing() {
           </div>
           
           <h1 className="text-7xl md:text-8xl font-black bg-gradient-to-r from-spiritual-blue via-purple-600 to-spiritual-blue bg-clip-text text-transparent mb-6 leading-tight">
-            BibliaConnect
+            Biblicai
           </h1>
           
           <p className="text-2xl text-gray-700 mb-4 max-w-3xl mx-auto font-medium leading-relaxed">
@@ -152,7 +152,7 @@ export default function Landing() {
               Transformações que Inspiram
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Descubra como o BibliaConnect tem impactado a vida espiritual de milhares de pessoas
+              Descubra como o Biblicai tem impactado a vida espiritual de milhares de pessoas
             </p>
           </div>
           

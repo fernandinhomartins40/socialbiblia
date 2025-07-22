@@ -271,7 +271,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
 
         <div className="mt-8 text-center pt-6 border-t border-gray-100">
           <p className="text-base text-muted-foreground mb-4">
-            Já faz parte da família BibliaConnect?
+            Já faz parte da família Biblicai?
           </p>
           <button
             type="button"
