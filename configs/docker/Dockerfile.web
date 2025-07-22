@@ -9,30 +9,16 @@ WORKDIR /app
 # Stage 1: Dependencies
 FROM base AS dependencies
 
-# Copiar package files
-COPY package*.json ./
-COPY apps/web/package*.json ./apps/web/
-COPY packages/shared/package*.json ./packages/shared/
-
-# Build shared package
-COPY packages/shared ./packages/shared
-WORKDIR /app/packages/shared
-RUN npm install --only=production && npm run build
-
 # Install web dependencies
-WORKDIR /app
-COPY apps/web ./apps/web
 WORKDIR /app/apps/web
-
-# Substituir workspace:* por file:../..
-RUN sed -i 's/"@socialbiblia\/shared": "workspace:\*"/"@socialbiblia\/shared": "file:..\/..\/packages\/shared"/g' package.json
-
+COPY apps/web/package*.json ./
 RUN npm install
 
 # Stage 2: Build
 FROM dependencies AS builder
 
-WORKDIR /app/apps/web
+# Copy source code
+COPY apps/web ./
 
 # Build da aplicação para produção
 ARG VITE_API_URL=http://localhost:4000
