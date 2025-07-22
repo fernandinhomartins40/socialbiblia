@@ -394,18 +394,38 @@ jobs:
             netstat -tulpn | grep -E ':(3000|3344|5432|8080) ' | head -5 || echo "  Portas principais livres"
             
             # ====================================
-            # ETAPA 6: LIMPEZA PRE-BUILD
+            # ETAPA 6: LIMPEZA AGRESSIVA PRE-BUILD
             # ====================================
-            log "🧹 Limpando ambiente..."
+            log "🧹 Limpando ambiente com limpeza agressiva..."
             
             # Parar containers do projeto
             docker compose -f docker-compose.new.yml down --remove-orphans 2>/dev/null || true
             
-            # Limpar apenas imagens do projeto
-            docker images --format "table {{.Repository}}:{{.Tag}}" | grep -E "(biblicai|backend|web)" | awk '{print $1}' | xargs -r docker rmi -f 2>/dev/null || true
+            # LIMPEZA AGRESSIVA: Remover containers conflitantes por nome
+            log "🗑️ Removendo containers conflitantes..."
+            for container_name in biblicai_postgres biblicai_api biblicai_web biblicai_nginx biblicai_pgadmin; do
+              if docker ps -a --format "{{.Names}}" | grep -q "^${container_name}$"; then
+                log "Removendo container conflitante: $container_name"
+                docker rm -f $container_name 2>/dev/null || true
+              fi
+            done
+            
+            # Remover também containers antigos socialbiblia (fallback)
+            for container_name in socialbiblia_postgres socialbiblia_api socialbiblia_web socialbiblia_nginx socialbiblia_pgadmin; do
+              if docker ps -a --format "{{.Names}}" | grep -q "^${container_name}$"; then
+                log "Removendo container antigo: $container_name"
+                docker rm -f $container_name 2>/dev/null || true
+              fi
+            done
+            
+            # Limpar imagens do projeto
+            docker images --format "table {{.Repository}}:{{.Tag}}" | grep -E "(biblicai|socialbiblia|backend|web)" | awk '{print $1}' | xargs -r docker rmi -f 2>/dev/null || true
             
             # Limpar volumes órfãos do projeto
-            docker volume ls --format "{{.Name}}" | grep "biblicai" | xargs -r docker volume rm 2>/dev/null || true
+            docker volume ls --format "{{.Name}}" | grep -E "(biblicai|socialbiblia)" | xargs -r docker volume rm 2>/dev/null || true
+            
+            # Limpar networks órfãs
+            docker network ls --format "{{.Name}}" | grep -E "(biblicai|socialbiblia)" | xargs -r docker network rm 2>/dev/null || true
             
             log "✅ Ambiente limpo"
             
