@@ -203,7 +203,7 @@ jobs:
           
           # Verificar estrutura necessária
           log "🔍 Verificando estrutura do projeto..."
-          REQUIRED_FILES="docker-compose.production.yml docker/Dockerfile.api docker/Dockerfile.web apps/api/package.json apps/web/package.json packages/shared/package.json"
+          REQUIRED_FILES="docker-compose.production.yml docker/Dockerfile.api-new docker/Dockerfile.web apps/api-new/package.json apps/web/package.json packages/shared/package.json"
           for file in $REQUIRED_FILES; do
             if [ ! -f "$file" ]; then
               log "❌ Arquivo obrigatório não encontrado: $file"
@@ -241,15 +241,15 @@ jobs:
           sleep 30
           
           # Aguardar API container estar rodando
-          log "⏳ Aguardando API container estar pronto..."
+          log "⏳ Aguardando API NOVA container estar pronto..."
           timeout=300
           while [ $timeout -gt 0 ]; do
             # Verificar se container existe e está rodando
-            container_status=$(docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml ps api --format "table {{.Service}}\t{{.State}}\t{{.Health}}" 2>/dev/null || echo "")
-            log "📊 Status API: $container_status"
+            container_status=$(docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml ps api-new --format "table {{.Service}}\t{{.State}}\t{{.Health}}" 2>/dev/null || echo "")
+            log "📊 Status API Nova: $container_status"
             
             if echo "$container_status" | grep -q "running"; then
-              log "✅ API container está rodando"
+              log "✅ API NOVA container está rodando"
               # Aguardar mais um pouco para o healthcheck
               sleep 20
               break
@@ -272,14 +272,14 @@ jobs:
           
           # Executar migrações do Prisma
           log "🗃️ Executando migrações do banco..."
-          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api npm run prisma:migrate:deploy || {
+          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api-new npm run prisma:migrate:deploy || {
             log "⚠️ Migrações falharam, tentando gerar cliente Prisma..."
-            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api npm run prisma:generate || true
+            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api-new npm run prisma:generate || true
           }
           
           # Seed inicial se necessário
           log "🌱 Executando seed do banco (se disponível)..."
-          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api npm run prisma:seed || log "⚠️ Seed não disponível ou falhou"
+          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api-new npm run prisma:seed || log "⚠️ Seed não disponível ou falhou"
           
           # ====================================
           # ETAPA 8: VERIFICAÇÕES
@@ -300,7 +300,7 @@ jobs:
           # Verificar se containers estão rodando
           FAILED_SERVICES=""
           
-          EXPECTED_CONTAINERS="socialbiblia_web socialbiblia_api socialbiblia_postgres"
+          EXPECTED_CONTAINERS="socialbiblia_web socialbiblia_api_new socialbiblia_postgres"
           for container in $EXPECTED_CONTAINERS; do
             if docker ps --format "{{.Names}}" | grep -q "$container"; then
               log "✅ Container $container está rodando"
@@ -321,19 +321,19 @@ jobs:
             FAILED_SERVICES="$FAILED_SERVICES frontend-health"
           fi
           
-          # Test Backend API
-          if curl -f http://localhost:4000/api >/dev/null 2>&1; then
-            log "✅ Backend API: OK"
+          # Test Backend API (Nova)
+          if curl -f http://localhost:4001/api >/dev/null 2>&1; then
+            log "✅ Backend API (Nova): OK"
           else
-            log "❌ Backend API: FALHOU"
+            log "❌ Backend API (Nova): FALHOU"
             FAILED_SERVICES="$FAILED_SERVICES backend-health"
           fi
           
           # Test Database Connection via API
-          if curl -f http://localhost:4000/api/info >/dev/null 2>&1; then
-            log "✅ Database Connection: OK"
+          if curl -f http://localhost:4001/api/info >/dev/null 2>&1; then
+            log "✅ Database Connection (Nova API): OK"
           else
-            log "❌ Database Connection: FALHOU"
+            log "❌ Database Connection (Nova API): FALHOU"
             FAILED_SERVICES="$FAILED_SERVICES database-health"
           fi
           
@@ -407,7 +407,7 @@ jobs:
               log "   - http://${{ env.VPS_HOST }} (Aplicação Principal - via Nginx)"
             fi
             log "   - http://${{ env.VPS_HOST }}:3000 (Frontend React - Direto)"
-            log "   - http://${{ env.VPS_HOST }}:4000 (Backend API - Direto)"
+            log "   - http://${{ env.VPS_HOST }}:4001 (Backend API NOVA - Direto)"
             log "   - http://${{ env.VPS_HOST }}:8080 (pgAdmin - Administração BD)"
             log ""
             log "🔐 Credenciais pgAdmin:"

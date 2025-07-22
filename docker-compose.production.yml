@@ -21,7 +21,7 @@ services:
       timeout: 10s
       retries: 5
 
-  # Backend API
+  # Backend API (Original - será desabilitado)
   api:
     build:
       context: .
@@ -59,6 +59,51 @@ services:
       - socialbiblia_network
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:4000/api/info || curl -f http://localhost:4000/api || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    profiles:
+      - disabled  # Desabilitar temporariamente
+
+  # Nova Backend API (Express-Prisma-TS Boilerplate)
+  api-new:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api-new
+      args:
+        NODE_ENV: production
+    container_name: socialbiblia_api_new
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://socialbiblia_user:socialbiblia_secure_password@postgres:5432/socialbiblia_db}
+      APP_URL_HOST: 0.0.0.0
+      APP_URL_PORT: 4000
+      API_PREFIX: ${API_PREFIX:-api}
+      API_VERSION: ${API_VERSION:-v1}
+      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-http://localhost:3000}
+      JWT_SECRET_USER: ${JWT_SECRET_USER:-your-jwt-secret-user}
+      JWT_SECRET_ADMIN: ${JWT_SECRET_ADMIN:-your-jwt-secret-admin}
+      JWT_SECRET_APP: ${JWT_SECRET_APP:-your-jwt-secret-app}
+      JWT_EXPIRED_IN: ${JWT_EXPIRED_IN:-24h}
+      BCRYPT_SALTROUNDS: ${BCRYPT_SALTROUNDS:-10}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-1000}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-15}
+      DEBUG_HTTP_REQUEST: ${DEBUG_HTTP_REQUEST:-false}
+      DEBUG_HTTP_CONNECTION: ${DEBUG_HTTP_CONNECTION:-false}
+    ports:
+      - "4001:4000"  # Porta diferente para testar em paralelo
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - api_new_logs:/app/logs
+      - api_new_uploads:/app/uploads
+    networks:
+      - socialbiblia_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4000/api || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -138,6 +183,10 @@ volumes:
     name: socialbiblia_api_logs
   api_uploads:
     name: socialbiblia_api_uploads
+  api_new_logs:
+    name: socialbiblia_api_new_logs
+  api_new_uploads:
+    name: socialbiblia_api_new_uploads
 
 networks:
   socialbiblia_network:

@@ -1,0 +1,95 @@
+# Dockerfile para Nova API Backend em produção
+FROM node:20-alpine AS base
+
+# Instalar dependências do sistema
+RUN apk add --no-cache \
+    openssl \
+    curl \
+    netcat-openbsd \
+    dumb-init
+
+WORKDIR /app
+
+# Stage 1: Instalar dependências
+FROM base AS dependencies
+
+# Copiar package.json files
+COPY package*.json ./
+COPY apps/api-new/package*.json ./apps/api-new/
+COPY packages/shared/package*.json ./packages/shared/
+
+# Instalar shared package dependencies
+COPY packages/shared ./packages/shared
+WORKDIR /app/packages/shared
+RUN npm install --only=production && npm run build
+
+# Voltar para root e instalar deps da API
+WORKDIR /app
+COPY apps/api-new ./apps/api-new
+
+# Substituir workspace:* por file:../..
+WORKDIR /app/apps/api-new
+RUN sed -i 's/"@socialbiblia\/shared": "workspace:\*"/"@socialbiblia\/shared": "file:..\/..\/packages\/shared"/g' package.json
+
+# Instalar dependências da API
+RUN npm install
+
+# Stage 2: Build
+FROM dependencies AS builder
+
+WORKDIR /app/apps/api-new
+
+# Gerar cliente Prisma
+RUN npx prisma generate
+
+# Build da aplicação
+RUN echo "🔨 Iniciando build do TypeScript..." && \
+    npm run build && \
+    echo "✅ Build do TypeScript concluído" && \
+    npm run copyfiles && \
+    echo "✅ Copyfiles concluído" && \
+    ls -la build/
+
+# Stage 3: Production
+FROM node:20-alpine AS production
+
+# Instalar dependências do sistema
+RUN apk add --no-cache \
+    openssl \
+    curl \
+    netcat-openbsd \
+    dumb-init
+
+# Criar usuário não-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
+WORKDIR /app
+
+# Copiar aplicação buildada
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api-new/build ./build
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api-new/package*.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api-new/prisma ./prisma
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api-new/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api-new/public ./public
+
+# Criar diretórios necessários
+RUN mkdir -p logs uploads && chown -R nodejs:nodejs logs uploads
+
+# Copiar entrypoint personalizado
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api-new/entrypoint.sh ./entrypoint.sh 2>/dev/null || echo '#!/bin/sh\necho "🚀 Iniciando API Social Bíblia (Nova)..."\necho "📅 Data/Hora: $(date)"\necho "DATABASE_URL: ${DATABASE_URL}"\necho "NODE_ENV: ${NODE_ENV}"\necho "⏳ Aguardando banco de dados..."\ntimeout=90\nwhile ! nc -z postgres 5432; do\n  echo "⏳ Tentando conectar ao PostgreSQL... ($timeout segundos restantes)"\n  sleep 3\n  timeout=$((timeout - 3))\n  if [ $timeout -le 0 ]; then\n    echo "❌ Timeout aguardando banco de dados"\n    exit 1\n  fi\ndone\necho "✅ Banco de dados está pronto!"\necho "🌟 Iniciando aplicação..."\nif [ -f "build/src/app.js" ]; then\n  exec node build/src/app.js\nelse\n  exec node build/src/index.js\nfi' > ./entrypoint.sh
+
+RUN chmod +x ./entrypoint.sh
+
+# Mudar para usuário não-root
+USER nodejs
+
+# Expor porta
+EXPOSE 4000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:4000/api || exit 1
+
+# Comando de inicialização
+CMD ["dumb-init", "./entrypoint.sh"]
