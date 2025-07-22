@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Heart, MessageCircle, Share, Bookmark, Send, Quote, HandHelping, Sparkles, MoreHorizontal, Clock, Users } from "lucide-react";
+import { Heart, MessageCircle, Share, Bookmark, Send, Quote, HandHelping, Sparkles, MoreHorizontal, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { PostWithDetails } from "@/lib/shared-types";

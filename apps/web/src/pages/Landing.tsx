@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, Users, MessageCircle, BookOpen, Sparkles, Shield, Zap, Star, ArrowRight } from "lucide-react";
+import { Heart, Users, BookOpen, Sparkles, Shield, Zap, Star, ArrowRight } from "lucide-react";
 import AuthModal from "@/components/AuthModal";
 
 export default function Landing() {

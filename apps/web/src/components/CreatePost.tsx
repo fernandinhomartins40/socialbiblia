@@ -4,13 +4,11 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { isUnauthorizedError, redirectToAuth } from "@/lib/authUtils";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Image, BookOpen, HandHelping, Send, Sparkles, Heart, Users } from "lucide-react";
+import { Image, BookOpen, HandHelping, Send, Sparkles, Heart } from "lucide-react";
 
 export default function CreatePost() {
   const { user } = useAuth();

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Loader2, Heart, Sparkles, ArrowRight, Users, Shield } from "lucide-react";
+import { Eye, EyeOff, Loader2, ArrowRight, Users, Shield } from "lucide-react";
 
 interface RegisterFormProps {
   onSuccess?: () => void;
