@@ -1,0 +1,41 @@
+# Dockerfile para PocketBase - Backend ultra-simples
+FROM alpine:3.19
+
+# Instalar dependências mínimas
+RUN apk add --no-cache \
+    ca-certificates \
+    curl \
+    tzdata
+
+# Criar usuário não-root
+RUN addgroup -g 1001 -S pocketbase && \
+    adduser -S pocketbase -u 1001 -G pocketbase
+
+# Criar diretório de trabalho
+WORKDIR /app
+
+# Copiar executável PocketBase e entrypoint
+COPY apps/pocketbase/pocketbase ./pocketbase
+COPY apps/pocketbase/docker-entrypoint.sh ./docker-entrypoint.sh
+
+# Dar permissões corretas
+RUN chmod +x ./pocketbase ./docker-entrypoint.sh
+
+# Criar diretório para dados
+RUN mkdir -p ./pb_data && chown -R pocketbase:pocketbase ./pb_data ./pocketbase ./docker-entrypoint.sh
+
+# Mudar para usuário não-root  
+USER pocketbase
+
+# Expor porta
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:8080/api/health || exit 1
+
+# Volume para persistir dados
+VOLUME ["/app/pb_data"]
+
+# Comando de inicialização
+CMD ["./docker-entrypoint.sh"]

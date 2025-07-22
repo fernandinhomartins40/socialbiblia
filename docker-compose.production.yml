@@ -1,5 +1,5 @@
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (Desabilitado - PocketBase usa SQLite)
   postgres:
     image: postgres:15-alpine
     container_name: socialbiblia_postgres
@@ -20,6 +20,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    profiles:
+      - disabled  # Desabilitado - PocketBase usa SQLite embarcado
 
   # Backend API (Original - será desabilitado)
   api:
@@ -66,48 +68,31 @@ services:
     profiles:
       - disabled  # Desabilitar temporariamente
 
-  # Nova Backend API (Express-Prisma-TS Boilerplate)
-  api-new:
+  # PocketBase Backend - Solução Definitiva ⭐
+  pocketbase:
     build:
       context: .
-      dockerfile: docker/Dockerfile.api-new
-      args:
-        NODE_ENV: production
-    container_name: socialbiblia_api_new
+      dockerfile: docker/Dockerfile.pocketbase
+    container_name: socialbiblia_pocketbase
     restart: unless-stopped
     environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://socialbiblia_user:socialbiblia_secure_password@postgres:5432/socialbiblia_db}
-      APP_URL_HOST: 0.0.0.0
-      APP_URL_PORT: 4000
-      API_PREFIX: ${API_PREFIX:-api}
-      API_VERSION: ${API_VERSION:-v1}
-      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-http://localhost:3000}
-      JWT_SECRET_USER: ${JWT_SECRET_USER:-your-jwt-secret-user}
-      JWT_SECRET_ADMIN: ${JWT_SECRET_ADMIN:-your-jwt-secret-admin}
-      JWT_SECRET_APP: ${JWT_SECRET_APP:-your-jwt-secret-app}
-      JWT_EXPIRED_IN: ${JWT_EXPIRED_IN:-24h}
-      BCRYPT_SALTROUNDS: ${BCRYPT_SALTROUNDS:-10}
-      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-1000}
-      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-15}
-      DEBUG_HTTP_REQUEST: ${DEBUG_HTTP_REQUEST:-false}
-      DEBUG_HTTP_CONNECTION: ${DEBUG_HTTP_CONNECTION:-false}
+      # PocketBase configurações
+      PB_DATA_DIR: ./pb_data
+      # Opcional: configurar URLs para CORS
+      PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-admin@socialbiblia.com}
+      PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-socialbiblia2024}
     ports:
-      - "4001:4000"  # Porta diferente para testar em paralelo
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - "8080:8080"  # PocketBase API e Admin UI
     volumes:
-      - api_new_logs:/app/logs
-      - api_new_uploads:/app/uploads
+      - pocketbase_data:/app/pb_data  # Persistir dados SQLite
     networks:
       - socialbiblia_network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:4000/api || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/health || exit 1"]
       interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   # Frontend Web
   web:
@@ -187,6 +172,8 @@ volumes:
     name: socialbiblia_api_new_logs
   api_new_uploads:
     name: socialbiblia_api_new_uploads
+  pocketbase_data:
+    name: socialbiblia_pocketbase_data
 
 networks:
   socialbiblia_network:

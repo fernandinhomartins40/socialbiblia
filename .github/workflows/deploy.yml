@@ -203,7 +203,7 @@ jobs:
           
           # Verificar estrutura necessária
           log "🔍 Verificando estrutura do projeto..."
-          REQUIRED_FILES="docker-compose.production.yml docker/Dockerfile.api-new docker/Dockerfile.web apps/api-new/package.json apps/web/package.json packages/shared/package.json"
+          REQUIRED_FILES="docker-compose.production.yml docker/Dockerfile.pocketbase docker/Dockerfile.web apps/pocketbase/pocketbase apps/web/package.json packages/shared/package.json"
           for file in $REQUIRED_FILES; do
             if [ ! -f "$file" ]; then
               log "❌ Arquivo obrigatório não encontrado: $file"
@@ -236,50 +236,43 @@ jobs:
           # ====================================
           log "🚀 ETAPA 7: Configurando banco de dados..."
           
-          # Aguardar PostgreSQL iniciar
-          log "⏳ Aguardando PostgreSQL iniciar..."
-          sleep 30
+          # Aguardar PocketBase iniciar (ultra-rápido!)
+          log "⏳ Aguardando PocketBase inicializar..."
+          sleep 15  # PocketBase inicia muito rapidamente
           
-          # Aguardar API container estar rodando
-          log "⏳ Aguardando API NOVA container estar pronto..."
-          timeout=300
+          # Aguardar PocketBase container estar rodando
+          log "⏳ Aguardando PocketBase container estar pronto..."
+          timeout=60  # PocketBase é muito mais rápido que Express
           while [ $timeout -gt 0 ]; do
             # Verificar se container existe e está rodando
-            container_status=$(docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml ps api-new --format "table {{.Service}}\t{{.State}}\t{{.Health}}" 2>/dev/null || echo "")
-            log "📊 Status API Nova: $container_status"
+            container_status=$(docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml ps pocketbase --format "table {{.Service}}\t{{.State}}\t{{.Health}}" 2>/dev/null || echo "")
+            log "📊 Status PocketBase: $container_status"
             
             if echo "$container_status" | grep -q "running"; then
-              log "✅ API NOVA container está rodando"
-              # Aguardar mais um pouco para o healthcheck
-              sleep 20
+              log "✅ PocketBase container está rodando!"
+              # PocketBase está pronto quase instantaneamente
+              sleep 5
               break
             fi
             log "⏳ Aguardando... ($timeout segundos restantes)"
-            sleep 15
-            timeout=$((timeout - 15))
+            sleep 5
+            timeout=$((timeout - 5))
           done
           
           if [ $timeout -le 0 ]; then
-            log "❌ Timeout aguardando API container"
+            log "❌ Timeout aguardando PocketBase container"
             log "📋 Status dos containers:"
             docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml ps
-            log "📋 Logs da API:"
-            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml logs api --tail=50
-            log "📋 Logs do PostgreSQL:"
-            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml logs postgres --tail=20
+            log "📋 Logs do PocketBase:"
+            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml logs pocketbase --tail=50
             exit 1
           fi
           
-          # Executar migrações do Prisma
-          log "🗃️ Executando migrações do banco..."
-          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api-new npm run prisma:migrate:deploy || {
-            log "⚠️ Migrações falharam, tentando gerar cliente Prisma..."
-            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api-new npm run prisma:generate || true
-          }
-          
-          # Seed inicial se necessário
-          log "🌱 Executando seed do banco (se disponível)..."
-          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api-new npm run prisma:seed || log "⚠️ Seed não disponível ou falhou"
+          # PocketBase não precisa de migrações! SQLite é automático
+          log "🗃️ PocketBase Database configuração..."
+          log "✅ SQLite database será criado automaticamente na primeira execução"
+          log "📋 Admin UI disponível em: http://localhost:8080/_/"
+          log "🔧 Collections e schemas podem ser configurados via Admin UI"
           
           # ====================================
           # ETAPA 8: VERIFICAÇÕES
@@ -300,7 +293,7 @@ jobs:
           # Verificar se containers estão rodando
           FAILED_SERVICES=""
           
-          EXPECTED_CONTAINERS="socialbiblia_web socialbiblia_api_new socialbiblia_postgres"
+          EXPECTED_CONTAINERS="socialbiblia_web socialbiblia_pocketbase"
           for container in $EXPECTED_CONTAINERS; do
             if docker ps --format "{{.Names}}" | grep -q "$container"; then
               log "✅ Container $container está rodando"
@@ -321,20 +314,20 @@ jobs:
             FAILED_SERVICES="$FAILED_SERVICES frontend-health"
           fi
           
-          # Test Backend API (Nova)
-          if curl -f http://localhost:4001/api >/dev/null 2>&1; then
-            log "✅ Backend API (Nova): OK"
+          # Test PocketBase API
+          if curl -f http://localhost:8080/api/health >/dev/null 2>&1; then
+            log "✅ PocketBase API: OK"
           else
-            log "❌ Backend API (Nova): FALHOU"
-            FAILED_SERVICES="$FAILED_SERVICES backend-health"
+            log "❌ PocketBase API: FALHOU"
+            FAILED_SERVICES="$FAILED_SERVICES pocketbase-health"
           fi
           
-          # Test Database Connection via API
-          if curl -f http://localhost:4001/api/info >/dev/null 2>&1; then
-            log "✅ Database Connection (Nova API): OK"
+          # Test PocketBase Admin Interface
+          if curl -f http://localhost:8080/_/ >/dev/null 2>&1; then
+            log "✅ PocketBase Admin UI: OK"
           else
-            log "❌ Database Connection (Nova API): FALHOU"
-            FAILED_SERVICES="$FAILED_SERVICES database-health"
+            log "❌ PocketBase Admin UI: FALHOU"
+            FAILED_SERVICES="$FAILED_SERVICES pocketbase-admin-health"
           fi
           
           # ====================================
@@ -407,15 +400,16 @@ jobs:
               log "   - http://${{ env.VPS_HOST }} (Aplicação Principal - via Nginx)"
             fi
             log "   - http://${{ env.VPS_HOST }}:3000 (Frontend React - Direto)"
-            log "   - http://${{ env.VPS_HOST }}:4001 (Backend API NOVA - Direto)"
-            log "   - http://${{ env.VPS_HOST }}:8080 (pgAdmin - Administração BD)"
+            log "   - http://${{ env.VPS_HOST }}:8080 (PocketBase API + Admin UI - Direto)"
             log ""
-            log "🔐 Credenciais pgAdmin:"
-            log "   - Email: admin@socialbiblia.com"
-            log "   - Senha: admin_socialbiblia_2024"
+            log "🔐 PocketBase Admin (Primeira configuração):"
+            log "   - Acesse: http://${{ env.VPS_HOST }}:8080/_/"
+            log "   - Na primeira vez, crie seu admin user diretamente na UI"
+            log "   - API disponível em: http://${{ env.VPS_HOST }}:8080/api/"
             log ""
             log "📊 Resumo: $(docker ps --format '{{.Names}}' | grep socialbiblia | wc -l) containers ativos"
-            log "💾 Banco: PostgreSQL rodando com isolamento"
+            log "💾 Banco: SQLite embarcado no PocketBase (ultra-simples)"
+            log "🚀 PocketBase: Backend completo em executável único"
             log "🔒 Aplicação isolada com Docker Compose"
             
             # Mostrar uso de recursos
