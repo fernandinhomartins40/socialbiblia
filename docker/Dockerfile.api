@@ -26,6 +26,9 @@ RUN npm install --only=production && npm run build
 WORKDIR /app
 COPY apps/api ./apps/api
 
+# Tornar o entrypoint executável
+RUN chmod +x ./apps/api/entrypoint.sh
+
 # Substituir workspace:* por file:../..
 WORKDIR /app/apps/api
 RUN sed -i 's/"@socialbiblia\/shared": "workspace:\*"/"@socialbiblia\/shared": "file:..\/..\/packages\/shared"/g' package.json
@@ -62,7 +65,7 @@ RUN adduser -S nodejs -u 1001
 WORKDIR /app
 
 # Copiar aplicação buildada
-COPY --from=builder --chown=nodejs:nodejs /app/apps/api/build ./
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/build ./build
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/package*.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/prisma ./prisma
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/node_modules ./node_modules

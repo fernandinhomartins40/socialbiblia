@@ -215,19 +215,31 @@ jobs:
           
           # Aguardar API container estar rodando
           log "⏳ Aguardando API container estar pronto..."
-          timeout=120
+          timeout=300
           while [ $timeout -gt 0 ]; do
-            if docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml ps api | grep -q "running"; then
+            # Verificar se container existe e está rodando
+            container_status=$(docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml ps api --format "table {{.Service}}\t{{.State}}\t{{.Health}}" 2>/dev/null || echo "")
+            log "📊 Status API: $container_status"
+            
+            if echo "$container_status" | grep -q "running"; then
               log "✅ API container está rodando"
+              # Aguardar mais um pouco para o healthcheck
+              sleep 20
               break
             fi
-            sleep 5
-            timeout=$((timeout - 5))
+            log "⏳ Aguardando... ($timeout segundos restantes)"
+            sleep 15
+            timeout=$((timeout - 15))
           done
           
           if [ $timeout -le 0 ]; then
             log "❌ Timeout aguardando API container"
-            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml logs api
+            log "📋 Status dos containers:"
+            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml ps
+            log "📋 Logs da API:"
+            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml logs api --tail=50
+            log "📋 Logs do PostgreSQL:"
+            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml logs postgres --tail=20
             exit 1
           fi
           
@@ -261,7 +273,7 @@ jobs:
           # Verificar se containers estão rodando
           FAILED_SERVICES=""
           
-          EXPECTED_CONTAINERS="socialbiblia-web-1 socialbiblia-api-1 socialbiblia-postgres-1"
+          EXPECTED_CONTAINERS="socialbiblia_web socialbiblia_api socialbiblia_postgres"
           for container in $EXPECTED_CONTAINERS; do
             if docker ps --format "{{.Names}}" | grep -q "$container"; then
               log "✅ Container $container está rodando"
