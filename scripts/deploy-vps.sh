@@ -21,11 +21,11 @@ if ! command -v docker &> /dev/null; then
     echo "✅ Docker instalado com sucesso"
 fi
 
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Docker Compose não está instalado. Instalando..."
-    sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
-    echo "✅ Docker Compose instalado com sucesso"
+if ! docker compose version &> /dev/null; then
+    echo "❌ Docker Compose plugin não está instalado. Instalando..."
+    sudo apt-get update -qq
+    sudo apt-get install -y docker-compose-plugin
+    echo "✅ Docker Compose plugin instalado com sucesso"
 fi
 
 # Verificar recursos do sistema
@@ -37,7 +37,7 @@ echo ""
 
 # Parar containers existentes (se houver)
 echo "🛑 PARANDO CONTAINERS EXISTENTES..."
-docker-compose -f $DOCKER_COMPOSE_FILE down --remove-orphans 2>/dev/null || true
+docker compose -f $DOCKER_COMPOSE_FILE down --remove-orphans 2>/dev/null || true
 
 # Limpar recursos não utilizados
 echo "🧹 LIMPANDO RECURSOS DOCKER NÃO UTILIZADOS..."
@@ -54,22 +54,22 @@ cp $ENV_FILE .env
 
 # Build das imagens
 echo "🏗️  FAZENDO BUILD DAS IMAGENS..."
-docker-compose -f $DOCKER_COMPOSE_FILE build --no-cache --parallel
+docker compose -f $DOCKER_COMPOSE_FILE build --no-cache --parallel
 
 # Iniciar serviços
 echo "🚀 INICIANDO SERVIÇOS..."
-docker-compose -f $DOCKER_COMPOSE_FILE up -d
+docker compose -f $DOCKER_COMPOSE_FILE up -d
 
 # Aguardar inicialização do PostgreSQL
 echo "⏳ AGUARDANDO INICIALIZAÇÃO DO POSTGRESQL..."
 timeout=60
 counter=0
-while ! docker-compose -f $DOCKER_COMPOSE_FILE exec -T postgres pg_isready -U socialbiblia_user -d socialbiblia_db; do
+while ! docker compose -f $DOCKER_COMPOSE_FILE exec -T postgres pg_isready -U socialbiblia_user -d socialbiblia_db; do
     sleep 1
     counter=$((counter+1))
     if [ $counter -ge $timeout ]; then
         echo "❌ PostgreSQL não iniciou em $timeout segundos!"
-        docker-compose -f $DOCKER_COMPOSE_FILE logs postgres
+        docker compose -f $DOCKER_COMPOSE_FILE logs postgres
         exit 1
     fi
 done
@@ -78,15 +78,15 @@ echo "✅ PostgreSQL iniciado com sucesso!"
 
 # Executar migrações do Prisma
 echo "🗃️  EXECUTANDO MIGRAÇÕES DO BANCO DE DADOS..."
-docker-compose -f $DOCKER_COMPOSE_FILE exec -T api npx prisma migrate deploy || {
+docker compose -f $DOCKER_COMPOSE_FILE exec -T api npx prisma migrate deploy || {
     echo "⚠️  Tentando reset das migrações..."
-    docker-compose -f $DOCKER_COMPOSE_FILE exec -T api npx prisma migrate reset --force
-    docker-compose -f $DOCKER_COMPOSE_FILE exec -T api npx prisma migrate deploy
+    docker compose -f $DOCKER_COMPOSE_FILE exec -T api npx prisma migrate reset --force
+    docker compose -f $DOCKER_COMPOSE_FILE exec -T api npx prisma migrate deploy
 }
 
 # Executar seed do banco (se necessário)
 echo "🌱 EXECUTANDO SEED DO BANCO DE DADOS..."
-docker-compose -f $DOCKER_COMPOSE_FILE exec -T api npm run prisma:seed || echo "⚠️  Seed falhou ou já foi executado"
+docker compose -f $DOCKER_COMPOSE_FILE exec -T api npm run prisma:seed || echo "⚠️  Seed falhou ou já foi executado"
 
 # Aguardar inicialização da API
 echo "⏳ AGUARDANDO INICIALIZAÇÃO DA API..."
@@ -98,7 +98,7 @@ while ! curl -f http://localhost:3344/api/info >/dev/null 2>&1; do
     if [ $counter -ge $timeout ]; then
         echo "❌ API não respondeu em $timeout segundos!"
         echo "📋 LOGS DA API:"
-        docker-compose -f $DOCKER_COMPOSE_FILE logs api
+        docker compose -f $DOCKER_COMPOSE_FILE logs api
         exit 1
     fi
     if [ $((counter % 10)) -eq 0 ]; then
@@ -117,7 +117,7 @@ while ! curl -f http://localhost:3000 >/dev/null 2>&1; do
     counter=$((counter+1))
     if [ $counter -ge $timeout ]; then
         echo "❌ Frontend não respondeu em $timeout segundos!"
-        docker-compose -f $DOCKER_COMPOSE_FILE logs web
+        docker compose -f $DOCKER_COMPOSE_FILE logs web
         exit 1
     fi
     if [ $((counter % 10)) -eq 0 ]; then
@@ -130,7 +130,7 @@ echo "✅ Frontend iniciado com sucesso!"
 # Verificar status final
 echo ""
 echo "📊 STATUS FINAL DOS SERVIÇOS:"
-docker-compose -f $DOCKER_COMPOSE_FILE ps
+docker compose -f $DOCKER_COMPOSE_FILE ps
 
 echo ""
 echo "🔗 ENDPOINTS DISPONÍVEIS:"
@@ -159,8 +159,8 @@ echo ""
 
 # Mostrar informações sobre logs
 echo "📋 PARA VER LOGS:"
-echo "docker-compose -f $DOCKER_COMPOSE_FILE logs -f [serviço]"
+echo "docker compose -f $DOCKER_COMPOSE_FILE logs -f [serviço]"
 echo ""
 echo "🔧 PARA PARAR SERVIÇOS:"
-echo "docker-compose -f $DOCKER_COMPOSE_FILE down"
+echo "docker compose -f $DOCKER_COMPOSE_FILE down"
 echo ""

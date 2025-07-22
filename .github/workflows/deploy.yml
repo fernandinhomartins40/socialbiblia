@@ -226,7 +226,7 @@ jobs:
             
             # Parar containers existentes
             log "⏹️ Parando containers existentes..."
-            docker-compose -f docker-compose.new.yml down --remove-orphans 2>/dev/null || true
+            docker compose -f docker-compose.new.yml down --remove-orphans 2>/dev/null || true
             
             # ====================================
             # ETAPA 2: ATUALIZAR CÓDIGO
@@ -399,7 +399,7 @@ jobs:
             log "🧹 Limpando ambiente..."
             
             # Parar containers do projeto
-            docker-compose -f docker-compose.new.yml down --remove-orphans 2>/dev/null || true
+            docker compose -f docker-compose.new.yml down --remove-orphans 2>/dev/null || true
             
             # Limpar apenas imagens do projeto
             docker images --format "table {{.Repository}}:{{.Tag}}" | grep -E "(socialbiblia|backend|web)" | awk '{print $1}' | xargs -r docker rmi -f 2>/dev/null || true
@@ -416,7 +416,7 @@ jobs:
             
             # Build das imagens
             log "🏗️ Fazendo build das imagens..."
-            if ! docker-compose -f docker-compose.new.yml build --no-cache --parallel; then
+            if ! docker compose -f docker-compose.new.yml build --no-cache --parallel; then
               log "❌ Falha no build das imagens!"
               docker system df
               exit 1
@@ -426,9 +426,9 @@ jobs:
             
             # Iniciar serviços
             log "🚀 Iniciando serviços..."
-            if ! docker-compose -f docker-compose.new.yml up -d; then
+            if ! docker compose -f docker-compose.new.yml up -d; then
               log "❌ Falha ao iniciar serviços!"
-              docker-compose -f docker-compose.new.yml logs
+              docker compose -f docker-compose.new.yml logs
               exit 1
             fi
             
@@ -443,7 +443,7 @@ jobs:
             log "🐘 Aguardando PostgreSQL..."
             timeout=120
             while [ $timeout -gt 0 ]; do
-              if docker-compose -f docker-compose.new.yml exec -T postgres pg_isready -U socialbiblia_user -d socialbiblia_db >/dev/null 2>&1; then
+              if docker compose -f docker-compose.new.yml exec -T postgres pg_isready -U socialbiblia_user -d socialbiblia_db >/dev/null 2>&1; then
                 log "✅ PostgreSQL pronto!"
                 break
               fi
@@ -456,21 +456,21 @@ jobs:
             
             if [ $timeout -le 0 ]; then
               log "❌ Timeout aguardando PostgreSQL"
-              docker-compose -f docker-compose.new.yml logs postgres
+              docker compose -f docker-compose.new.yml logs postgres
               exit 1
             fi
             
             # Executar migrações do Prisma
             log "🗃️ Executando migrações do banco..."
-            if ! docker-compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy; then
+            if ! docker compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy; then
               log "⚠️ Migrações falharam, tentando reset..."
-              docker-compose -f docker-compose.new.yml exec -T api npx prisma migrate reset --force
-              docker-compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy
+              docker compose -f docker-compose.new.yml exec -T api npx prisma migrate reset --force
+              docker compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy
             fi
             
             # Executar seed (opcional)
             log "🌱 Executando seed do banco..."
-            docker-compose -f docker-compose.new.yml exec -T api npm run prisma:seed || log "⚠️ Seed falhou ou já executado"
+            docker compose -f docker-compose.new.yml exec -T api npm run prisma:seed || log "⚠️ Seed falhou ou já executado"
             
             # Aguardar API
             log "🔌 Aguardando API..."
@@ -489,7 +489,7 @@ jobs:
             
             if [ $timeout -le 0 ]; then
               log "❌ Timeout aguardando API"
-              docker-compose -f docker-compose.new.yml logs api
+              docker compose -f docker-compose.new.yml logs api
               exit 1
             fi
             
@@ -510,7 +510,7 @@ jobs:
             
             if [ $timeout -le 0 ]; then
               log "❌ Timeout aguardando Frontend"
-              docker-compose -f docker-compose.new.yml logs web
+              docker compose -f docker-compose.new.yml logs web
               exit 1
             fi
             
@@ -521,7 +521,7 @@ jobs:
             
             # Status dos containers
             log "📊 Status dos containers:"
-            docker-compose -f docker-compose.new.yml ps
+            docker compose -f docker-compose.new.yml ps
             
             # Health checks
             HEALTH_ISSUES=""
@@ -567,7 +567,7 @@ jobs:
               log "❌ DEPLOY CONCLUÍDO COM PROBLEMAS!"
               log "🔍 Serviços com problemas: $HEALTH_ISSUES"
               log "📋 Logs dos containers:"
-              docker-compose -f docker-compose.new.yml logs --tail=50
+              docker compose -f docker-compose.new.yml logs --tail=50
               exit 1
             else
               log "🎉 DEPLOY DA SOCIAL BÍBLIA CONCLUÍDO COM SUCESSO!"

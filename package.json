@@ -24,10 +24,10 @@
     "test:backend": "npm run test --workspace=apps/backend",
     "clean": "rm -rf node_modules apps/*/node_modules",
     "install-all": "npm install && npm install --workspaces",
-    "docker:build": "docker-compose -f docker-compose.new.yml build",
-    "docker:up": "docker-compose -f docker-compose.new.yml up -d",
-    "docker:down": "docker-compose -f docker-compose.new.yml down",
-    "docker:logs": "docker-compose -f docker-compose.new.yml logs -f"
+    "docker:build": "docker compose -f docker-compose.new.yml build",
+    "docker:up": "docker compose -f docker-compose.new.yml up -d",
+    "docker:down": "docker compose -f docker-compose.new.yml down",
+    "docker:logs": "docker compose -f docker-compose.new.yml logs -f"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
