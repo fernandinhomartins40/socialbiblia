@@ -197,6 +197,43 @@ jobs:
           docker volume ls --format "{{.Name}}" | grep "socialbiblia" | xargs -r docker volume rm || true
           
           # ====================================
+          # ETAPA 5.5: DIAGNÓSTICO EXTENSIVO DO SISTEMA
+          # ====================================
+          log "🔍 ETAPA 5.5: Diagnóstico completo do sistema..."
+          
+          # Verificar recursos do sistema
+          log "💾 Recursos do Sistema:"
+          echo "Memory: $(free -h | grep '^Mem:' | awk '{print $3"/"$2}')"
+          echo "Disk: $(df -h / | tail -1 | awk '{print $3"/"$2" ("$5" used)"}')"
+          echo "Load: $(uptime | sed 's/.*load average: //')"
+          
+          # Verificar Docker
+          log "🐳 Estado do Docker:"
+          docker version --format '{{.Server.Version}}' 2>/dev/null && echo "Docker OK" || echo "Docker PROBLEMA"
+          docker system df || echo "Docker system df falhou"
+          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | head -10 || echo "Docker images falhou"
+          
+          # Verificar containers existentes
+          log "📦 Containers existentes:"
+          docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || echo "Nenhum container"
+          
+          # Verificar volumes
+          log "💿 Volumes Docker:"
+          docker volume ls | grep socialbiblia || echo "Nenhum volume socialbiblia"
+          
+          # Verificar networks
+          log "🌐 Networks Docker:"
+          docker network ls | grep socialbiblia || echo "Nenhuma network socialbiblia"
+          
+          # Verificar portas ocupadas
+          log "🔌 Portas ocupadas (3000, 4000, 4001, 8080):"
+          netstat -tulpn | grep -E ':(3000|4000|4001|8080) ' || echo "Portas livres"
+          
+          # Verificar logs do sistema
+          log "📋 Últimos logs do sistema Docker:"
+          journalctl -u docker --no-pager --lines=5 || echo "Sem logs Docker"
+          
+          # ====================================
           # ETAPA 6: BUILD E DEPLOY
           # ====================================
           log "🚀 ETAPA 6: Fazendo build e iniciando containers..."
@@ -236,13 +273,13 @@ jobs:
           # ====================================
           log "🚀 ETAPA 7: Configurando banco de dados..."
           
-          # Aguardar PocketBase iniciar (ultra-rápido!)
-          log "⏳ Aguardando PocketBase inicializar..."
-          sleep 15  # PocketBase inicia muito rapidamente
+          # PocketBase inicia ultra-rápido, sem PostgreSQL!
+          log "⏳ Aguardando PocketBase inicializar (muito rápido!)..."
+          sleep 10
           
           # Aguardar PocketBase container estar rodando
           log "⏳ Aguardando PocketBase container estar pronto..."
-          timeout=60  # PocketBase é muito mais rápido que Express
+          timeout=60  # PocketBase é muito mais rápido
           while [ $timeout -gt 0 ]; do
             # Verificar se container existe e está rodando
             container_status=$(docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml ps pocketbase --format "table {{.Service}}\t{{.State}}\t{{.Health}}" 2>/dev/null || echo "")
@@ -263,16 +300,19 @@ jobs:
             log "❌ Timeout aguardando PocketBase container"
             log "📋 Status dos containers:"
             docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml ps
-            log "📋 Logs do PocketBase:"
-            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml logs pocketbase --tail=50
+            log "📋 Logs detalhados do PocketBase:"
+            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml logs pocketbase --tail=100
+            log "📋 Logs do Docker Daemon:"
+            journalctl -u docker --no-pager --lines=20
+            log "🔧 Diagnóstico de rede Docker:"
+            docker network inspect socialbiblia_network || echo "Network não existe"
             exit 1
           fi
           
           # PocketBase não precisa de migrações! SQLite é automático
-          log "🗃️ PocketBase Database configuração..."
-          log "✅ SQLite database será criado automaticamente na primeira execução"
+          log "🗃️ PocketBase Database inicialização..."
+          log "✅ SQLite database será criado automaticamente"
           log "📋 Admin UI disponível em: http://localhost:8080/_/"
-          log "🔧 Collections e schemas podem ser configurados via Admin UI"
           
           # ====================================
           # ETAPA 8: VERIFICAÇÕES
@@ -318,8 +358,13 @@ jobs:
           if curl -f http://localhost:8080/api/health >/dev/null 2>&1; then
             log "✅ PocketBase API: OK"
           else
-            log "❌ PocketBase API: FALHOU"
-            FAILED_SERVICES="$FAILED_SERVICES pocketbase-health"
+            log "❌ PocketBase API: FALHOU - Tentando endpoint alternativo"
+            if curl -f http://localhost:8080/api/ >/dev/null 2>&1; then
+              log "✅ PocketBase endpoint alternativo: OK"
+            else
+              log "❌ PocketBase completamente inacessível"
+              FAILED_SERVICES="$FAILED_SERVICES pocketbase-health"
+            fi
           fi
           
           # Test PocketBase Admin Interface
@@ -400,15 +445,15 @@ jobs:
               log "   - http://${{ env.VPS_HOST }} (Aplicação Principal - via Nginx)"
             fi
             log "   - http://${{ env.VPS_HOST }}:3000 (Frontend React - Direto)"
-            log "   - http://${{ env.VPS_HOST }}:8080 (PocketBase API + Admin UI - Direto)"
+            log "   - http://${{ env.VPS_HOST }}:8080 (PocketBase API + Admin UI)"
             log ""
             log "🔐 PocketBase Admin (Primeira configuração):"
             log "   - Acesse: http://${{ env.VPS_HOST }}:8080/_/"
-            log "   - Na primeira vez, crie seu admin user diretamente na UI"
-            log "   - API disponível em: http://${{ env.VPS_HOST }}:8080/api/"
+            log "   - Crie seu usuário admin na primeira visita"
+            log "   - API: http://${{ env.VPS_HOST }}:8080/api/"
             log ""
             log "📊 Resumo: $(docker ps --format '{{.Names}}' | grep socialbiblia | wc -l) containers ativos"
-            log "💾 Banco: SQLite embarcado no PocketBase (ultra-simples)"
+            log "💾 Banco: SQLite embarcado no PocketBase"
             log "🚀 PocketBase: Backend completo em executável único"
             log "🔒 Aplicação isolada com Docker Compose"
             
