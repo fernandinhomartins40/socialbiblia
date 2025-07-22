@@ -561,53 +561,105 @@ jobs:
             done
             
             # ====================================
-            # ETAPA 10: RESULTADO FINAL
+            # ETAPA 10: RELATÓRIO DE STATUS FINAL
+            # ====================================
+            log "📋 GERANDO RELATÓRIO FINAL DE STATUS..."
+            echo ""
+            echo "==========================================="
+            echo "🔍 BIBLICAI DEPLOY STATUS REPORT"
+            echo "==========================================="
+            echo "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
+            echo "Health Issues: ${HEALTH_ISSUES:-NENHUM}"
+            echo ""
+            
+            # Sistema
+            echo "📊 SISTEMA:"
+            echo "  Memory: $(free -h | grep '^Mem:' | awk '{print $3"/"$2}')"
+            echo "  Disk: $(df -h / | tail -1 | awk '{print $3"/"$2}')"
+            echo "  Load: $(uptime | sed 's/.*load average: //')"
+            echo ""
+            
+            # Docker info
+            echo "🐳 DOCKER:"
+            echo "  Version: $(docker --version | cut -d' ' -f3 | tr -d ',')"
+            echo "  Compose: $(docker compose version | head -1 | grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+')"
+            echo ""
+            
+            # Containers Status
+            echo "📦 CONTAINERS STATUS:"
+            docker ps -a --format "{{.Names}} {{.Status}} {{.Ports}}" | grep biblicai | head -10 || echo "  Nenhum container biblicai encontrado"
+            echo ""
+            
+            # Network and Volumes
+            echo "🌐 RESOURCES:"
+            echo "  Networks: $(docker network ls --format '{{.Name}}' | grep biblicai | wc -l)"
+            echo "  Volumes: $(docker volume ls --format '{{.Name}}' | grep biblicai | wc -l)"
+            echo ""
+            
+            # Health checks detalhados
+            echo "🔍 HEALTH STATUS:"
+            if curl -f http://localhost:3344/api/info >/dev/null 2>&1; then
+              echo "  ✅ API (3344): Respondendo"
+              api_response=$(curl -s http://localhost:3344/api/info 2>/dev/null | head -1)
+              echo "     Response: ${api_response:0:50}..."
+            else
+              echo "  ❌ API (3344): Não responde"
+            fi
+            
+            if curl -f http://localhost:3000 >/dev/null 2>&1; then
+              echo "  ✅ Frontend (3000): Respondendo"
+            else
+              echo "  ❌ Frontend (3000): Não responde"
+            fi
+            
+            if curl -f http://localhost:8080 >/dev/null 2>&1; then
+              echo "  ✅ pgAdmin (8080): Respondendo"
+            else
+              echo "  ⚠️ pgAdmin (8080): Não responde (normal durante inicialização)"
+            fi
+            echo ""
+            
+            # Portas em uso
+            echo "🔌 PORTAS:"
+            for port in 3000 3344 5432 8080; do
+              if netstat -tuln 2>/dev/null | grep -q ":$port "; then
+                process=$(netstat -tulpn 2>/dev/null | grep ":$port " | head -1 | awk '{print $7}' | cut -d'/' -f2)
+                echo "  Port $port: Em uso por ${process:-unknown}"
+              else
+                echo "  Port $port: Livre"
+              fi
+            done
+            echo ""
+            
+            # Se há problemas, mostrar logs críticos
+            if [ -n "$HEALTH_ISSUES" ]; then
+              echo "📋 LOGS CRÍTICOS (últimas 3 linhas por container):"
+              for container in biblicai_postgres biblicai_api biblicai_web; do
+                if docker ps -a --format "{{.Names}}" | grep -q "$container"; then
+                  echo "--- $container ---"
+                  docker logs $container 2>&1 | tail -3 2>/dev/null
+                  echo ""
+                fi
+              done
+            fi
+            
+            echo "==========================================="
+            if [ -n "$HEALTH_ISSUES" ]; then
+              echo "❌ DEPLOY FALHOU - Problemas: $HEALTH_ISSUES"
+              echo "🏁 FIM DO RELATÓRIO DE FALHA"
+            else
+              echo "✅ DEPLOY BEM-SUCEDIDO"
+              echo "🏁 FIM DO RELATÓRIO DE SUCESSO"
+            fi
+            echo "==========================================="
+            echo ""
+            
+            # ====================================
+            # RESULTADO FINAL
             # ====================================
             if [ -n "$HEALTH_ISSUES" ]; then
               log "❌ DEPLOY CONCLUÍDO COM PROBLEMAS!"
               log "🔍 Serviços com problemas: $HEALTH_ISSUES"
-              
-              # ====================================
-              # RELATÓRIO DE DEBUG REDUZIDO
-              # ====================================
-              log "📋 GERANDO RELATÓRIO DE DEBUG REDUZIDO..."
-              echo ""
-              echo "==========================================="
-              echo "🔍 BIBLICAI DEPLOY FAILURE REPORT"
-              echo "==========================================="
-              echo "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
-              echo "Issues: $HEALTH_ISSUES"
-              echo ""
-              
-              # Sistema
-              echo "📊 SISTEMA:"
-              echo "  Memory: $(free -h | grep '^Mem:' | awk '{print $3"/"$2}')"
-              echo "  Disk: $(df -h / | tail -1 | awk '{print $3"/"$2}')"
-              echo ""
-              
-              # Containers
-              echo "📦 CONTAINERS STATUS:"
-              docker ps -a --format "{{.Names}} {{.Status}}" | grep biblicai | head -5 || echo "  Nenhum container biblicai encontrado"
-              echo ""
-              
-              # Logs críticos (apenas últimas 5 linhas de cada)
-              echo "📋 LOGS CRÍTICOS:"
-              for container in biblicai_postgres biblicai_api biblicai_web; do
-                echo "--- $container ---"
-                docker logs $container 2>&1 | tail -5 2>/dev/null || echo "Container não encontrado"
-                echo ""
-              done
-              
-              # Health checks
-              echo "🔍 HEALTH STATUS:"
-              curl -f http://localhost:3344/api/info >/dev/null 2>&1 && echo "  API: ✅" || echo "  API: ❌"
-              curl -f http://localhost:3000 >/dev/null 2>&1 && echo "  Frontend: ✅" || echo "  Frontend: ❌"
-              echo ""
-              
-              echo "==========================================="
-              echo "🏁 FIM DO RELATÓRIO DE FALHA"
-              echo "==========================================="
-              
               exit 1
             else
               log "🎉 DEPLOY DA BIBLICAI CONCLUÍDO COM SUCESSO!"
