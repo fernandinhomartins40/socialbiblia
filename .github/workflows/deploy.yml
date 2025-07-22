@@ -1,0 +1,367 @@
+name: Deploy Social Bíblia to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  VPS_HOST: '31.97.85.98'
+  VPS_USER: 'root'
+  APP_DIR: '/opt/socialbiblia'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to VPS
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ env.VPS_HOST }}
+        username: ${{ env.VPS_USER }}
+        password: ${{ secrets.VPS_PASSWORD }}
+        port: 22
+        timeout: 600s
+        command_timeout: 600s
+        script: |
+          # Função de log
+          log() {
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+          }
+          
+          # ====================================
+          # ETAPA 1: PREPARAR AMBIENTE
+          # ====================================
+          log "🚀 INICIANDO DEPLOY SOCIAL BÍBLIA - ETAPA 1: Preparando ambiente..."
+          
+          # Configurações
+          APP_DIR="${{ env.APP_DIR }}"
+          REPO_URL="https://github.com/${{ github.repository }}.git"
+          COMPOSE_PROJECT_NAME="socialbiblia"
+          
+          # Criar diretório e navegar
+          mkdir -p $APP_DIR
+          cd $APP_DIR
+          
+          # Parar containers existentes ANTES de qualquer outra operação
+          log "⏹️ Parando containers existentes..."
+          if [ -f "docker-compose.production.yml" ]; then
+            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml down --remove-orphans || true
+          fi
+          
+          # ====================================
+          # ETAPA 2: BAIXAR/ATUALIZAR CÓDIGO
+          # ====================================
+          log "🚀 ETAPA 2: Baixando código..."
+          
+          # Se não existe repositório, clonar
+          if [ ! -d ".git" ]; then
+            log "📥 Clonando repositório..."
+            git clone $REPO_URL . || {
+              log "❌ Clone falhou, usando download direto..."
+              curl -L https://github.com/${{ github.repository }}/archive/main.tar.gz | tar xz --strip-components=1
+            }
+          else
+            # Atualizar repositório existente
+            log "🔄 Atualizando repositório..."
+            git fetch origin && git reset --hard origin/main && git clean -fd
+          fi
+          
+          # Verificar se baixou corretamente
+          if [ ! -f "docker-compose.production.yml" ]; then
+            log "❌ Arquivo docker-compose.production.yml não encontrado!"
+            exit 1
+          fi
+          log "✅ Código baixado com sucesso"
+          
+          # ====================================
+          # ETAPA 3: INSTALAR DEPENDÊNCIAS
+          # ====================================
+          log "🚀 ETAPA 3: Verificando/instalando dependências..."
+          
+          # Atualizar sistema
+          apt-get update -qq
+          
+          # Instalar Docker se necessário
+          if ! command -v docker >/dev/null 2>&1; then
+            log "📦 Instalando Docker..."
+            curl -fsSL https://get.docker.com | sh
+            systemctl start docker
+            systemctl enable docker
+          else
+            log "✅ Docker já instalado"
+          fi
+          
+          # Verificar Docker Compose
+          if ! docker compose version >/dev/null 2>&1; then
+            log "📦 Instalando Docker Compose..."
+            apt-get install -y docker-compose-plugin
+          else
+            log "✅ Docker Compose já instalado"
+          fi
+          
+          # Instalar Node.js se necessário (para builds locais se precisar)
+          if ! command -v node >/dev/null 2>&1; then
+            log "📦 Instalando Node.js..."
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
+          else
+            log "✅ Node.js já instalado"
+          fi
+          
+          # ====================================
+          # ETAPA 4: CONFIGURAR VARIÁVEIS DE AMBIENTE
+          # ====================================
+          log "🚀 ETAPA 4: Configurando variáveis de ambiente..."
+          
+          # Criar arquivo .env se não existir
+          if [ ! -f ".env.production" ]; then
+            log "📝 Criando arquivo .env.production..."
+            cat > .env.production << EOF
+          # Configurações da aplicação
+          NODE_ENV=production
+          APP_NAME=Social Bíblia
+          
+          # URLs base
+          FRONTEND_URL=http://${{ env.VPS_HOST }}:3000
+          BACKEND_URL=http://${{ env.VPS_HOST }}:4000
+          
+          # Banco de dados PostgreSQL
+          DATABASE_URL=postgresql://socialbiblia_user:socialbiblia_secure_password@postgres:5432/socialbiblia_db
+          POSTGRES_DB=socialbiblia_db
+          POSTGRES_USER=socialbiblia_user
+          POSTGRES_PASSWORD=socialbiblia_secure_password
+          
+          # JWT Secrets (gerados automaticamente)
+          JWT_SECRET_USER=\$(openssl rand -base64 32)
+          JWT_SECRET_ADMIN=\$(openssl rand -base64 32)
+          JWT_SECRET_APP=\$(openssl rand -base64 32)
+          JWT_EXPIRED_IN=24h
+          
+          # API Configuration
+          API_PREFIX=api
+          API_VERSION=v1
+          
+          # CORS Configuration
+          CORS_ALLOW_ORIGIN=http://${{ env.VPS_HOST }}:3000
+          
+          # Bcrypt
+          BCRYPT_SALTROUNDS=10
+          
+          # Rate Limiter
+          RATE_LIMIT_MAX=1000
+          RATE_LIMIT_WINDOW=15
+          
+          # Portas dos serviços
+          WEB_PORT=3000
+          API_PORT=4000
+          POSTGRES_PORT=5432
+          PGADMIN_PORT=8080
+          
+          # pgAdmin
+          PGADMIN_DEFAULT_EMAIL=admin@socialbiblia.com
+          PGADMIN_DEFAULT_PASSWORD=admin_socialbiblia_2024
+          
+          # Email (opcional - configurar depois se necessário)
+          EMAIL_FROM=noreply@socialbiblia.com
+          EMAIL_HOST=
+          EMAIL_PORT=587
+          EMAIL_USER=
+          EMAIL_PASS=
+          
+          # Debug
+          DEBUG_HTTP_REQUEST=false
+          DEBUG_HTTP_CONNECTION=false
+          EOF
+            log "✅ Arquivo .env.production criado"
+          else
+            log "✅ Arquivo .env.production já existe"
+          fi
+          
+          # ====================================
+          # ETAPA 5: LIMPEZA PRÉ-BUILD
+          # ====================================
+          log "🚀 ETAPA 5: Limpando ambiente..."
+          
+          # Limpar apenas containers do projeto atual (isolamento)
+          docker compose -p $COMPOSE_PROJECT_NAME down --remove-orphans || true
+          
+          # Limpar imagens antigas apenas do projeto
+          docker images --format "table {{.Repository}}:{{.Tag}}" | grep "socialbiblia" | awk '{print \$1}' | xargs -r docker rmi || true
+          
+          # Limpar volumes órfãos apenas do projeto
+          docker volume ls --format "{{.Name}}" | grep "socialbiblia" | xargs -r docker volume rm || true
+          
+          # ====================================
+          # ETAPA 6: BUILD E DEPLOY
+          # ====================================
+          log "🚀 ETAPA 6: Fazendo build e iniciando containers..."
+          
+          # Build e iniciar aplicação com isolamento
+          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml --env-file .env.production up -d --build
+          
+          # ====================================
+          # ETAPA 7: CONFIGURAÇÃO DO BANCO
+          # ====================================
+          log "🚀 ETAPA 7: Configurando banco de dados..."
+          
+          # Aguardar PostgreSQL iniciar
+          log "⏳ Aguardando PostgreSQL iniciar..."
+          sleep 30
+          
+          # Executar migrações do Prisma
+          log "🗃️ Executando migrações do banco..."
+          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api npm run prisma:migrate deploy || {
+            log "⚠️ Migrações falharam, tentando gerar cliente Prisma..."
+            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api npm run prisma:generate
+          }
+          
+          # Seed inicial se necessário
+          log "🌱 Executando seed do banco (se disponível)..."
+          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api npm run prisma:seed || log "⚠️ Seed não disponível ou falhou"
+          
+          # ====================================
+          # ETAPA 8: VERIFICAÇÕES
+          # ====================================
+          log "🚀 ETAPA 8: Verificando deployment..."
+          
+          # Aguardar todos os serviços iniciarem
+          log "⏳ Aguardando todos os serviços iniciarem..."
+          sleep 60
+          
+          # Verificar status dos containers
+          log "📋 Status dos containers:"
+          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml ps
+          
+          # Health checks básicos
+          log "🏥 Executando health checks..."
+          
+          # Verificar se containers estão rodando
+          FAILED_SERVICES=""
+          
+          EXPECTED_CONTAINERS="socialbiblia-web-1 socialbiblia-api-1 socialbiblia-postgres-1"
+          for container in \$EXPECTED_CONTAINERS; do
+            if docker ps --format "{{.Names}}" | grep -q "\$container"; then
+              log "✅ Container \$container está rodando"
+            else
+              log "❌ Container \$container NÃO está rodando"
+              FAILED_SERVICES="\$FAILED_SERVICES \$container"
+            fi
+          done
+          
+          # Testar endpoints básicos
+          sleep 20
+          
+          # Test Frontend
+          if curl -f http://localhost:3000 >/dev/null 2>&1; then
+            log "✅ Frontend (React): OK"
+          else
+            log "❌ Frontend: FALHOU"
+            FAILED_SERVICES="\$FAILED_SERVICES frontend-health"
+          fi
+          
+          # Test Backend API
+          if curl -f http://localhost:4000/api >/dev/null 2>&1; then
+            log "✅ Backend API: OK"
+          else
+            log "❌ Backend API: FALHOU"
+            FAILED_SERVICES="\$FAILED_SERVICES backend-health"
+          fi
+          
+          # Test Database Connection via API
+          if curl -f http://localhost:4000/api/info >/dev/null 2>&1; then
+            log "✅ Database Connection: OK"
+          else
+            log "❌ Database Connection: FALHOU"
+            FAILED_SERVICES="\$FAILED_SERVICES database-health"
+          fi
+          
+          # ====================================
+          # ETAPA 9: CONFIGURAR PROXY/NGINX (SE NECESSÁRIO)
+          # ====================================
+          log "🚀 ETAPA 9: Configurando acesso externo..."
+          
+          # Verificar se nginx está instalado no sistema
+          if command -v nginx >/dev/null 2>&1; then
+            log "🔧 Configurando Nginx para proxy reverso..."
+            
+            # Backup da configuração existente
+            cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup.\$(date +%s) || true
+            
+            # Criar configuração do nginx para Social Bíblia
+            cat > /etc/nginx/sites-available/socialbiblia << 'EOF'
+          server {
+              listen 80;
+              server_name ${{ env.VPS_HOST }};
+              
+              # Frontend
+              location / {
+                  proxy_pass http://localhost:3000;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade \$http_upgrade;
+                  proxy_set_header Connection 'upgrade';
+                  proxy_set_header Host \$host;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto \$scheme;
+                  proxy_cache_bypass \$http_upgrade;
+              }
+              
+              # API Backend
+              location /api {
+                  proxy_pass http://localhost:4000;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade \$http_upgrade;
+                  proxy_set_header Connection 'upgrade';
+                  proxy_set_header Host \$host;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto \$scheme;
+                  proxy_cache_bypass \$http_upgrade;
+              }
+          }
+          EOF
+            
+            # Habilitar site
+            ln -sf /etc/nginx/sites-available/socialbiblia /etc/nginx/sites-enabled/
+            
+            # Testar e recarregar nginx
+            nginx -t && systemctl reload nginx && log "✅ Nginx configurado com sucesso" || log "⚠️ Erro na configuração do Nginx"
+          else
+            log "ℹ️ Nginx não instalado - aplicação disponível nas portas diretas"
+          fi
+          
+          # ====================================
+          # ETAPA 10: RESULTADO FINAL
+          # ====================================
+          if [ -n "\$FAILED_SERVICES" ]; then
+            log "❌ DEPLOY COM PROBLEMAS. Serviços com falha:\$FAILED_SERVICES"
+            log "📋 Logs dos containers com problemas:"
+            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml logs --tail=50
+            exit 1
+          else
+            log "🎉 DEPLOY DA SOCIAL BÍBLIA CONCLUÍDO COM SUCESSO!"
+            log "🌐 Aplicação disponível em:"
+            if command -v nginx >/dev/null 2>&1; then
+              log "   - http://${{ env.VPS_HOST }} (Aplicação Principal - via Nginx)"
+            fi
+            log "   - http://${{ env.VPS_HOST }}:3000 (Frontend React - Direto)"
+            log "   - http://${{ env.VPS_HOST }}:4000 (Backend API - Direto)"
+            log "   - http://${{ env.VPS_HOST }}:8080 (pgAdmin - Administração BD)"
+            log ""
+            log "🔐 Credenciais pgAdmin:"
+            log "   - Email: admin@socialbiblia.com"
+            log "   - Senha: admin_socialbiblia_2024"
+            log ""
+            log "📊 Resumo: \$(docker ps --format '{{.Names}}' | grep socialbiblia | wc -l) containers ativos"
+            log "💾 Banco: PostgreSQL rodando com isolamento"
+            log "🔒 Aplicação isolada com Docker Compose"
+            
+            # Mostrar uso de recursos
+            log "📈 Uso de recursos:"
+            docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" | head -10
+          fi

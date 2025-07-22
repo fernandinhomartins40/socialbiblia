@@ -1,0 +1,93 @@
+# Dockerfile para Backend API em produção
+FROM node:20-alpine AS base
+
+# Instalar dependências do sistema
+RUN apk add --no-cache \
+    openssl \
+    curl \
+    dumb-init
+
+# Criar usuário não-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Copiar arquivos de configuração dos workspaces
+COPY package*.json ./
+COPY apps/api/package*.json ./apps/api/
+COPY packages/shared/package*.json ./packages/shared/
+
+# Stage 1: Build do shared package
+FROM base AS shared-builder
+WORKDIR /app
+
+# Instalar dependências do shared
+COPY packages/shared ./packages/shared
+WORKDIR /app/packages/shared
+RUN npm ci --only=production
+RUN npm run build
+
+# Stage 2: Build da API
+FROM base AS api-builder
+WORKDIR /app
+
+# Copiar shared package buildado
+COPY --from=shared-builder /app/packages/shared ./packages/shared
+
+# Instalar dependências da API
+COPY apps/api ./apps/api
+WORKDIR /app/apps/api
+
+# Instalar dependências incluindo devDependencies para build
+RUN npm ci
+
+# Gerar cliente Prisma
+RUN npx prisma generate
+
+# Build da aplicação
+RUN npm run build
+
+# Copiar arquivos necessários para produção
+RUN npm run copyfiles
+
+# Stage 3: Produção
+FROM node:20-alpine AS production
+
+# Instalar dependências do sistema para produção
+RUN apk add --no-cache \
+    openssl \
+    curl \
+    dumb-init
+
+# Criar usuário não-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+
+WORKDIR /app
+
+# Copiar shared package
+COPY --from=shared-builder --chown=nodejs:nodejs /app/packages/shared ./packages/shared
+
+# Copiar aplicação buildada
+COPY --from=api-builder --chown=nodejs:nodejs /app/apps/api/build ./
+COPY --from=api-builder --chown=nodejs:nodejs /app/apps/api/package*.json ./
+COPY --from=api-builder --chown=nodejs:nodejs /app/apps/api/prisma ./prisma
+COPY --from=api-builder --chown=nodejs:nodejs /app/apps/api/node_modules ./node_modules
+
+# Criar diretórios necessários
+RUN mkdir -p logs uploads && chown -R nodejs:nodejs logs uploads
+
+# Mudar para usuário não-root
+USER nodejs
+
+# Expor porta
+EXPOSE 4000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:4000/api || exit 1
+
+# Comando de inicialização
+CMD ["dumb-init", "node", "src/app.js"]

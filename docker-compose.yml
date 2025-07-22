@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Banco de dados PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: socialbiblia_postgres
+    environment:
+      POSTGRES_DB: socialbiblia_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - socialbiblia_network
+
+  # pgAdmin para administração do banco
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: socialbiblia_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@socialbiblia.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    networks:
+      - socialbiblia_network
+
+volumes:
+  postgres_data:
+
+networks:
+  socialbiblia_network:
+    driver: bridge
