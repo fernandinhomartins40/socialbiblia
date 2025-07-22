@@ -20,9 +20,9 @@ import routes from '@routes/index';
 import routesUser from '@routes/client/v1';
 import routesAdmin from '@routes/admin/v1';
 
-const publicLogs = './logs';
-const publicFavicon = './public/assets/images/favicons/favicon.ico';
-const views = '../views';
+const publicLogs = path.resolve(process.cwd(), 'logs');
+const publicFavicon = path.resolve(process.cwd(), 'public/assets/images/favicons/favicon.ico');
+const views = path.resolve(__dirname, '../views');
 
 export default () => {
     const app = express();
@@ -46,7 +46,7 @@ export default () => {
     jwtUserStrategy(passport);
 
     app.use(favicon(publicFavicon));
-    app.use(express.static('public'));
+    app.use(express.static(path.resolve(process.cwd(), 'public')));
 
     app.use(baseApiUrl + '/logs', express.static(publicLogs, { dotfiles: 'allow' }));
     app.use(baseApiUrl + '/', routes);
@@ -54,7 +54,7 @@ export default () => {
     app.use(baseApiUrl + '/admin/', routesAdmin);
 
     app.set('view engine', 'ejs');
-    app.set('views', path.join(__dirname, views));
+    app.set('views', views);
 
     app.use(handleError);
 

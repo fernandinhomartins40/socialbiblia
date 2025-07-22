@@ -73,6 +73,7 @@ COPY --from=builder --chown=nodejs:nodejs /app/apps/api/build ./build
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/package*.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/prisma ./prisma
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/public ./public
 
 # Copiar entrypoint script
 COPY --from=builder --chown=nodejs:nodejs /app/apps/api/entrypoint.sh ./entrypoint.sh

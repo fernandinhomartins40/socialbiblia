@@ -59,6 +59,22 @@ else
   echo "✅ Cliente Prisma encontrado"
 fi
 
+# Teste de inicialização simplificado primeiro
+echo "🧪 Executando teste de inicialização..."
+if [ -f "build/src/test-startup.js" ]; then
+  node build/src/test-startup.js || {
+    echo "❌ Teste de inicialização falhou"
+    exit 1
+  }
+elif [ -f "src/test-startup.js" ]; then
+  node src/test-startup.js || {
+    echo "❌ Teste de inicialização falhou"
+    exit 1
+  }
+else
+  echo "⚠️ Arquivo de teste não encontrado, continuando..."
+fi
+
 # Verificar conexão com banco antes de iniciar
 echo "🔍 Testando conexão com banco de dados..."
 node -e "
