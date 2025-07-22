@@ -108,7 +108,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
   };
 
   return (
-    <Card className="w-full max-w-lg mx-auto card-modern overflow-hidden">
+    <Card className="w-full max-w-lg mx-auto card-modern overflow-hidden bg-white dark:bg-gray-900 border-0 shadow-none">
       {/* Background Decoration */}
       <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-divine-gold via-orange-500 to-red-500 opacity-5"></div>
       
