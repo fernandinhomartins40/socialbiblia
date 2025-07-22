@@ -42,6 +42,11 @@ out/
 # LOGS
 # ============================================
 logs/
+# Exception: Allow logs route, controller, view, and service files
+!apps/backend/src/routes/commons/logs/
+!apps/backend/src/controllers/commons/logs/
+!apps/backend/src/views/logs/
+!apps/backend/src/services/commons/logs_infos/
 *.log
 npm-debug.log*
 yarn-debug.log*
