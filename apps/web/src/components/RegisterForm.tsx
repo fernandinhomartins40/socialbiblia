@@ -269,20 +269,22 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
           </Button>
         </form>
 
-        <div className="mt-8 text-center pt-6 border-t border-gray-100">
-          <p className="text-base text-muted-foreground mb-4">
-            Já faz parte da família Biblicai?
-          </p>
-          <button
-            type="button"
-            onClick={onSwitchToLogin}
-            className="text-spiritual-blue hover:text-spiritual-blue-dark font-semibold text-base hover:underline transition-all duration-200 inline-flex items-center gap-2"
-            disabled={registerMutation.isPending}
-          >
-            <span>Fazer login</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
+        {onSwitchToLogin && (
+          <div className="mt-8 text-center pt-6 border-t border-gray-100">
+            <p className="text-base text-muted-foreground mb-4">
+              Já faz parte da família Biblicai?
+            </p>
+            <button
+              type="button"
+              onClick={onSwitchToLogin}
+              className="text-spiritual-blue hover:text-spiritual-blue-dark font-semibold text-base hover:underline transition-all duration-200 inline-flex items-center gap-2"
+              disabled={registerMutation.isPending}
+            >
+              <span>Fazer login</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

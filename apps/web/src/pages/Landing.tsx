@@ -1,22 +1,9 @@
-import { useState } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Users, BookOpen, Sparkles, Shield, Zap, Star, ArrowRight } from "lucide-react";
-import AuthModal from "@/components/AuthModal";
 
 export default function Landing() {
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authTab, setAuthTab] = useState<"login" | "register">("login");
-
-  const handleLogin = () => {
-    setAuthTab("login");
-    setShowAuthModal(true);
-  };
-
-  const handleRegister = () => {
-    setAuthTab("register");
-    setShowAuthModal(true);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden">
@@ -55,19 +42,17 @@ export default function Landing() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button 
-              className="btn-primary group text-lg px-10 py-4"
-              onClick={handleLogin}
-            >
-              <span className="mr-2">Entrar Agora</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Button>
-            <Button 
-              className="btn-secondary text-lg px-10 py-4"
-              onClick={handleRegister}
-            >
-              Criar Conta Gratuita
-            </Button>
+            <Link href="/login">
+              <Button className="btn-primary group text-lg px-10 py-4">
+                <span className="mr-2">Entrar Agora</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+            <Link href="/registro">
+              <Button className="btn-secondary text-lg px-10 py-4">
+                Criar Conta Gratuita
+              </Button>
+            </Link>
           </div>
           
           <div className="flex items-center justify-center gap-8 mt-12 text-sm text-gray-600">
@@ -240,20 +225,20 @@ export default function Landing() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-              <Button 
-                className="bg-white text-spiritual-blue hover:bg-gray-100 font-bold px-10 py-4 text-lg rounded-xl shadow-medium hover:shadow-strong transition-all duration-300 group"
-                onClick={handleRegister}
-              >
-                <span className="mr-2">Começar Gratuitamente</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button 
-                variant="ghost"
-                className="text-white hover:bg-white/20 font-medium px-8 py-4 text-lg rounded-xl backdrop-blur-sm border border-white/30"
-                onClick={handleLogin}
-              >
-                Já tenho conta
-              </Button>
+              <Link href="/registro">
+                <Button className="bg-white text-spiritual-blue hover:bg-gray-100 font-bold px-10 py-4 text-lg rounded-xl shadow-medium hover:shadow-strong transition-all duration-300 group">
+                  <span className="mr-2">Começar Gratuitamente</span>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button 
+                  variant="ghost"
+                  className="text-white hover:bg-white/20 font-medium px-8 py-4 text-lg rounded-xl backdrop-blur-sm border border-white/30"
+                >
+                  Já tenho conta
+                </Button>
+              </Link>
             </div>
             
             <div className="flex items-center justify-center gap-6 text-sm text-blue-100">
@@ -273,12 +258,6 @@ export default function Landing() {
           </div>
         </div>
       </div>
-      
-      <AuthModal 
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        defaultTab={authTab}
-      />
     </div>
   );
 }

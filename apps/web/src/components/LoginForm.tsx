@@ -152,20 +152,22 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
           </Button>
         </form>
 
-        <div className="mt-8 text-center pt-6 border-t border-gray-100">
-          <p className="text-base text-muted-foreground mb-4">
-            Primeira vez no Biblicai?
-          </p>
-          <button
-            type="button"
-            onClick={onSwitchToRegister}
-            className="text-spiritual-blue hover:text-spiritual-blue-dark font-semibold text-base hover:underline transition-all duration-200 inline-flex items-center gap-2"
-            disabled={loginMutation.isPending}
-          >
-            <span>Criar conta gratuita</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
+        {onSwitchToRegister && (
+          <div className="mt-8 text-center pt-6 border-t border-gray-100">
+            <p className="text-base text-muted-foreground mb-4">
+              Primeira vez no Biblicai?
+            </p>
+            <button
+              type="button"
+              onClick={onSwitchToRegister}
+              className="text-spiritual-blue hover:text-spiritual-blue-dark font-semibold text-base hover:underline transition-all duration-200 inline-flex items-center gap-2"
+              disabled={loginMutation.isPending}
+            >
+              <span>Criar conta gratuita</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
