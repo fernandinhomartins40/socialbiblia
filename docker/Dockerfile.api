@@ -7,58 +7,52 @@ RUN apk add --no-cache \
     curl \
     dumb-init
 
-# Criar usuário não-root
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-
-# Definir diretório de trabalho
 WORKDIR /app
 
-# Copiar arquivos de configuração dos workspaces
+# Stage 1: Instalar dependências
+FROM base AS dependencies
+
+# Copiar package.json files
 COPY package*.json ./
 COPY apps/api/package*.json ./apps/api/
 COPY packages/shared/package*.json ./packages/shared/
 
-# Stage 1: Build do shared package
-FROM base AS shared-builder
-WORKDIR /app
-
-# Instalar dependências do shared
+# Instalar shared package dependencies
 COPY packages/shared ./packages/shared
 WORKDIR /app/packages/shared
-RUN npm ci --only=production
-RUN npm run build
+RUN npm install --only=production && npm run build
 
-# Stage 2: Build da API
-FROM base AS api-builder
+# Voltar para root e instalar deps da API
 WORKDIR /app
+COPY apps/api ./apps/api
 
-# Copiar shared package buildado
-COPY --from=shared-builder /app/packages/shared ./packages/shared
+# Substituir workspace:* por file:../..
+WORKDIR /app/apps/api
+RUN sed -i 's/"@socialbiblia\/shared": "workspace:\*"/"@socialbiblia\/shared": "file:..\/..\/packages\/shared"/g' package.json
 
 # Instalar dependências da API
-COPY apps/api ./apps/api
-WORKDIR /app/apps/api
+RUN npm install
 
-# Instalar dependências incluindo devDependencies para build
-RUN npm ci
+# Stage 2: Build
+FROM dependencies AS builder
+
+WORKDIR /app/apps/api
 
 # Gerar cliente Prisma
 RUN npx prisma generate
 
 # Build da aplicação
 RUN npm run build
-
-# Copiar arquivos necessários para produção
 RUN npm run copyfiles
 
-# Stage 3: Produção
+# Stage 3: Production
 FROM node:20-alpine AS production
 
-# Instalar dependências do sistema para produção
+# Instalar dependências do sistema
 RUN apk add --no-cache \
     openssl \
     curl \
+    netcat-openbsd \
     dumb-init
 
 # Criar usuário não-root
@@ -67,14 +61,15 @@ RUN adduser -S nodejs -u 1001
 
 WORKDIR /app
 
-# Copiar shared package
-COPY --from=shared-builder --chown=nodejs:nodejs /app/packages/shared ./packages/shared
-
 # Copiar aplicação buildada
-COPY --from=api-builder --chown=nodejs:nodejs /app/apps/api/build ./
-COPY --from=api-builder --chown=nodejs:nodejs /app/apps/api/package*.json ./
-COPY --from=api-builder --chown=nodejs:nodejs /app/apps/api/prisma ./prisma
-COPY --from=api-builder --chown=nodejs:nodejs /app/apps/api/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/build ./
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/package*.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/prisma ./prisma
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/node_modules ./node_modules
+
+# Copiar entrypoint script
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
 
 # Criar diretórios necessários
 RUN mkdir -p logs uploads && chown -R nodejs:nodejs logs uploads
@@ -90,4 +85,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:4000/api || exit 1
 
 # Comando de inicialização
-CMD ["dumb-init", "node", "src/app.js"]
+CMD ["dumb-init", "./entrypoint.sh"]

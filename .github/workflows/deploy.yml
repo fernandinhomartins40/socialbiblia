@@ -213,11 +213,29 @@ jobs:
           log "⏳ Aguardando PostgreSQL iniciar..."
           sleep 30
           
+          # Aguardar API container estar rodando
+          log "⏳ Aguardando API container estar pronto..."
+          timeout=120
+          while [ $timeout -gt 0 ]; do
+            if docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml ps api | grep -q "running"; then
+              log "✅ API container está rodando"
+              break
+            fi
+            sleep 5
+            timeout=$((timeout - 5))
+          done
+          
+          if [ $timeout -le 0 ]; then
+            log "❌ Timeout aguardando API container"
+            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml logs api
+            exit 1
+          fi
+          
           # Executar migrações do Prisma
           log "🗃️ Executando migrações do banco..."
-          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api npm run prisma:migrate deploy || {
+          docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api npm run prisma:migrate:deploy || {
             log "⚠️ Migrações falharam, tentando gerar cliente Prisma..."
-            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api npm run prisma:generate
+            docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml exec -T api npm run prisma:generate || true
           }
           
           # Seed inicial se necessário
@@ -244,12 +262,12 @@ jobs:
           FAILED_SERVICES=""
           
           EXPECTED_CONTAINERS="socialbiblia-web-1 socialbiblia-api-1 socialbiblia-postgres-1"
-          for container in \$EXPECTED_CONTAINERS; do
-            if docker ps --format "{{.Names}}" | grep -q "\$container"; then
-              log "✅ Container \$container está rodando"
+          for container in $EXPECTED_CONTAINERS; do
+            if docker ps --format "{{.Names}}" | grep -q "$container"; then
+              log "✅ Container $container está rodando"
             else
-              log "❌ Container \$container NÃO está rodando"
-              FAILED_SERVICES="\$FAILED_SERVICES \$container"
+              log "❌ Container $container NÃO está rodando"
+              FAILED_SERVICES="$FAILED_SERVICES $container"
             fi
           done
           
@@ -261,7 +279,7 @@ jobs:
             log "✅ Frontend (React): OK"
           else
             log "❌ Frontend: FALHOU"
-            FAILED_SERVICES="\$FAILED_SERVICES frontend-health"
+            FAILED_SERVICES="$FAILED_SERVICES frontend-health"
           fi
           
           # Test Backend API
@@ -269,7 +287,7 @@ jobs:
             log "✅ Backend API: OK"
           else
             log "❌ Backend API: FALHOU"
-            FAILED_SERVICES="\$FAILED_SERVICES backend-health"
+            FAILED_SERVICES="$FAILED_SERVICES backend-health"
           fi
           
           # Test Database Connection via API
@@ -277,7 +295,7 @@ jobs:
             log "✅ Database Connection: OK"
           else
             log "❌ Database Connection: FALHOU"
-            FAILED_SERVICES="\$FAILED_SERVICES database-health"
+            FAILED_SERVICES="$FAILED_SERVICES database-health"
           fi
           
           # ====================================
@@ -290,7 +308,7 @@ jobs:
             log "🔧 Configurando Nginx para proxy reverso..."
             
             # Backup da configuração existente
-            cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup.\$(date +%s) || true
+            cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup.\`date +%s\` || true
             
             # Criar configuração do nginx para Social Bíblia
             cat > /etc/nginx/sites-available/socialbiblia << 'EOF'
@@ -338,8 +356,8 @@ jobs:
           # ====================================
           # ETAPA 10: RESULTADO FINAL
           # ====================================
-          if [ -n "\$FAILED_SERVICES" ]; then
-            log "❌ DEPLOY COM PROBLEMAS. Serviços com falha:\$FAILED_SERVICES"
+          if [ -n "$FAILED_SERVICES" ]; then
+            log "❌ DEPLOY COM PROBLEMAS. Serviços com falha:$FAILED_SERVICES"
             log "📋 Logs dos containers com problemas:"
             docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.production.yml logs --tail=50
             exit 1
@@ -357,7 +375,7 @@ jobs:
             log "   - Email: admin@socialbiblia.com"
             log "   - Senha: admin_socialbiblia_2024"
             log ""
-            log "📊 Resumo: \$(docker ps --format '{{.Names}}' | grep socialbiblia | wc -l) containers ativos"
+            log "📊 Resumo: $(docker ps --format '{{.Names}}' | grep socialbiblia | wc -l) containers ativos"
             log "💾 Banco: PostgreSQL rodando com isolamento"
             log "🔒 Aplicação isolada com Docker Compose"
             

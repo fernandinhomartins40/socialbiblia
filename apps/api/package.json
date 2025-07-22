@@ -24,6 +24,7 @@
         "test:badges": "npm run test && jest-coverage-badges",
         "prisma:format": "prisma format",
         "prisma:migrate": "prisma migrate dev --skip-seed",
+        "prisma:migrate:deploy": "prisma migrate deploy",
         "prisma:generate": "prisma generate",
         "prisma:generate:watch": "prisma generate --watch",
         "prisma:seed": "ts-node prisma/seed/seed.ts",
