@@ -28,7 +28,9 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: 'package-lock.json'
+          cache-dependency-path: |
+            package-lock.json
+            apps/backend/package-lock.json
 
       - name: 🔍 Verify project structure
         run: |
@@ -63,14 +65,14 @@ jobs:
       - name: 🏗️ Install Root Dependencies  
         run: |
           echo "📦 Instalando dependências do monorepo..."
-          npm ci --ignore-scripts
+          npm ci --ignore-scripts --no-fund --no-audit
           echo "✅ Dependências do monorepo instaladas"
 
       - name: 🏗️ Install Backend Dependencies
         run: |
           echo "📦 Instalando dependências do backend..."
           cd apps/backend
-          npm ci --ignore-scripts
+          npm ci --ignore-scripts --no-fund --no-audit
           echo "✅ Dependências do backend instaladas"
 
       - name: 🔧 Generate Prisma Client
@@ -92,7 +94,12 @@ jobs:
         run: |
           echo "📦 Instalando dependências do frontend..."
           cd apps/web
-          npm ci --ignore-scripts
+          # Clean install to fix Rollup optional dependencies issue
+          rm -rf node_modules 2>/dev/null || true
+          # Install dependencies with platform-specific fixes
+          npm install --no-fund --no-audit --prefer-dedupe
+          # Ensure Rollup platform binary is available
+          npm rebuild rollup --no-fund --no-audit || true
           echo "✅ Dependências do frontend instaladas"
 
       - name: 🏗️ Build Frontend
