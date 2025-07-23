@@ -88,7 +88,7 @@ export default async (options: GetPostsOptions = {}) => {
         });
 
         // Transform to include isLiked flag
-        const transformedPosts = posts.map(post => ({
+        const transformedPosts = posts.map((post: any) => ({
             ...post,
             isLiked: post.likes && post.likes.length > 0,
             likes: undefined, // Remove the likes array, we only needed it for the isLiked flag

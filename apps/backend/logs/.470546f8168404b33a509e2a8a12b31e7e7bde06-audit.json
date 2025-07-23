@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 7
+    },
+    "auditLog": "C:\\Projetos Cursor\\socialbiblia\\apps\\backend\\logs\\.470546f8168404b33a509e2a8a12b31e7e7bde06-audit.json",
+    "files": [
+        {
+            "date": 1753270669207,
+            "name": "C:\\Projetos Cursor\\socialbiblia\\apps\\backend\\logs\\info-2025-07-23-00.log",
+            "hash": "c3172479323ec61ed06a72c7d45590abbf012c9f2e6f856c135c367abb45ae8e"
+        }
+    ],
+    "hashType": "sha256"
+}

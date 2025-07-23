@@ -66,11 +66,11 @@ export default async (postId: string, userId?: string) => {
         });
 
         // Transform to include isLiked flag
-        const transformedComments = comments.map(comment => ({
+        const transformedComments = comments.map((comment: any) => ({
             ...comment,
             isLiked: comment.likes && comment.likes.length > 0,
             likes: undefined,
-            replies: comment.replies.map(reply => ({
+            replies: comment.replies.map((reply: any) => ({
                 ...reply,
                 isLiked: reply.likes && reply.likes.length > 0,
                 likes: undefined,
