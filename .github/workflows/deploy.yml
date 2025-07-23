@@ -42,6 +42,7 @@ jobs:
             "apps/backend/package.json"
             "apps/backend/tsconfig.json"
             "apps/backend/prisma/schema.prisma"
+            "apps/backend/.env.ci"
             "apps/backend/src/app.ts"
             "apps/web/package.json"
             "apps/web/vite.config.ts"
@@ -74,6 +75,14 @@ jobs:
           cd apps/backend
           npm ci --ignore-scripts --no-fund --no-audit
           echo "✅ Dependências do backend instaladas"
+
+      - name: 🔧 Setup CI Environment
+        run: |
+          echo "🔧 Configurando ambiente CI..."
+          cd apps/backend
+          # Copy CI environment file
+          cp .env.ci .env
+          echo "✅ Arquivo de ambiente CI configurado"
 
       - name: 🔧 Generate Prisma Client
         run: |
