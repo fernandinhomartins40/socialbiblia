@@ -1,4 +1,4 @@
-import prisma from '../../../prisma/prisma-client';
+import prisma from '@database/prisma_client';
 import logger from '@utils/logger/winston/logger';
 
 const msgError = 'Failed to update a user.';

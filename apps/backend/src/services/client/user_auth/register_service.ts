@@ -15,16 +15,24 @@ import hashPassword from '@functions/generate_hash_password';
 export default async (data: any) => {
     let registeredUser;
 
+    console.log('Registration attempt:', { email: data?.email, hasPassword: !!data?.password, hasName: !!data?.name });
+
     // Check required user datas
-    if (!checkRequiredDatas(data))
+    if (!checkRequiredDatas(data)) {
+        console.log('Failed validation - missing required data:', data);
         return httpMsg.http422(
             constError.REGISTER_ERROR_MSG.failToRegister,
             constError.ERROR_CODE.register,
         );
+    }
 
     // Check existing user and get data
     const user = await getUsr({ email: data.email });
-    if (!user.success) return httpMsg.http422(user.error || '', constError.ERROR_CODE.register);
+    console.log('User check result:', { success: user.success, error: user.error, hasData: !!user.data });
+    if (!user.success) {
+        console.log('User check failed:', user.error);
+        return httpMsg.http422(user.error || '', constError.ERROR_CODE.register);
+    }
 
     // If user exist but is not registered: update user
     if (user.data && !user.data.isRegistered) {
@@ -40,12 +48,16 @@ export default async (data: any) => {
 
     // If user not exist: create new user
     if (!user.data) {
+        console.log('Creating new user...');
         const createdUser = await createUsr(data);
-        if (!createdUser.success)
+        console.log('User creation result:', { success: createdUser.success, hasData: !!createdUser.data });
+        if (!createdUser.success) {
+            console.log('User creation failed');
             return httpMsg.http422(
                 constError.REGISTER_ERROR_MSG.failToRegister,
                 constError.ERROR_CODE.register,
             );
+        }
         registeredUser = createdUser.data;
     }
     // Delete some user datas
