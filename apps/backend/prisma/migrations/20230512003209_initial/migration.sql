@@ -1,7 +1,7 @@
 -- CreateTable
 
 CREATE TABLE
-    "User" (
+    "users" (
         "id" UUID NOT NULL,
         "email" VARCHAR(255) NOT NULL,
         "name" VARCHAR(255) NOT NULL,
@@ -24,9 +24,9 @@ CREATE TABLE
         "createdAt" TIMESTAMPTZ(6) NOT NULL,
         "updatedAt" TIMESTAMPTZ(6) NOT NULL,
         "deletedAt" TIMESTAMPTZ(6),
-        CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+        CONSTRAINT "users_pkey" PRIMARY KEY ("id")
     );
 
 -- CreateIndex
 
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
