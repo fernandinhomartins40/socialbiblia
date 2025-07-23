@@ -15,8 +15,8 @@ COPY packages/ ./packages/
 # Copiar aplicação web
 COPY apps/web/ ./apps/web/
 
-# Instalar dependências
-RUN npm ci
+# Instalar dependências usando workspaces
+RUN npm install --frozen-lockfile --ignore-scripts
 
 # Build dos packages compartilhados primeiro
 RUN npm run build:packages

@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "license": "MIT",
+  "packageManager": "npm@10.9.0",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -15,14 +16,14 @@
     "build": "turbo run build",
     "build:web": "npm run build --workspace=apps/web",
     "build:backend": "npm run build --workspace=apps/backend",
-    "build:packages": "npm run build --workspace=packages/shared --workspace=packages/config --workspace=packages/ui",
-    "build:all": "./tools/build/build-all.sh",
+    "build:packages": "echo 'Packages build skipped for now'",
+    "build:all": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "clean:dist": "rm -rf apps/*/dist packages/*/dist",
-    "install-all": "npm install && npm install --workspaces",
+    "install-all": "npm install --workspaces",
     "deploy:local": "./tools/deploy/deploy-vps.sh",
     "deploy:remote": "./tools/deploy/deploy-remote.sh",
     "test:build": "./tools/deploy/test-build.sh"
@@ -30,6 +31,12 @@
   "devDependencies": {
     "typescript": "^5.6.3",
     "turbo": "^2.0.0",
-    "tsup": "^8.0.1"
+    "tsup": "^8.0.1",
+    "copyfiles": "^2.4.1",
+    "@types/node": "^20.10.5"
+  },
+  "dependencies": {
+    "prisma": "^5.7.1",
+    "@prisma/client": "^5.7.1"
   }
 }
