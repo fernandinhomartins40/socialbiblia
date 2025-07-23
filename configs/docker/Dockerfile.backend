@@ -55,11 +55,11 @@ RUN chown -R backend:nodejs /app
 USER backend
 
 # Expor porta
-EXPOSE 3000
+EXPOSE 3344
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+  CMD curl -f http://localhost:3344/api/info || exit 1
 
 # Comando para iniciar a aplicação
 CMD ["node", "apps/backend/dist/src/server/index.js"]
