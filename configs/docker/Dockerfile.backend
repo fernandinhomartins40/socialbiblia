@@ -1,0 +1,35 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copiar arquivos de configuração do monorepo
+COPY package*.json ./
+COPY turbo.json ./
+COPY tsconfig.base.json ./
+
+# Copiar arquivos do backend
+COPY apps/backend/package*.json ./apps/backend/
+COPY apps/backend/prisma ./apps/backend/prisma/
+
+# Copiar packages compartilhados
+COPY packages/shared/package*.json ./packages/shared/
+COPY packages/config/package*.json ./packages/config/
+
+# Instalar dependências do monorepo
+RUN npm ci --only=production --workspace=backend --include-workspace-root
+
+# Gerar cliente Prisma
+RUN cd apps/backend && npx prisma generate
+
+# Copiar código fonte
+COPY apps/backend ./apps/backend
+COPY packages ./packages
+
+# Build da aplicação
+RUN npm run build --workspace=backend
+
+# Expor porta
+EXPOSE 3000
+
+# Comando para iniciar
+CMD ["npm", "start", "--workspace=backend"]
