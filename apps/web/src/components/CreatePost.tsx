@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiClient } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { isUnauthorizedError, redirectToAuth } from "@/lib/authUtils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -24,9 +23,9 @@ export default function CreatePost() {
       content: string;
       verseReference?: string;
       verseText?: string;
-      type: string;
+      isPublic?: boolean;
     }) => {
-      await apiRequest("POST", "/api/posts", data);
+      return await apiClient.createPost(data);
     },
     onSuccess: () => {
       toast({
@@ -37,20 +36,10 @@ export default function CreatePost() {
       setVerseReference("");
       setVerseText("");
       setPostType("post");
-      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
     },
-    onError: (error) => {
-      if (isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          redirectToAuth();
-        }, 500);
-        return;
-      }
+    onError: (error: any) => {
+      console.error('Create post error:', error);
       toast({
         title: "Erro",
         description: "Não foi possível criar o post. Tente novamente.",
@@ -73,7 +62,7 @@ export default function CreatePost() {
       content: content.trim(),
       verseReference: verseReference.trim() || undefined,
       verseText: verseText.trim() || undefined,
-      type: postType,
+      isPublic: true,
     });
   };
 

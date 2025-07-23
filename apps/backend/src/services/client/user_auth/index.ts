@@ -4,6 +4,7 @@ import register from './register_service';
 import registerConfirm from './register_confirm_service';
 import forgotPasswordRequest from './request_password_service';
 import forgotPasswordReset from './reset_password_service';
+import refreshToken from './refresh_token_service';
 
 export default {
     login,
@@ -12,4 +13,5 @@ export default {
     registerConfirm,
     forgotPasswordRequest,
     forgotPasswordReset,
+    refreshToken,
 };

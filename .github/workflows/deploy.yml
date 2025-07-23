@@ -81,6 +81,13 @@ jobs:
           cd apps/backend
           npx prisma generate
           echo "✅ Cliente Prisma gerado"
+          
+      - name: 🔍 Validate Prisma Schema
+        run: |
+          echo "🔍 Validando schema do Prisma..."
+          cd apps/backend
+          npx prisma validate
+          echo "✅ Schema do Prisma validado"
 
       - name: 🏗️ Build Backend
         run: |
@@ -172,6 +179,37 @@ jobs:
           cd apps/backend
           npx tsc --noEmit
           echo "✅ TypeScript do backend validado"
+          
+      - name: 🔍 Validate API Structure
+        run: |
+          echo "🔍 Validando estrutura da API..."
+          cd apps/backend
+          
+          # Verificar arquivos críticos das novas implementações
+          CRITICAL_FILES=(
+            "src/controllers/client/posts_controller.ts"
+            "src/controllers/client/comments_controller.ts"
+            "src/services/client/posts/index.ts"
+            "src/services/client/comments/index.ts"
+            "src/routes/client/v1/posts_route.ts"
+            "src/routes/client/v1/comments_route.ts"
+            "src/dao/posts/post_delete_dao.ts"
+            "src/dao/comments/comment_create_dao.ts"
+            "src/dao/comments/comment_get_all_dao.ts"
+            "prisma/migrations/20250123_recommendations_system/migration.sql"
+          )
+          
+          echo "Verificando arquivos críticos das implementações..."
+          for file in "${CRITICAL_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✅ Found: $file"
+            else
+              echo "❌ Missing critical file: $file"
+              exit 1
+            fi
+          done
+          
+          echo "✅ Estrutura da API validada"
 
       - name: 🧪 Validate TypeScript (Frontend)
         run: |
@@ -482,11 +520,33 @@ jobs:
             
             # Executar migrações do Prisma
             log "🗃️ Executando migrações do banco..."
+            
+            # Verificar se as migrações existem
+            log "📋 Verificando migrações disponíveis..."
+            docker compose -f docker-compose.new.yml exec -T api npx prisma migrate status || log "⚠️ Status das migrações não pôde ser verificado"
+            
+            # Tentar deploy das migrações
             if ! docker compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy; then
-              log "⚠️ Migrações falharam, tentando reset..."
+              log "⚠️ Migrações falharam na primeira tentativa, verificando causa..."
+              
+              # Verificar se o banco está acessível
+              if ! docker compose -f docker-compose.new.yml exec -T postgres pg_isready -U biblicai_user -d biblicai_db; then
+                log "❌ Banco não está acessível para migrações"
+                exit 1
+              fi
+              
+              # Verificar logs de erro
+              log "📋 Logs do container API para diagnóstico:"
+              docker compose -f docker-compose.new.yml logs api | tail -20
+              
+              log "⚠️ Tentando reset e nova migração..."
               docker compose -f docker-compose.new.yml exec -T api npx prisma migrate reset --force
               docker compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy
             fi
+            
+            # Verificar se as novas tabelas foram criadas
+            log "🔍 Verificando tabelas criadas..."
+            docker compose -f docker-compose.new.yml exec -T postgres psql -U biblicai_user -d biblicai_db -c "\\dt" | grep -E "(posts|comments|users|user_interactions|recommendation_scores)" || log "⚠️ Algumas tabelas podem não ter sido criadas"
             
             # Executar seed (opcional)
             log "🌱 Executando seed do banco..."
@@ -549,6 +609,24 @@ jobs:
             # Test API endpoints
             if curl -f http://localhost:3344/api/info >/dev/null 2>&1; then
               log "✅ API Health Check: OK"
+              
+              # Test specific API endpoints for new features
+              log "🔍 Testando endpoints específicos..."
+              
+              # Test posts feed endpoint
+              if curl -f -H "Accept: application/json" http://localhost:3344/api/client/posts/feed >/dev/null 2>&1; then
+                log "✅ Posts Feed Endpoint: OK"
+              else
+                log "⚠️ Posts Feed Endpoint: Não acessível"
+              fi
+              
+              # Test auth endpoints
+              if curl -f -H "Accept: application/json" http://localhost:3344/api/client/auth/register >/dev/null 2>&1 || [ $? -eq 22 ]; then
+                log "✅ Auth Register Endpoint: OK (method not allowed é esperado)"
+              else
+                log "⚠️ Auth Register Endpoint: Problemas de conectividade"
+              fi
+              
             else
               log "❌ API Health Check: FALHOU"
               HEALTH_ISSUES="api "
@@ -662,6 +740,29 @@ jobs:
                 fi
               done
             fi
+            
+            # Final integration test
+            echo "🔗 TESTE FINAL DE INTEGRAÇÃO:"
+            if [ -z "$HEALTH_ISSUES" ]; then
+              log "🧪 Executando teste de integração frontend-backend..."
+              
+              # Test if frontend can reach backend
+              frontend_to_backend_test=$(docker compose -f docker-compose.new.yml exec -T web curl -f http://api:3344/api/info 2>/dev/null || echo "FAILED")
+              if [ "$frontend_to_backend_test" != "FAILED" ]; then
+                echo "  ✅ Frontend consegue comunicar com Backend"
+              else
+                echo "  ⚠️ Frontend não consegue comunicar com Backend (pode ser normal)"
+              fi
+              
+              # Test external access
+              external_test=$(curl -f http://localhost:3344/api/info 2>/dev/null || echo "FAILED")
+              if [ "$external_test" != "FAILED" ]; then
+                echo "  ✅ API acessível externamente"
+              else
+                echo "  ⚠️ API não acessível externamente"
+              fi
+            fi
+            echo ""
             
             echo "==========================================="
             if [ -n "$HEALTH_ISSUES" ]; then

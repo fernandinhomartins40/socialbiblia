@@ -14,6 +14,7 @@ router.get('/register/confirmation', validate(registerConfirmation), ctrlUserAut
 
 // User Login/Logout
 router.post('/login', validate(login), auth('login-user'), ctrlUserAuth.login);
+router.post('/refresh', ctrlUserAuth.refreshToken);
 router.get('/logout', auth('jwt-user'), ctrlUserAuth.logout);
 
 // User Forgot Password

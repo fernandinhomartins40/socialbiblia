@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiClient } from "@/lib/api";
 import CreatePost from "@/components/CreatePost";
 import Post from "@/components/Post";
 import AIChat from "@/components/AIChat";
@@ -38,11 +39,14 @@ export default function Home() {
     }
   }, [user, authLoading, toast]);
 
-  // Fetch posts
-  const { data: posts = [], isLoading: postsLoading } = useQuery<PostWithUser[]>({
-    queryKey: ["/api/posts"],
+  // Fetch posts from feed
+  const { data: feedData, isLoading: postsLoading } = useQuery({
+    queryKey: ["feed"],
+    queryFn: () => apiClient.getFeed(20, 0),
     enabled: !!user,
   });
+
+  const posts = feedData?.posts || [];
 
   // Fetch communities
   const { data: communities = [] } = useQuery<Community[]>({

@@ -10,6 +10,8 @@ const saltRounds = config.bcrypt.saltRounds;
 
 const userQty = 9;
 const users: any = [];
+const posts: any = [];
+const comments: any = [];
 
 const states = [
     'AC',
@@ -79,6 +81,72 @@ async function main() {
     await prisma.user.createMany({
         data: users,
     });
+
+    // Create sample posts
+    const samplePosts = [
+        {
+            id: uuidv4(),
+            content: "Que a paz de Deus esteja com todos vocês! 🙏",
+            authorId: users[0].id,
+            isPublic: true,
+            isPinned: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        },
+        {
+            id: uuidv4(),
+            content: "Meditando na palavra de Deus hoje.",
+            verseReference: "Salmos 23:1",
+            verseText: "O Senhor é o meu pastor; nada me faltará.",
+            authorId: users[1].id,
+            isPublic: true,
+            isPinned: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        },
+        {
+            id: uuidv4(),
+            content: "Gratidão é a chave para uma vida plena! ✨",
+            authorId: users[2].id,
+            isPublic: true,
+            isPinned: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        },
+    ];
+
+    await prisma.post.createMany({
+        data: samplePosts,
+    });
+
+    // Create sample comments
+    const sampleComments = [
+        {
+            id: uuidv4(),
+            content: "Amém! Que palavra abençoada!",
+            postId: samplePosts[0].id,
+            authorId: users[1].id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        },
+        {
+            id: uuidv4(),
+            content: "Que o Senhor continue te abençoando!",
+            postId: samplePosts[0].id,
+            authorId: users[2].id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        },
+    ];
+
+    await prisma.comment.createMany({
+        data: sampleComments,
+    });
+
+    console.log(`✅ Seed concluído:`);
+    console.log(`   • ${users.length} usuários criados`);
+    console.log(`   • ${samplePosts.length} posts criados`);
+    console.log(`   • ${sampleComments.length} comentários criados`);
 }
 
 main()

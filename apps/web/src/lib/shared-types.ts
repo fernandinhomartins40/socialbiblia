@@ -1,32 +1,60 @@
-// Temporary types to replace @shared/schema imports
+// Enhanced types for social network functionality
 
-export interface UserWithStats {
+export interface User {
   id: string;
   email: string;
   name: string;
-  phone?: string;
   firstName?: string;
   lastName?: string;
+  username?: string;
+  phone?: string;
   profileImageUrl?: string;
+  bio?: string;
   denomination?: string;
-  favoriteVerse?: string;
+  location?: string;
+  isVerified?: boolean;
+  isPrivate?: boolean;
+}
+
+export interface UserWithStats extends User {
   _count?: {
     followers: number;
     following: number;
     posts: number;
   };
+  favoriteVerse?: string;
 }
 
-export interface PostWithDetails {
+export interface Post {
   id: string;
   content: string;
-  createdAt: string;
-  userId: string;
-  type?: string;
+  imageUrl?: string;
+  videoUrl?: string;
   verseReference?: string;
   verseText?: string;
-  imageUrl?: string;
-  user?: UserWithStats;
+  isPublic: boolean;
+  isPinned: boolean;
+  authorId: string;
+  communityId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PostWithUser extends Post {
+  author: User;
+  community?: Community;
+  stats: {
+    likesCount: number;
+    commentsCount: number;
+    sharesCount: number;
+  };
+  isLiked: boolean;
+}
+
+// Legacy compatibility
+export interface PostWithDetails extends PostWithUser {
+  userId: string; // For backward compatibility
+  user?: UserWithStats; // For backward compatibility
   likes: Array<{ userId: string; id: string; }>;
   comments?: CommentWithDetails[];
   _count?: {
@@ -34,9 +62,6 @@ export interface PostWithDetails {
     comments: number;
   };
 }
-
-// Type alias for compatibility
-export type PostWithUser = PostWithDetails;
 
 export interface CommentWithDetails {
   id: string;

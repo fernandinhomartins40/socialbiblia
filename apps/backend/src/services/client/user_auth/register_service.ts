@@ -114,6 +114,7 @@ const getUsr = async (where: object) => {
 
 const createUsr = async (datas: any) => {
     const select = {
+        id: true,
         name: true,
         email: true,
         phone: true,
@@ -130,6 +131,16 @@ const createUsr = async (datas: any) => {
     // Create user tokens
     datas.tokenOfRegisterConfirmation = randtoken.suid(16);
     datas.tokenOfResetPassword = randtoken.suid(16);
+    
+    // Set initial security fields
+    datas.isRegistered = true; // Marcar como registrado imediatamente
+    datas.failedLoginAttempts = 0;
+    datas.passwordChangedAt = new Date();
+    
+    // Se phone não for fornecido, deixar como null
+    if (!datas.phone || datas.phone.trim() === '') {
+        datas.phone = null;
+    }
 
     // Create user
     const created = await createUser(datas, select);

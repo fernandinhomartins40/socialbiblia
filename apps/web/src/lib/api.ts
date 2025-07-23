@@ -30,11 +30,30 @@ interface LoginData {
   password: string;
 }
 
+interface RefreshTokenData {
+  refreshToken: string;
+}
+
 interface RegisterData {
   email: string;
   password: string;
   name: string;
   phone?: string;
+}
+
+interface CreatePostData {
+  content: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  verseReference?: string;
+  verseText?: string;
+  isPublic?: boolean;
+  communityId?: string;
+}
+
+interface LikePostData {
+  postId: string;
+  action: 'like' | 'unlike';
 }
 
 interface ApiResponse {
@@ -54,10 +73,6 @@ interface UserWithStats {
   denomination?: string;
 }
 
-interface CreatePostData {
-  content: string;
-  communityId?: string;
-}
 
 interface CreateCommentData {
   content: string;
@@ -131,13 +146,16 @@ const API_BASE_URL = '/api';
 class ApiClient {
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    isRetry: boolean = false
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
+    const token = localStorage.getItem('accessToken');
     
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
       credentials: 'include',
@@ -148,6 +166,22 @@ class ApiClient {
       const response = await fetch(url, config);
       
       if (!response.ok) {
+        // Handle 401 unauthorized errors with token refresh
+        if (response.status === 401 && !isRetry && endpoint !== '/client/auth/refresh' && endpoint !== '/client/auth/login') {
+          try {
+            await this.refreshToken();
+            // Retry the original request with new token
+            return this.request(endpoint, options, true);
+          } catch (refreshError) {
+            // Refresh failed, clear tokens and redirect to login
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+            throw new Error('Session expired');
+          }
+        }
+        
         const error = await response.text();
         throw new Error(error || `HTTP error! status: ${response.status}`);
       }
@@ -161,10 +195,48 @@ class ApiClient {
 
   // Auth endpoints - Adapted for Vincent Queimado's API structure
   async login(data: LoginData): Promise<ApiResponse> {
-    return this.request('/client/auth/login', {
+    const response = await this.request('/client/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+
+    // Store tokens if login is successful
+    if (response.success && response.data) {
+      localStorage.setItem('accessToken', response.data.token);
+      if (response.data.refreshToken) {
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+      }
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+    }
+
+    return response;
+  }
+
+  async refreshToken(): Promise<ApiResponse> {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    const response = await this.request('/client/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    // Update tokens if refresh is successful
+    if (response.success && response.data) {
+      localStorage.setItem('accessToken', response.data.token);
+      if (response.data.refreshToken) {
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+      }
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+    }
+
+    return response;
   }
 
   async register(data: RegisterData): Promise<ApiResponse> {
@@ -175,13 +247,48 @@ class ApiClient {
   }
 
   async logout(): Promise<ApiResponse> {
-    return this.request('/client/auth/logout', {
+    const response = await this.request('/client/auth/logout', {
       method: 'GET',
     });
+
+    // Clear tokens on logout
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+
+    return response;
   }
 
   async getCurrentUser(): Promise<UserWithStats> {
     return this.request('/client/user/me');
+  }
+
+  // Posts endpoints
+  async createPost(data: CreatePostData): Promise<ApiResponse> {
+    return this.request('/client/posts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getFeed(limit: number = 20, offset: number = 0, communityId?: string): Promise<ApiResponse> {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+    });
+    
+    if (communityId) {
+      params.append('communityId', communityId);
+    }
+
+    return this.request(`/client/posts/feed?${params.toString()}`);
+  }
+
+  async likePost(data: LikePostData): Promise<ApiResponse> {
+    return this.request('/client/posts/like', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   // User endpoints - Adapted for Vincent Queimado's API structure
@@ -192,42 +299,20 @@ class ApiClient {
     });
   }
 
-  // Post endpoints
-  async getPosts(userId?: string, limit = 20, offset = 0): Promise<PostWithDetails[]> {
-    const params = new URLSearchParams();
-    if (userId) params.append('userId', userId);
-    params.append('limit', limit.toString());
-    params.append('offset', offset.toString());
-    
-    return this.request(`/posts?${params.toString()}`);
-  }
-
-  async createPost(data: CreatePostData): Promise<PostWithDetails> {
-    return this.request('/posts', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
+  // Delete post
   async deletePost(postId: string): Promise<ApiResponse> {
-    return this.request(`/posts/${postId}`, {
+    return this.request(`/client/posts/${postId}`, {
       method: 'DELETE',
-    });
-  }
-
-  async likePost(postId: string): Promise<{ liked: boolean }> {
-    return this.request(`/posts/${postId}/like`, {
-      method: 'POST',
     });
   }
 
   // Comment endpoints
   async getComments(postId: string) {
-    return this.request(`/posts/${postId}/comments`);
+    return this.request(`/client/posts/${postId}/comments`);
   }
 
   async createComment(data: CreateCommentData) {
-    return this.request('/comments', {
+    return this.request('/client/comments', {
       method: 'POST',
       body: JSON.stringify(data),
     });
