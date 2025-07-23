@@ -62,16 +62,6 @@ const forgotPasswordReset = (req: Request, res: Response, next: NextFunction) =>
         });
 };
 
-const refreshToken = (req: Request, res: Response, next: NextFunction) => {
-    presenter
-        .refreshToken(req.body)
-        .then((result: any) => res.status(result.httpStatusCode).json(result.data))
-        .catch((err: any) => {
-            logger.error(`Refresh token error. ${err.message}`);
-            next(err);
-        });
-};
-
 export default {
     login,
     logout,
@@ -79,5 +69,4 @@ export default {
     registerConfirm,
     forgotPasswordRequest,
     forgotPasswordReset,
-    refreshToken,
 };

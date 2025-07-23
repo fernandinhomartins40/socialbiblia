@@ -69,8 +69,8 @@ export default async (data: any) => {
 const checkRequiredDatas = (datas: any) => /* istanbul ignore next */ {
     if (!datas.email) return false;
     if (!datas.name) return false;
-    if (!datas.password) return false;
     if (!datas.phone) return false;
+    if (!datas.password) return false;
 
     return true;
 };
@@ -115,7 +115,6 @@ const getUsr = async (where: object) => {
 
 const createUsr = async (datas: any) => {
     const select = {
-        id: true,
         name: true,
         email: true,
         phone: true,
@@ -132,13 +131,6 @@ const createUsr = async (datas: any) => {
     // Create user tokens
     datas.tokenOfRegisterConfirmation = randtoken.suid(16);
     datas.tokenOfResetPassword = randtoken.suid(16);
-    
-    // Set initial security fields
-    datas.isRegistered = true; // Marcar como registrado imediatamente
-    datas.failedLoginAttempts = 0;
-    datas.passwordChangedAt = new Date();
-    
-    // Phone é obrigatório, validação já foi feita no schema
 
     // Create user
     const created = await createUser(datas, select);

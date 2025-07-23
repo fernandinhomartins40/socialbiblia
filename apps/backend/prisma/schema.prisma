@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,312 +8,92 @@ datasource db {
 }
 
 model User {
-  id                          String    @id @default(uuid()) @db.Uuid
-  email                       String    @unique @db.VarChar(255)
-  name                        String    @db.VarChar(255)
-  firstName                   String?   @db.VarChar(100)
-  lastName                    String?   @db.VarChar(100)
-  username                    String?   @unique @db.VarChar(50)
-  phone                       String    @db.VarChar(255)
-  avatar                      String?   @db.VarChar(255)
-  profileImageUrl             String?   @db.VarChar(500)
-  bio                         String?   @db.Text
-  denomination                String?   @db.VarChar(100)
-  location                    String?   @db.VarChar(100)
-  dateOfBirth                 DateTime? @db.Date
-  accountName                 String?   @db.VarChar(255)
-  accountLocationState        String?   @db.VarChar(255)
-  accountType                 String    @default("free") @db.VarChar(255)
-  google_signin               Boolean?  @default(false)
-  google_given_name           String?   @db.VarChar(255)
-  google_family_name          String?   @db.VarChar(255)
-  google_locale               String?   @db.VarChar(255)
-  google_avatar               String?   @db.VarChar(255)
-  password                    String    @db.VarChar(255)
-  isRegistered                Boolean?  @default(false)
-  isVerified                  Boolean?  @default(false)
-  isPrivate                   Boolean?  @default(false)
-  tokenOfRegisterConfirmation String    @db.VarChar(255)
-  tokenOfResetPassword        String    @db.VarChar(255)
-  isDisabled                  Boolean?  @default(false)
-  isDeleted                   Boolean?  @default(false)
-  lastLoginAt                 DateTime? @db.Timestamptz(6)
-  emailVerifiedAt             DateTime? @db.Timestamptz(6)
-  passwordChangedAt           DateTime? @db.Timestamptz(6)
-  failedLoginAttempts         Int?      @default(0)
-  lockedUntil                 DateTime? @db.Timestamptz(6)
-  refreshToken                String?   @db.VarChar(500)
-  refreshTokenExpiresAt       DateTime? @db.Timestamptz(6)
-  createdAt                   DateTime  @default(now())
-  updatedAt                   DateTime  @updatedAt
-  deletedAt                   DateTime? @db.Timestamptz(6)
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  avatar    String?
+  role      Role     @default(USER)
+  isEmailVerified Boolean @default(false)
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 
-  // Relations
-  posts                       Post[]
-  comments                    Comment[]
-  likes                       Like[]
-  commentLikes                CommentLike[]
-  shares                      Share[]
-  followers                   Follow[] @relation("UserFollowers")
-  following                   Follow[] @relation("UserFollowing")
-  communityMemberships        CommunityMember[]
-  communityPosts              CommunityPost[]
-  communitiesCreated          Community[]
-  bibleReadingProgress        BibleReadingProgress[]
-  prayerRequests              PrayerRequest[]
-  devotionals                 Devotional[]
-  userPreferences             UserPreference?
-  interactions                UserInteraction[]
-  recommendationScores        RecommendationScore[]
+  // Relacionamentos
+  posts     Post[]
+  refreshTokens RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
 
   @@map("users")
 }
 
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("email_verification_tokens")
+}
+
 model Post {
-  id              String    @id @default(uuid()) @db.Uuid
-  content         String    @db.Text
-  imageUrl        String?   @db.VarChar(500)
-  videoUrl        String?   @db.VarChar(500)
-  verseReference  String?   @db.VarChar(100)
-  verseText       String?   @db.Text
-  isPublic        Boolean   @default(true)
-  isPinned        Boolean   @default(false)
-  authorId        String    @db.Uuid
-  author          User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  communityId     String?   @db.Uuid
-  community       Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
-  comments        Comment[]
-  likes           Like[]
-  shares          Share[]
-  tags            PostTag[]
-  interactions    UserInteraction[]
-  recommendationScores RecommendationScore[]
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  content     String
+  excerpt     String?
+  status      PostStatus @default(DRAFT)
+  publishedAt DateTime?
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  tags        String[]
+  category    String?
+  featured    Boolean   @default(false)
+  views       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
   @@map("posts")
 }
 
-model Comment {
-  id        String    @id @default(uuid()) @db.Uuid
-  content   String    @db.Text
-  postId    String    @db.Uuid
-  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId  String    @db.Uuid
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parentId  String?   @db.Uuid
-  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[] @relation("CommentReplies")
-  likes     CommentLike[]
-  interactions UserInteraction[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@map("comments")
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
 }
 
-model Like {
-  id       String @id @default(uuid()) @db.Uuid
-  userId   String @db.Uuid
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postId   String @db.Uuid
-  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@unique([userId, postId])
-  @@map("likes")
-}
-
-model CommentLike {
-  id        String  @id @default(uuid()) @db.Uuid
-  userId    String  @db.Uuid
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  commentId String  @db.Uuid
-  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@unique([userId, commentId])
-  @@map("comment_likes")
-}
-
-model Share {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postId    String   @db.Uuid
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  content   String?  @db.Text
-  createdAt DateTime @default(now())
-
-  @@unique([userId, postId])
-  @@map("shares")
-}
-
-model Follow {
-  id          String @id @default(uuid()) @db.Uuid
-  followerId  String @db.Uuid
-  follower    User   @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
-  followingId String @db.Uuid
-  following   User   @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-
-  @@unique([followerId, followingId])
-  @@map("follows")
-}
-
-model Community {
-  id          String            @id @default(uuid()) @db.Uuid
-  name        String            @db.VarChar(100)
-  description String?           @db.Text
-  imageUrl    String?           @db.VarChar(500)
-  isPrivate   Boolean           @default(false)
-  createdBy   String            @db.Uuid
-  creator     User              @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  members     CommunityMember[]
-  posts       CommunityPost[]
-  regularPosts Post[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-
-  @@map("communities")
-}
-
-model CommunityMember {
-  id          String    @id @default(uuid()) @db.Uuid
-  userId      String    @db.Uuid
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  communityId String    @db.Uuid
-  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  role        String    @default("member") @db.VarChar(20) // member, moderator, admin
-  joinedAt    DateTime  @default(now())
-
-  @@unique([userId, communityId])
-  @@map("community_members")
-}
-
-model CommunityPost {
-  id          String    @id @default(uuid()) @db.Uuid
-  title       String    @db.VarChar(200)
-  content     String    @db.Text
-  authorId    String    @db.Uuid
-  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  communityId String    @db.Uuid
-  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  isPinned    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@map("community_posts")
-}
-
-model Tag {
-  id    String    @id @default(uuid()) @db.Uuid
-  name  String    @unique @db.VarChar(50)
-  posts PostTag[]
-  createdAt DateTime @default(now())
-
-  @@map("tags")
-}
-
-model PostTag {
-  id     String @id @default(uuid()) @db.Uuid
-  postId String @db.Uuid
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
-  tagId  String @db.Uuid
-  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@unique([postId, tagId])
-  @@map("post_tags")
-}
-
-model BibleReadingProgress {
-  id       String @id @default(uuid()) @db.Uuid
-  userId   String @db.Uuid
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  book     String @db.VarChar(50)
-  chapter  Int
-  verse    Int?
-  completed Boolean @default(false)
-  readAt   DateTime @default(now())
-
-  @@unique([userId, book, chapter])
-  @@map("bible_reading_progress")
-}
-
-model PrayerRequest {
-  id        String   @id @default(uuid()) @db.Uuid
-  title     String   @db.VarChar(200)
-  content   String   @db.Text
-  isPrivate Boolean  @default(false)
-  authorId  String   @db.Uuid
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  isAnswered Boolean @default(false)
-  answeredAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("prayer_requests")
-}
-
-model Devotional {
-  id        String   @id @default(uuid()) @db.Uuid
-  title     String   @db.VarChar(200)
-  content   String   @db.Text
-  verseReference String? @db.VarChar(100)
-  verseText String?  @db.Text
-  authorId  String   @db.Uuid
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  isPublic  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("devotionals")
-}
-
-model UserPreference {
-  id                    String  @id @default(uuid()) @db.Uuid
-  userId                String  @unique @db.Uuid
-  user                  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  emailNotifications    Boolean @default(true)
-  pushNotifications     Boolean @default(true)
-  dailyVerseReminder    Boolean @default(true)
-  prayerReminder        Boolean @default(true)
-  communityUpdates      Boolean @default(true)
-  language              String  @default("pt-BR") @db.VarChar(10)
-  bibleVersion          String  @default("NVI") @db.VarChar(10)
-  theme                 String  @default("light") @db.VarChar(10)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  @@map("user_preferences")
-}
-
-model UserInteraction {
-  id           String @id @default(uuid()) @db.Uuid
-  userId       String @db.Uuid
-  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postId       String? @db.Uuid
-  post         Post?  @relation(fields: [postId], references: [id], onDelete: Cascade)
-  commentId    String? @db.Uuid
-  comment      Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  interactionType String @db.VarChar(50) // like, comment, share, view, bookmark
-  duration     Int?   // Time spent viewing (in seconds)
-  createdAt    DateTime @default(now())
-
-  @@map("user_interactions")
-}
-
-model RecommendationScore {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postId    String   @db.Uuid
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  score     Float    // Recommendation score (0.0 to 1.0)
-  factors   Json?    // JSON with scoring factors
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, postId])
-  @@map("recommendation_scores")
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }

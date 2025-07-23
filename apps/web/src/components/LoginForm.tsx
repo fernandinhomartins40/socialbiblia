@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { usePlugbaseAuth } from "@/hooks/usePlugbaseAuth";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,36 +16,9 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { toast } = useToast();
+  const { login, isLoading } = usePlugbaseAuth();
 
-  const loginMutation = useMutation({
-    mutationFn: async (data: { email: string; password: string }) => {
-      return await apiClient.login(data);
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Bem-vindo(a) de volta!",
-        });
-        // Recarregar a página para atualizar o estado de autenticação
-        window.location.reload();
-        onSuccess?.();
-      } else {
-        throw new Error(data.message || "Erro no login");
-      }
-    },
-    onError: (error: Error) => {
-      console.error("Login error:", error);
-      toast({
-        title: "Erro no login",
-        description: error.message || "Email ou senha incorretos. Tente novamente.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       toast({
@@ -56,7 +28,13 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
       });
       return;
     }
-    loginMutation.mutate({ email: email.trim(), password });
+    
+    try {
+      await login({ email: email.trim(), password });
+      onSuccess?.();
+    } catch (error) {
+      // Erro já tratado pelo hook usePlugbaseAuth
+    }
   };
 
   return (
@@ -95,7 +73,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
               placeholder="Digite seu email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={loginMutation.isPending}
+              disabled={isLoading}
               className="h-12 text-base rounded-xl border-gray-200 focus:border-spiritual-blue focus:ring-spiritual-blue/20"
               required
             />
@@ -112,7 +90,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
                 placeholder="Digite sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                disabled={loginMutation.isPending}
+                disabled={isLoading}
                 className="h-12 text-base rounded-xl border-gray-200 focus:border-spiritual-blue focus:ring-spiritual-blue/20 pr-12"
                 required
               />
@@ -122,7 +100,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
                 size="sm"
                 className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100 rounded-lg"
                 onClick={() => setShowPassword(!showPassword)}
-                disabled={loginMutation.isPending}
+                disabled={isLoading}
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4 text-gray-500" />
@@ -136,9 +114,9 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
           <Button 
             type="submit" 
             className="w-full btn-primary h-12 text-base font-semibold group"
-            disabled={loginMutation.isPending}
+            disabled={isLoading}
           >
-            {loginMutation.isPending ? (
+            {isLoading ? (
               <>
                 <Loader2 className="mr-3 h-5 w-5 animate-spin" />
                 Entrando na sua conta...
@@ -161,7 +139,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
               type="button"
               onClick={onSwitchToRegister}
               className="text-spiritual-blue hover:text-spiritual-blue-dark font-semibold text-base hover:underline transition-all duration-200 inline-flex items-center gap-2"
-              disabled={loginMutation.isPending}
+              disabled={isLoading}
             >
               <span>Criar conta gratuita</span>
               <ArrowRight className="w-4 h-4" />

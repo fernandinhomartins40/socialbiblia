@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Frontend Biblicai
+  biblicai-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: biblicai-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # Volume para logs persistentes
+      - ./logs:/var/log/nginx
+    networks:
+      - biblicai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - plugbase-backend
+
+  # Backend Plugbase (quando disponível)
+  plugbase-backend:
+    image: plugbase:latest  # Substitua pela imagem do seu backend Plugbase
+    container_name: plugbase-backend
+    ports:
+      - "3001:3000"  # Porta diferente para evitar conflito
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # Adicione aqui outras variáveis de ambiente do Plugbase
+      # - DATABASE_URL=...
+      # - JWT_SECRET=...
+    volumes:
+      # Adicione volumes necessários para o Plugbase
+      - ./backend-data:/app/data
+      - ./backend-logs:/app/logs
+    networks:
+      - biblicai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+networks:
+  biblicai-network:
+    driver: bridge
+    name: biblicai-network
+
+volumes:
+  backend-data:
+    driver: local
+  backend-logs:
+    driver: local

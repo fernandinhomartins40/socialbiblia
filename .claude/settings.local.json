@@ -16,7 +16,8 @@
       "Bash(git push:*)",
       "Bash(git commit:*)",
       "Bash(mv:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

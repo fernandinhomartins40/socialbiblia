@@ -1,9 +1,10 @@
 openapi: 3.0.0
 info:
-  title: '@biblicai/backend'
+  title: express-prisma-ts-boilerplate
   description: >-
-    Biblicai - Backend API TypeScript com Express, Prisma, autenticação JWT e
-    muito mais.
+    A starter project written in TypeScript for quickly building Express RESTful
+    APIs using ORM, loggers, schema validator, authentication, unit test
+    coverage, and much more.
   version: 1.0.1
   contact:
     name: Vincent Jean
@@ -66,10 +67,10 @@ paths:
             schema:
               type: object
               example:
-                email: johndoe@sample.com
-                name: johndoe
+                email: vincent.queimado@gmail.com
+                name: vincent
                 phone: (81) 99999-9999
-                password: Johndoe@1234
+                password: '1234'
       security:
         - noauthAuth: []
       parameters:
@@ -98,7 +99,7 @@ paths:
           in: query
           schema:
             type: string
-          example: johndoe@sample.com
+          example: johndoe10@sample.com
         - name: token
           in: query
           schema:

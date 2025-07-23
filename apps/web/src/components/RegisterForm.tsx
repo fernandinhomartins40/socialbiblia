@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import { usePlugbaseAuth } from "@/hooks/usePlugbaseAuth";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,60 +16,22 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
     password: "",
     confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { toast } = useToast();
-
-  const registerMutation = useMutation({
-    mutationFn: async (data: { name: string; email: string; password: string; phone: string }) => {
-      return await apiClient.register(data);
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Verifique seu email para ativar sua conta.",
-        });
-        // Resetar form
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          password: "",
-          confirmPassword: "",
-        });
-        onSuccess?.();
-        // Switch para login após registro
-        setTimeout(() => {
-          onSwitchToLogin?.();
-        }, 2000);
-      } else {
-        throw new Error(data.message || "Erro no registro");
-      }
-    },
-    onError: (error: Error) => {
-      console.error("Register error:", error);
-      toast({
-        title: "Erro no registro",
-        description: error.message || "Não foi possível criar a conta. Tente novamente.",
-        variant: "destructive",
-      });
-    },
-  });
+  const { register, isLoading } = usePlugbaseAuth();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validações
-    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.password.trim()) {
+    if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -97,14 +58,25 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
       return;
     }
 
-    const registerData = {
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      password: formData.password,
-      phone: formData.phone.trim(),
-    };
-
-    registerMutation.mutate(registerData);
+    try {
+      await register({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+      });
+      
+      // Resetar form
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+      
+      onSuccess?.();
+    } catch (error) {
+      // Erro já tratado pelo hook usePlugbaseAuth
+    }
   };
 
   return (
@@ -144,7 +116,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                 placeholder="Digite seu nome completo"
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
-                disabled={registerMutation.isPending}
+                disabled={isLoading}
                 className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20"
                 required
               />
@@ -160,27 +132,12 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                 placeholder="Digite seu melhor email"
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
-                disabled={registerMutation.isPending}
+                disabled={isLoading}
                 className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20"
                 required
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm font-semibold text-deep-blue-gray">
-                Telefone *
-              </Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="(11) 99999-9999"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                disabled={registerMutation.isPending}
-                className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20"
-                required
-              />
-            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -195,7 +152,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                   placeholder="Mínimo 6 caracteres"
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
-                  disabled={registerMutation.isPending}
+                  disabled={isLoading}
                   className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20 pr-11"
                   required
                   minLength={6}
@@ -206,7 +163,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                   size="sm"
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 rounded-lg"
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={registerMutation.isPending}
+                  disabled={isLoading}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4 text-gray-500" />
@@ -228,7 +185,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                   placeholder="Digite novamente"
                   value={formData.confirmPassword}
                   onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                  disabled={registerMutation.isPending}
+                  disabled={isLoading}
                   className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20 pr-11"
                   required
                 />
@@ -238,7 +195,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                   size="sm"
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 rounded-lg"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  disabled={registerMutation.isPending}
+                  disabled={isLoading}
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="h-4 w-4 text-gray-500" />
@@ -253,9 +210,9 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
           <Button 
             type="submit" 
             className="w-full h-12 text-base font-semibold group bg-gradient-to-r from-divine-gold to-orange-600 hover:from-divine-gold-light hover:to-orange-500 text-white shadow-medium hover:shadow-strong transition-all duration-300"
-            disabled={registerMutation.isPending}
+            disabled={isLoading}
           >
-            {registerMutation.isPending ? (
+            {isLoading ? (
               <>
                 <Loader2 className="mr-3 h-5 w-5 animate-spin" />
                 Criando sua conta...
@@ -279,7 +236,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
               type="button"
               onClick={onSwitchToLogin}
               className="text-spiritual-blue hover:text-spiritual-blue-dark font-semibold text-base hover:underline transition-all duration-200 inline-flex items-center gap-2"
-              disabled={registerMutation.isPending}
+              disabled={isLoading}
             >
               <span>Fazer login</span>
               <ArrowRight className="w-4 h-4" />

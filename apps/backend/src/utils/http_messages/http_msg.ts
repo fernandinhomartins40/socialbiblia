@@ -39,28 +39,4 @@ export default {
         };
         return { httpStatusCode: 422, data: params };
     },
-    http403(customMsg: string, error: any) {
-        const params = {
-            success: false,
-            message: customMsg || 'Acesso negado',
-            error: error || null,
-        };
-        return { httpStatusCode: 403, data: params };
-    },
-    http404(customMsg: string, error: any) {
-        const params = {
-            success: false,
-            message: customMsg || 'Não encontrado',
-            error: error || null,
-        };
-        return { httpStatusCode: 404, data: params };
-    },
-    http500(customMsg: string, error: any) {
-        const params = {
-            success: false,
-            message: customMsg || 'Erro interno do servidor',
-            error: error || null,
-        };
-        return { httpStatusCode: 500, data: params };
-    },
 };

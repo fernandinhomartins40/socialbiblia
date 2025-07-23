@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Frontend Biblicai
+  biblicai-frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.web
+    container_name: biblicai-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=http://biblicai-backend:3001/api
+      - VITE_WS_URL=http://biblicai-backend:3001/socket.io
+    volumes:
+      - ./logs/frontend:/var/log/nginx
+    networks:
+      - biblicai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - biblicai-backend
+
+  # Backend Plugbase
+  biblicai-backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: biblicai-backend
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL:-}
+      - JWT_SECRET=${JWT_SECRET:-biblicai-secret-key}
+      - CORS_ORIGIN=http://localhost:3000
+    volumes:
+      - ./data/backend:/app/data
+      - ./logs/backend:/app/logs
+    networks:
+      - biblicai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+networks:
+  biblicai-network:
+    driver: bridge
+    name: biblicai-network
+
+volumes:
+  backend-data:
+    driver: local
+  frontend-logs:
+    driver: local
+  backend-logs:
+    driver: local
