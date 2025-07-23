@@ -15,24 +15,16 @@ import hashPassword from '@functions/generate_hash_password';
 export default async (data: any) => {
     let registeredUser;
 
-    console.log('Registration attempt:', { email: data?.email, hasPassword: !!data?.password, hasName: !!data?.name });
-
     // Check required user datas
-    if (!checkRequiredDatas(data)) {
-        console.log('Failed validation - missing required data:', data);
+    if (!checkRequiredDatas(data))
         return httpMsg.http422(
             constError.REGISTER_ERROR_MSG.failToRegister,
             constError.ERROR_CODE.register,
         );
-    }
 
     // Check existing user and get data
     const user = await getUsr({ email: data.email });
-    console.log('User check result:', { success: user.success, error: user.error, hasData: !!user.data });
-    if (!user.success) {
-        console.log('User check failed:', user.error);
-        return httpMsg.http422(user.error || '', constError.ERROR_CODE.register);
-    }
+    if (!user.success) return httpMsg.http422(user.error || '', constError.ERROR_CODE.register);
 
     // If user exist but is not registered: update user
     if (user.data && !user.data.isRegistered) {
@@ -48,16 +40,12 @@ export default async (data: any) => {
 
     // If user not exist: create new user
     if (!user.data) {
-        console.log('Creating new user...');
         const createdUser = await createUsr(data);
-        console.log('User creation result:', { success: createdUser.success, hasData: !!createdUser.data });
-        if (!createdUser.success) {
-            console.log('User creation failed');
+        if (!createdUser.success)
             return httpMsg.http422(
                 constError.REGISTER_ERROR_MSG.failToRegister,
                 constError.ERROR_CODE.register,
             );
-        }
         registeredUser = createdUser.data;
     }
     // Delete some user datas
@@ -82,6 +70,7 @@ const checkRequiredDatas = (datas: any) => /* istanbul ignore next */ {
     if (!datas.email) return false;
     if (!datas.name) return false;
     if (!datas.password) return false;
+    if (!datas.phone) return false;
 
     return true;
 };
@@ -149,10 +138,7 @@ const createUsr = async (datas: any) => {
     datas.failedLoginAttempts = 0;
     datas.passwordChangedAt = new Date();
     
-    // Se phone não for fornecido, deixar como null
-    if (!datas.phone || datas.phone.trim() === '') {
-        datas.phone = null;
-    }
+    // Phone é obrigatório, validação já foi feita no schema
 
     // Create user
     const created = await createUser(datas, select);

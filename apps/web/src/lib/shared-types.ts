@@ -7,7 +7,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   username?: string;
-  phone?: string;
+  phone: string;
   profileImageUrl?: string;
   bio?: string;
   denomination?: string;

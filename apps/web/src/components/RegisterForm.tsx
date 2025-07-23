@@ -26,7 +26,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
   const { toast } = useToast();
 
   const registerMutation = useMutation({
-    mutationFn: async (data: { name: string; email: string; password: string; phone?: string }) => {
+    mutationFn: async (data: { name: string; email: string; password: string; phone: string }) => {
       return await apiClient.register(data);
     },
     onSuccess: (data) => {
@@ -70,7 +70,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
     e.preventDefault();
     
     // Validações
-    if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) {
+    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.password.trim()) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -101,7 +101,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
       name: formData.name.trim(),
       email: formData.email.trim(),
       password: formData.password,
-      ...(formData.phone.trim() && { phone: formData.phone.trim() }),
+      phone: formData.phone.trim(),
     };
 
     registerMutation.mutate(registerData);
@@ -168,7 +168,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
 
             <div className="space-y-2">
               <Label htmlFor="phone" className="text-sm font-semibold text-deep-blue-gray">
-                Telefone (opcional)
+                Telefone *
               </Label>
               <Input
                 id="phone"
@@ -178,6 +178,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                 onChange={(e) => handleInputChange("phone", e.target.value)}
                 disabled={registerMutation.isPending}
                 className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20"
+                required
               />
             </div>
           </div>

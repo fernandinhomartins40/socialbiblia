@@ -34,7 +34,7 @@ interface RegisterData {
   email: string;
   password: string;
   name: string;
-  phone?: string;
+  phone: string;
 }
 
 interface CreatePostData {
@@ -62,7 +62,7 @@ interface UserWithStats {
   id: string;
   email: string;
   name: string;
-  phone?: string;
+  phone: string;
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;

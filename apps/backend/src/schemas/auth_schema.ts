@@ -20,8 +20,7 @@ export const register = z.object({
             })
             .max(15, {
                 message: 'Phone too long',
-            })
-            .optional(),
+            }),
         password: z
             .string()
             .min(4, {
