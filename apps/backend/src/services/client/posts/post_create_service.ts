@@ -1,17 +1,7 @@
 import constError from '@constants/error_constant';
 import httpMsg from '@utils/http_messages/http_msg';
 import createPost from '@dao/posts/post_create_dao';
-
-interface CreatePostData {
-    content: string;
-    imageUrl?: string;
-    videoUrl?: string;
-    verseReference?: string;
-    verseText?: string;
-    isPublic?: boolean;
-    authorId: string;
-    communityId?: string;
-}
+import { CreatePostData } from '@utils/types/posts';
 
 export default async (data: CreatePostData) => {
     // Validate required fields

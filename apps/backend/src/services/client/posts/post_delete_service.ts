@@ -1,10 +1,6 @@
 import httpMsg from '@utils/http_messages/http_msg';
 import deletePost from '@dao/posts/post_delete_dao';
-
-interface DeletePostData {
-    userId: string;
-    postId: string;
-}
+import { DeletePostData } from '@utils/types/posts';
 
 export default async (data: DeletePostData) => {
     // Validate required fields

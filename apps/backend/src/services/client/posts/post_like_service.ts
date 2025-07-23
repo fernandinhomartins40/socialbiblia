@@ -2,12 +2,7 @@ import httpMsg from '@utils/http_messages/http_msg';
 import createLike from '@dao/likes/like_create_dao';
 import deleteLike from '@dao/likes/like_delete_dao';
 import getPost from '@dao/posts/post_get_one_dao';
-
-interface LikePostData {
-    userId: string;
-    postId: string;
-    action: 'like' | 'unlike';
-}
+import { LikePostData } from '@utils/types/posts';
 
 export default async (data: LikePostData) => {
     // Validate required fields
@@ -27,10 +22,10 @@ export default async (data: LikePostData) => {
             return httpMsg.http404('Post not found', 'POST_NOT_FOUND');
         }
 
-        const post = postResult.data;
+        const post = postResult.data as any;
         
         // Check if user can interact with this post
-        if (!post.isPublic && post.authorId !== data.userId) {
+        if (!post?.isPublic && post?.authorId !== data.userId) {
             return httpMsg.http403('You cannot interact with this private post', 'ACCESS_DENIED');
         }
 

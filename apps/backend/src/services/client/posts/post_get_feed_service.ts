@@ -1,12 +1,6 @@
 import httpMsg from '@utils/http_messages/http_msg';
 import getAllPosts from '@dao/posts/post_get_all_dao';
-
-interface GetFeedOptions {
-    userId?: string;
-    limit?: number;
-    offset?: number;
-    communityId?: string;
-}
+import { GetFeedOptions } from '@utils/types/posts';
 
 export default async (options: GetFeedOptions = {}) => {
     try {
@@ -37,7 +31,7 @@ export default async (options: GetFeedOptions = {}) => {
         }
 
         // Transform posts to include engagement metrics
-        const transformedPosts = result.data.map((post: any) => ({
+        const transformedPosts = result.data ? result.data.map((post: any) => ({
             id: post.id,
             content: post.content,
             imageUrl: post.imageUrl,
@@ -67,7 +61,7 @@ export default async (options: GetFeedOptions = {}) => {
                 sharesCount: post._count.shares,
             },
             isLiked: post.isLiked || false,
-        }));
+        })) : [];
 
         return httpMsg.http200({
             posts: transformedPosts,

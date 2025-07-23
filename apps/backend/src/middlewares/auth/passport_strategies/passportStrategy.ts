@@ -28,12 +28,12 @@ const jwtUserStrategy = async (passport: any) => {
                     isDeleted: false,
                     isRegistered: true,
                 });
-                if (!newUser.success) done(errorMsg, {});
+                if (!newUser.success) done(errorMsg, false);
 
-                newUser.data ? done(null, newUser.data) : done(null, {});
+                newUser.data ? done(null, newUser.data) : done(null, false);
             } catch (err) {
                 logger.error(`JWT passport strategy error: ${err})`);
-                return done(err, {});
+                return done(err, false);
             }
         }),
     );
@@ -51,21 +51,21 @@ const localUserStrategy = async (passport: any) => {
                     isRegistered: true,
                 });
 
-                if (!newUser.success) return done(errorMsg, {});
-                if (!newUser.data) return done(null, {});
+                if (!newUser.success) return done(errorMsg, false);
+                if (!newUser.data) return done(null, false);
 
                 // Check password
                 const checkedPassword = await checkPassword(password, newUser.data.password);
-                if (!checkedPassword) return done(null, {});
+                if (!checkedPassword) return done(null, false);
 
                 delete newUser.data.password;
 
                 if (newUser.data) return done(null, newUser.data);
 
-                return done(errorMsg, {});
+                return done(errorMsg, false);
             } catch (err) {
                 logger.error(`JWT passport strategy error: ${err})`);
-                return done(err, {});
+                return done(err, false);
             }
         }),
     );

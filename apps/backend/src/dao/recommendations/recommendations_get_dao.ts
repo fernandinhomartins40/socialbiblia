@@ -69,7 +69,7 @@ export default async (options: GetRecommendationsOptions) => {
         });
 
         // Transform to include isLiked flag
-        const transformedRecommendations = recommendations.map(rec => ({
+        const transformedRecommendations = recommendations.map((rec: any) => ({
             ...rec.post,
             isLiked: rec.post.likes && rec.post.likes.length > 0,
             likes: undefined, // Remove the likes array

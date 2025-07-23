@@ -1,11 +1,6 @@
 import httpMsg from '@utils/http_messages/http_msg';
 import getComments from '@dao/comments/comment_get_all_dao';
-
-interface GetCommentsOptions {
-    postId: string;
-    limit?: number;
-    offset?: number;
-}
+import { GetCommentsOptions } from '@utils/types/posts';
 
 export default async (options: GetCommentsOptions = { postId: '' }) => {
     try {

@@ -16,7 +16,7 @@ export default async (options: CalculateScoresOptions = {}) => {
 
         return httpMsg.http200({
             message: 'Recommendation scores calculated successfully',
-            processed: result.data.processed
+            processed: result.data?.processed || 0
         });
     } catch (error: any) {
         return httpMsg.http500(error.message || 'Internal server error', 'SERVER_ERROR');

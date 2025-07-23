@@ -35,7 +35,7 @@ export default async (data: any) => {
     if (!generatedToken.success) return httpMsg.http401(constError.ERROR_CODE.login);
 
     // Generate refresh token
-    const generatedRefreshToken = await generateRefreshToken(user.data);
+    const generatedRefreshToken = await servGenerateRefreshToken(user.data);
     if (!generatedRefreshToken.success) return httpMsg.http401(constError.ERROR_CODE.login);
 
     // Update user login info

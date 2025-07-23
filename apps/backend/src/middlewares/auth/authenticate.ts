@@ -5,12 +5,12 @@ import httpMsg from '@utils/http_messages/http_msg';
 const errorCod = 'ERROR_AUTH';
 
 const auth = (plataform: string) => async (req: Request, res: Response, next: NextFunction) => {
-    await passport.authenticate(plataform, { session: false }, (err: any, user: object) => {
+    await passport.authenticate(plataform, { session: false }, (err: any, user: Express.User | false | undefined) => {
         if (err) {
             const result = httpMsg.http422(err, errorCod);
             return res.status(result.httpStatusCode).json(result.data);
         }
-        if (!user || Object.keys(user).length === 0) {
+        if (!user) {
             const result = httpMsg.http401('Invalid token');
             return res.status(result.httpStatusCode).json(result.data);
         }

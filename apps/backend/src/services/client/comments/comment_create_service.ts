@@ -1,12 +1,6 @@
 import httpMsg from '@utils/http_messages/http_msg';
 import createComment from '@dao/comments/comment_create_dao';
-
-interface CreateCommentData {
-    content: string;
-    postId: string;
-    authorId: string;
-    parentId?: string;
-}
+import { CreateCommentData } from '@utils/types/posts';
 
 export default async (data: CreateCommentData) => {
     // Validate required fields

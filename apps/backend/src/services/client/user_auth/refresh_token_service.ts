@@ -36,14 +36,14 @@ export default async (data: any) => {
         }
 
         // Generate new tokens
-        const newAccessToken = await generateToken(user.data);
+        const newAccessToken = await servGenerateToken(user.data);
         if (!newAccessToken.success) {
-            return httpMsg.http500('Failed to generate access token');
+            return httpMsg.http500('Failed to generate access token', 'TOKEN_GENERATION_ERROR');
         }
 
-        const newRefreshToken = await generateRefreshToken(user.data);
+        const newRefreshToken = await servGenerateRefreshToken(user.data);
         if (!newRefreshToken.success) {
-            return httpMsg.http500('Failed to generate refresh token');
+            return httpMsg.http500('Failed to generate refresh token', 'REFRESH_TOKEN_GENERATION_ERROR');
         }
 
         // Update user with new refresh token
@@ -112,11 +112,3 @@ const generateToken = async (userData: any) => {
     return await servGenerateToken(tokenData);
 };
 
-const generateRefreshToken = async (userData: any) => {
-    const tokenData = {
-        id: userData.id,
-        email: userData.email,
-    };
-
-    return await servGenerateRefreshToken(tokenData);
-};
