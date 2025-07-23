@@ -30,10 +30,6 @@ interface LoginData {
   password: string;
 }
 
-interface RefreshTokenData {
-  refreshToken: string;
-}
-
 interface RegisterData {
   email: string;
   password: string;
@@ -73,17 +69,9 @@ interface UserWithStats {
   denomination?: string;
 }
 
-
 interface CreateCommentData {
   content: string;
   postId: string;
-}
-
-interface PostWithDetails {
-  id: string;
-  content: string;
-  createdAt: string;
-  userId: string;
 }
 
 interface Community {
@@ -195,7 +183,7 @@ class ApiClient {
 
   // Auth endpoints - Adapted for Vincent Queimado's API structure
   async login(data: LoginData): Promise<ApiResponse> {
-    const response = await this.request('/client/auth/login', {
+    const response = await this.request<ApiResponse>('/client/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -220,7 +208,7 @@ class ApiClient {
       throw new Error('No refresh token available');
     }
 
-    const response = await this.request('/client/auth/refresh', {
+    const response = await this.request<ApiResponse>('/client/auth/refresh', {
       method: 'POST',
       body: JSON.stringify({ refreshToken }),
     });
@@ -240,14 +228,14 @@ class ApiClient {
   }
 
   async register(data: RegisterData): Promise<ApiResponse> {
-    return this.request('/client/auth/register', {
+    return this.request<ApiResponse>('/client/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async logout(): Promise<ApiResponse> {
-    const response = await this.request('/client/auth/logout', {
+    const response = await this.request<ApiResponse>('/client/auth/logout', {
       method: 'GET',
     });
 
@@ -260,12 +248,12 @@ class ApiClient {
   }
 
   async getCurrentUser(): Promise<UserWithStats> {
-    return this.request('/client/user/me');
+    return this.request<UserWithStats>('/client/user/me');
   }
 
   // Posts endpoints
   async createPost(data: CreatePostData): Promise<ApiResponse> {
-    return this.request('/client/posts', {
+    return this.request<ApiResponse>('/client/posts', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -281,11 +269,11 @@ class ApiClient {
       params.append('communityId', communityId);
     }
 
-    return this.request(`/client/posts/feed?${params.toString()}`);
+    return this.request<ApiResponse>(`/client/posts/feed?${params.toString()}`);
   }
 
   async likePost(data: LikePostData): Promise<ApiResponse> {
-    return this.request('/client/posts/like', {
+    return this.request<ApiResponse>('/client/posts/like', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -293,7 +281,7 @@ class ApiClient {
 
   // User endpoints - Adapted for Vincent Queimado's API structure
   async updateProfile(data: UpdateUserProfileData): Promise<UserWithStats> {
-    return this.request('/client/user/me', {
+    return this.request<UserWithStats>('/client/user/me', {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
@@ -301,18 +289,18 @@ class ApiClient {
 
   // Delete post
   async deletePost(postId: string): Promise<ApiResponse> {
-    return this.request(`/client/posts/${postId}`, {
+    return this.request<ApiResponse>(`/client/posts/${postId}`, {
       method: 'DELETE',
     });
   }
 
   // Comment endpoints
-  async getComments(postId: string) {
-    return this.request(`/client/posts/${postId}/comments`);
+  async getComments(postId: string): Promise<{ comments: any[] }> {
+    return this.request<{ comments: any[] }>(`/client/posts/${postId}/comments`);
   }
 
-  async createComment(data: CreateCommentData) {
-    return this.request('/client/comments', {
+  async createComment(data: CreateCommentData): Promise<ApiResponse> {
+    return this.request<ApiResponse>('/client/comments', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -320,105 +308,105 @@ class ApiClient {
 
   // Community endpoints
   async getCommunities(): Promise<Community[]> {
-    return this.request('/communities');
+    return this.request<Community[]>('/communities');
   }
 
   async joinCommunity(communityId: string): Promise<{ joined: boolean }> {
-    return this.request(`/communities/${communityId}/join`, {
+    return this.request<{ joined: boolean }>(`/communities/${communityId}/join`, {
       method: 'POST',
     });
   }
 
   // Follow endpoints
   async followUser(userId: string): Promise<{ followed: boolean }> {
-    return this.request(`/users/${userId}/follow`, {
+    return this.request<{ followed: boolean }>(`/users/${userId}/follow`, {
       method: 'POST',
     });
   }
 
   // Bible endpoints
-  async getBibleBooks() {
-    return this.request('/bible/books');
+  async getBibleBooks(): Promise<any> {
+    return this.request<any>('/bible/books');
   }
 
-  async getBibleBook(bookId: string) {
-    return this.request(`/bible/books/${bookId}`);
+  async getBibleBook(bookId: string): Promise<any> {
+    return this.request<any>(`/bible/books/${bookId}`);
   }
 
-  async getBibleChapters(bookId: string) {
-    return this.request(`/bible/books/${bookId}/chapters`);
+  async getBibleChapters(bookId: string): Promise<any> {
+    return this.request<any>(`/bible/books/${bookId}/chapters`);
   }
 
-  async getBibleVerses(bookId?: string, chapter?: number) {
+  async getBibleVerses(bookId?: string, chapter?: number): Promise<any> {
     const params = new URLSearchParams();
     if (bookId) params.append('bookId', bookId);
     if (chapter) params.append('chapter', chapter.toString());
     
-    return this.request(`/bible/verses?${params.toString()}`);
+    return this.request<any>(`/bible/verses?${params.toString()}`);
   }
 
   async searchBible(data: BibleSearchData): Promise<BibleSearchResponse> {
-    return this.request('/bible/search', {
+    return this.request<BibleSearchResponse>('/bible/search', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async searchBibleAI(data: BibleAISearchData): Promise<BibleSearchResponse> {
-    return this.request('/bible/ai-search', {
+    return this.request<BibleSearchResponse>('/bible/ai-search', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async getRandomVerse(): Promise<RandomVerseResponse> {
-    return this.request('/verses/random');
+    return this.request<RandomVerseResponse>('/verses/random');
   }
 
   // Bookmark endpoints
   async getBookmarks(): Promise<BookmarkData[]> {
-    return this.request('/bible/bookmarks');
+    return this.request<BookmarkData[]>('/bible/bookmarks');
   }
 
   async createBookmark(data: any): Promise<BookmarkData> {
-    return this.request('/bible/bookmarks', {
+    return this.request<BookmarkData>('/bible/bookmarks', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async deleteBookmark(bookmarkId: string): Promise<ApiResponse> {
-    return this.request(`/bible/bookmarks/${bookmarkId}`, {
+    return this.request<ApiResponse>(`/bible/bookmarks/${bookmarkId}`, {
       method: 'DELETE',
     });
   }
 
   // AI Chat endpoints
   async chatWithAI(data: AIInteractionData): Promise<AISearchResponse> {
-    return this.request('/ai/chat', {
+    return this.request<AISearchResponse>('/ai/chat', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async submitAIFeedback(data: AIFeedbackData): Promise<ApiResponse> {
-    return this.request('/ai/feedback', {
+    return this.request<ApiResponse>('/ai/feedback', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async getAIAnalytics(): Promise<AIAnalyticsResponse> {
-    return this.request('/ai/analytics');
+    return this.request<AIAnalyticsResponse>('/ai/analytics');
   }
 
   // LLM endpoints
   async getLLMStatus(): Promise<LLMStatusResponse> {
-    return this.request('/llm/status');
+    return this.request<LLMStatusResponse>('/llm/status');
   }
 
   async testLLM(message?: string): Promise<any> {
-    return this.request('/llm/test', {
+    return this.request<any>('/llm/test', {
       method: 'POST',
       body: JSON.stringify({ message }),
     });

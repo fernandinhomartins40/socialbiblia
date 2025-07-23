@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageCircle, Users, BookOpen, Bell, Plus, Sparkles, Heart } from "lucide-react";
 import { redirectToAuth } from "@/lib/authUtils";
-import type { PostWithUser, Community, RandomVerse } from "@/lib/shared-types";
+import type { Community, RandomVerse } from "@/lib/shared-types";
 
 export default function Home() {
   const { user, isLoading: authLoading } = useAuth();
@@ -46,7 +46,7 @@ export default function Home() {
     enabled: !!user,
   });
 
-  const posts = feedData?.posts || [];
+  const posts = feedData?.data?.posts || [];
 
   // Fetch communities
   const { data: communities = [] } = useQuery<Community[]>({
@@ -359,7 +359,7 @@ export default function Home() {
                 </div>
               ) : posts.length > 0 ? (
                 <div className="space-y-6">
-                  {posts.map((post) => (
+                  {posts.map((post: any) => (
                     <Post key={post.id} post={post} />
                   ))}
                 </div>
