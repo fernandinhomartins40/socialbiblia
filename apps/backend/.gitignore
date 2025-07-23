@@ -63,4 +63,4 @@ uploads/
 temp/
 
 # Prisma
-prisma/migrations/
+# prisma/migrations/ - MANTIDO PARA DEPLOY: migrations são necessárias para produção

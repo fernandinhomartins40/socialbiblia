@@ -1,97 +1,171 @@
 version: '3.8'
 
 services:
-  backend:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.backend
-    container_name: socialbiblia-backend
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
-      - EMAIL_HOST=${EMAIL_HOST}
-      - EMAIL_PORT=${EMAIL_PORT}
-      - EMAIL_USER=${EMAIL_USER}
-      - EMAIL_PASS=${EMAIL_PASS}
-      - EMAIL_FROM=${EMAIL_FROM}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3001}
-    depends_on:
-      - postgres
-      - redis
-    volumes:
-      - ./apps/backend/uploads:/app/apps/backend/uploads
-    networks:
-      - socialbiblia-network
-
-  frontend:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.web
-    container_name: socialbiblia-frontend
-    restart: unless-stopped
-    ports:
-      - "3001:80"
-    environment:
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
-      - VITE_SOCKET_URL=${VITE_SOCKET_URL:-http://localhost:3000}
-    depends_on:
-      - backend
-    networks:
-      - socialbiblia-network
-
+  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: socialbiblia-postgres
+    container_name: biblicai_postgres
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-socialbiblia}
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-biblicai_db}
+      POSTGRES_USER: ${POSTGRES_USER:-biblicai_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Biblicai@2024#SecureDB!VPS#Secure}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d
+      - ./apps/backend/prisma:/docker-entrypoint-initdb.d
     networks:
-      - socialbiblia-network
+      - biblicai_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-biblicai_user} -d ${POSTGRES_DB:-biblicai_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  redis:
-    image: redis:7-alpine
-    container_name: socialbiblia-redis
+  # Backend API (Vincent Queimado Express + Prisma)
+  api:
+    build:
+      context: .
+      dockerfile: configs/docker/Dockerfile.backend
+      cache_from:
+        - node:18-alpine
+    container_name: biblicai_api
     restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3344
+      DATABASE_URL: postgresql://${POSTGRES_USER:-biblicai_user}:${POSTGRES_PASSWORD:-Biblicai@2024#SecureDB!VPS#Secure}@postgres:5432/${POSTGRES_DB:-biblicai_db}?schema=public
+      
+      # App Configuration
+      APP_URL_HOST: ${APP_URL_HOST:-0.0.0.0}
+      APP_URL_PORT: ${APP_URL_PORT:-3344}
+      SSL_ALLOW: ${SSL_ALLOW:-false}
+      
+      # API Configuration
+      API_PREFIX: ${API_PREFIX:-api}
+      API_JSON_LIMIT: ${API_JSON_LIMIT:-5mb}
+      API_EXT_URLENCODED: ${API_EXT_URLENCODED:-false}
+      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-*}
+      
+      # JWT Configuration
+      JWT_SECRET_USER: ${JWT_SECRET_USER:-Biblicai@VincentQueimado#UserJWT2024!VPS#Secure}
+      JWT_SECRET_DEVICE: ${JWT_SECRET_DEVICE:-Biblicai@VincentQueimado#DeviceJWT2024!VPS#Secure}
+      JWT_EXPIRED_IN: ${JWT_EXPIRED_IN:-24h}
+      
+      # Security Configuration
+      BCRYPT_SALTROUNDS: ${BCRYPT_SALTROUNDS:-12}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-500}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-15}
+      
+      # Debug Configuration
+      DEBUG_HTTP_REQUEST: ${DEBUG_HTTP_REQUEST:-false}
+      DEBUG_HTTP_CONNECTION: ${DEBUG_HTTP_CONNECTION:-false}
+      
+      # Email Configuration
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      EMAIL_SERVICE: ${EMAIL_SERVICE:-gmail}
+      EMAIL_OAUTH_CLIENT_ID: ${EMAIL_OAUTH_CLIENT_ID:-}
+      EMAIL_OAUTH_CLIENT_SECRET: ${EMAIL_OAUTH_CLIENT_SECRET:-}
+      EMAIL_OAUTH_REFRESH_TOKEN: ${EMAIL_OAUTH_REFRESH_TOKEN:-}
+      
+      # Timezone
+      TZ: ${TZ:-America/Sao_Paulo}
     ports:
-      - "6379:6379"
+      - "${API_PORT:-3344}:3344"
     volumes:
-      - redis_data:/data
+      - api_data:/app/data
+      - api_logs:/app/logs
     networks:
-      - socialbiblia-network
-
-  nginx:
-    image: nginx:alpine
-    container_name: socialbiblia-nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./docker/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
+      - biblicai_network
     depends_on:
-      - frontend
-      - backend
-    networks:
-      - socialbiblia-network
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3344/api/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
+  # Frontend Web (React + Vite)
+  web:
+    build:
+      context: .
+      dockerfile: configs/docker/Dockerfile.web
+      cache_from:
+        - node:18-alpine
+        - nginx:alpine
+    container_name: biblicai_web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      VITE_API_URL: http://localhost:${API_PORT:-3344}
+      VITE_WS_URL: ws://localhost:${API_PORT:-3344}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - web_logs:/var/log/nginx
+    networks:
+      - biblicai_network
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # pgAdmin (Database Administration)
+  pgladmin:
+    image: dpage/pgadmin4:latest
+    container_name: biblicai_pgadmin
+    restart: unless-stopped
+    environment:
+      PGLADMIN_DEFAULT_EMAIL: ${PGLADMIN_DEFAULT_EMAIL:-admin@biblicai.com.br}
+      PGLADMIN_DEFAULT_PASSWORD: ${PGLADMIN_DEFAULT_PASSWORD:-Biblicai@Admin2024!VPS}
+      PGLADMIN_CONFIG_SERVER_MODE: 'False'
+      PGLADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "${PGLADMIN_PORT:-8080}:80"
+    volumes:
+      - pgladmin_data:/var/lib/pgladmin
+    networks:
+      - biblicai_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/misc/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# Networks
+networks:
+  biblicai_network:
+    driver: bridge
+    name: biblicai_network
+
+# Volumes
 volumes:
   postgres_data:
-  redis_data:
-
-networks:
-  socialbiblia-network:
-    driver: bridge
+    driver: local
+    name: biblicai_postgres_data
+  api_data:
+    driver: local
+    name: biblicai_api_data
+  api_logs:
+    driver: local
+    name: biblicai_api_logs
+  web_logs:
+    driver: local
+    name: biblicai_web_logs
+  pgladmin_data:
+    driver: local
+    name: biblicai_pgladmin_data 

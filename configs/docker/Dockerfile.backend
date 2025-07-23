@@ -1,35 +1,65 @@
-FROM node:18-alpine
+# Multi-stage build para backend Plugbase - Monorepo
+FROM node:18-alpine AS builder
 
+# Definir diretório de trabalho
 WORKDIR /app
 
-# Copiar arquivos de configuração do monorepo
+# Copiar arquivos de configuração de dependências (monorepo)
 COPY package*.json ./
 COPY turbo.json ./
 COPY tsconfig.base.json ./
 
-# Copiar arquivos do backend
-COPY apps/backend/package*.json ./apps/backend/
-COPY apps/backend/prisma ./apps/backend/prisma/
+# Copiar packages
+COPY packages/ ./packages/
 
-# Copiar packages compartilhados
-COPY packages/shared/package*.json ./packages/shared/
-COPY packages/config/package*.json ./packages/config/
+# Copiar aplicação backend
+COPY apps/backend/ ./apps/backend/
 
-# Instalar dependências do monorepo
-RUN npm ci --only=production --workspace=backend --include-workspace-root
+# Instalar dependências
+RUN npm ci
 
-# Gerar cliente Prisma
-RUN cd apps/backend && npx prisma generate
+# Build dos packages compartilhados primeiro
+RUN npm run build:packages
 
-# Copiar código fonte
-COPY apps/backend ./apps/backend
-COPY packages ./packages
+# Build da aplicação backend
+RUN npm run build:backend
 
-# Build da aplicação
-RUN npm run build --workspace=backend
+# Estágio de produção
+FROM node:18-alpine
+
+# Instalar curl para health checks
+RUN apk add --no-cache curl
+
+# Criar usuário não-root
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S backend -u 1001
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Copiar apenas os arquivos necessários para produção
+COPY --from=builder --chown=backend:nodejs /app/package*.json ./
+COPY --from=builder --chown=backend:nodejs /app/apps/backend/package*.json ./apps/backend/
+COPY --from=builder --chown=backend:nodejs /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder --chown=backend:nodejs /app/apps/backend/prisma ./apps/backend/prisma
+COPY --from=builder --chown=backend:nodejs /app/apps/backend/public ./apps/backend/public
+
+# Instalar apenas dependências de produção
+RUN npm ci --only=production && npm cache clean --force
+
+# Criar diretórios necessários
+RUN mkdir -p /app/data /app/logs
+RUN chown -R backend:nodejs /app
+
+# Mudar para usuário não-root
+USER backend
 
 # Expor porta
 EXPOSE 3000
 
-# Comando para iniciar
-CMD ["npm", "start", "--workspace=backend"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Comando para iniciar a aplicação
+CMD ["node", "apps/backend/dist/src/server/index.js"]
