@@ -23,7 +23,10 @@ export default async (data: any) => {
 
     // Check password
     const checkedPassword = await checkPassword(data.password, user.data.password);
-    if (!checkedPassword) return httpMsg.http401(constError.ERROR_CODE.login);
+    if (!checkedPassword) {
+        await handleFailedLogin(user.data);
+        return httpMsg.http401(constError.ERROR_CODE.login);
+    }
 
     // Verificar se conta não está bloqueada
     if (user.data.lockedUntil && new Date() < user.data.lockedUntil) {
@@ -68,6 +71,25 @@ const checkRequiredDatas = (datas: any) => /* istanbul ignore next */ {
     if (!datas.password) return false;
 
     return true;
+};
+
+const handleFailedLogin = async (user: any) => {
+    const MAX_LOGIN_ATTEMPTS = 5;
+    const LOCKOUT_DURATION_MINUTES = 15;
+
+    const newAttempts = (user.failedLoginAttempts || 0) + 1;
+    let updateData: any = { failedLoginAttempts: newAttempts };
+
+    if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+        const lockedUntil = new Date();
+        lockedUntil.setMinutes(lockedUntil.getMinutes() + LOCKOUT_DURATION_MINUTES);
+        updateData = {
+            ...updateData,
+            lockedUntil: lockedUntil,
+        };
+    }
+
+    await updateUser(user.id, updateData, { id: true });
 };
 
 const getUser = async (where: object) => {
