@@ -126,7 +126,7 @@ export async function invalidateCache(pattern: string): Promise<number> {
   try {
     const deleted = await cache.delPattern(pattern);
     Logger.info('Cache invalidated', { pattern, deletedKeys: deleted });
-    return deleted;
+    return deleted ? 1 : 0;
   } catch (error) {
     Logger.error('Cache invalidation error', error as Error, { pattern });
     return 0;

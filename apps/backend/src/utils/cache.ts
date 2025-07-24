@@ -21,6 +21,14 @@ interface CircuitBreakerState {
 
 class CacheService {
   private client: RedisClientType | null = null;
+  
+  // TTL constants in seconds
+  static readonly ttl = {
+    SHORT: 300,    // 5 minutes
+    MEDIUM: 1800,  // 30 minutes
+    LONG: 3600,    // 1 hour
+    DAY: 86400,    // 24 hours
+  } as const;
   private isConnected = false;
   private connectionAttempts = 0;
   private circuitBreaker: CircuitBreakerState;
@@ -81,7 +89,6 @@ class CacheService {
       url: this.cacheConfig.url,
       socket: {
         connectTimeout: this.cacheConfig.connectionTimeoutMs,
-        commandTimeout: this.cacheConfig.commandTimeoutMs,
         reconnectStrategy: (retries) => {
           if (retries >= this.cacheConfig.maxRetries) {
             Logger.error(`Redis max retries (${this.cacheConfig.maxRetries}) exceeded`);
@@ -250,7 +257,7 @@ class CacheService {
         return null;
       }
       
-      const parsed = JSON.parse(value) as T;
+      const parsed = JSON.parse(value as string) as T;
       Logger.debug('Cache hit', { key });
       return parsed;
     } catch (error) {
@@ -296,6 +303,32 @@ class CacheService {
       return result > 0;
     } catch (error) {
       Logger.error('Cache delete error:', error, { key });
+      this.onConnectionFailure(error as Error);
+      return false;
+    }
+  }
+
+  async delPattern(pattern: string): Promise<boolean> {
+    if (!this.isHealthy()) {
+      Logger.debug('Cache delete pattern skipped: Redis not healthy', { pattern });
+      return false;
+    }
+
+    try {
+      // Get all keys matching the pattern
+      const keys = await this.client!.keys(pattern);
+      
+      if (keys.length === 0) {
+        Logger.debug('Cache delete pattern: no keys found', { pattern });
+        return true;
+      }
+      
+      // Delete all matching keys
+      const result = await this.client!.del(keys);
+      Logger.debug('Cache delete pattern', { pattern, keysDeleted: result });
+      return result > 0;
+    } catch (error) {
+      Logger.error('Cache delete pattern error:', error, { pattern });
       this.onConnectionFailure(error as Error);
       return false;
     }
@@ -356,3 +389,6 @@ class CacheService {
 
 // Export singleton instance
 export const cache = new CacheService();
+
+// Export class for testing or custom instances
+export { CacheService };
