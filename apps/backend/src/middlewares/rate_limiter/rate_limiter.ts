@@ -1,6 +1,6 @@
 import rateLimit from 'express-rate-limit';
 
-import config from '@config/app';
+import config from '../config/app';
 
 const standardHeaders = true;
 const legacyHeaders = false;

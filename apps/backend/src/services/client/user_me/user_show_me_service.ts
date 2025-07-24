@@ -1,5 +1,5 @@
-import httpMsg from '@utils/http_messages/http_msg';
-import servFindOneUser from '@dao/users/user_get_one_dao';
+import httpMsg from '../utils/http_messages/http_msg';
+import servFindOneUser from '../dao/users/user_get_one_dao';
 
 const errorCod = 'ERROR_USER_FIND_ME';
 const errorMsg = 'Failed to show user';

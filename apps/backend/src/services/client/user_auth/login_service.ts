@@ -1,8 +1,8 @@
-import constError from '@constants/error_constant';
-import httpMsg from '@utils/http_messages/http_msg';
-import servFindOneUser from '@dao/users/user_get_one_dao';
-import servCheckPassword from '@functions/check_password';
-import servGenerateToken from '@functions/generate_token_access';
+import constError from '../constants/error_constant';
+import httpMsg from '../utils/http_messages/http_msg';
+import servFindOneUser from '../dao/users/user_get_one_dao';
+import servCheckPassword from '../functions/check_password';
+import servGenerateToken from '../functions/generate_token_access';
 
 export default async (data: any) => {
     let userLogged = {};

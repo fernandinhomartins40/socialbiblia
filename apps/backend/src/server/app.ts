@@ -6,19 +6,19 @@ import passport from 'passport';
 import favicon from 'serve-favicon';
 import bodyParser from 'body-parser';
 
-import xss from '@middlewares/xss/xss';
-import morgan from '@middlewares/morgan/morgan';
-import rateLimit from '@middlewares/rate_limiter/rate_limiter';
-import handleError from '@middlewares/http_error_handler/error_handler';
+import xss from '../middlewares/xss/xss';
+import morgan from '../middlewares/morgan/morgan';
+import rateLimit from '../middlewares/rate_limiter/rate_limiter';
+import handleError from '../middlewares/http_error_handler/error_handler';
 import {
     localUserStrategy,
     jwtUserStrategy,
-} from '@middlewares/auth/passport_strategies/passportStrategy';
+} from '../middlewares/auth/passport_strategies/passportStrategy';
 
-import config from '@config/app';
-import routes from '@routes/index';
-import routesUser from '@routes/client/v1';
-import routesAdmin from '@routes/admin/v1';
+import config from '../config/app';
+import routes from '../routes/index';
+import routesUser from '../routes/client/v1';
+import routesAdmin from '../routes/admin/v1';
 
 const publicLogs = './logs';
 const publicFavicon = './public/assets/images/favicons/favicon.ico';

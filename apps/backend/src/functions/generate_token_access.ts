@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import config from '@config/app';
+import config from '../config/app';
 
 export default async (tokenData: object) => {
     const token = jwt.sign(tokenData, config.jwt.secretUser, {

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { PostsService } from '../../modules/posts/posts.service';
 import { ResponseUtil } from '../../utils/responses';
 import { AuthenticatedRequest } from '../../types/auth';
-import logger from '@utils/logger/winston/logger';
+import logger from '../utils/logger/winston/logger';
 
 const getAllPosts = async (req: Request, res: Response, next: NextFunction) => {
     try {

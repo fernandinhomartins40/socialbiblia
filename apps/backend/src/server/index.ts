@@ -2,9 +2,9 @@ import moment from 'moment';
 import colorTxt from 'ansi-colors';
 
 import pkg from '../../package.json';
-import server from '@server/http_server';
-import db from '@database/db_connection';
-import logger from '@utils/logger/winston/logger';
+import server from './http_server';
+import db from '../database/db_connection';
+import logger from '../utils/logger/winston/logger';
 
 const startup = async (silent: boolean) => {
     if (!silent) {

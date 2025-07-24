@@ -1,6 +1,6 @@
-import httpMsg from '@utils/http_messages/http_msg';
-import servUpdateUser from '@dao/users/user_update_dao';
-import servFindOneUser from '@dao/users/user_get_one_dao';
+import httpMsg from '../utils/http_messages/http_msg';
+import servUpdateUser from '../dao/users/user_update_dao';
+import servFindOneUser from '../dao/users/user_get_one_dao';
 
 const errorCod = 'ERROR_USER_DELETE_ME';
 const errorMsg = 'Failed to delete user';

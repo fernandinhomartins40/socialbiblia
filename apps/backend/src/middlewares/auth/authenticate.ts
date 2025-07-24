@@ -1,6 +1,6 @@
 import passport from 'passport';
 import { Request, Response, NextFunction } from 'express';
-import httpMsg from '@utils/http_messages/http_msg';
+import httpMsg from '../utils/http_messages/http_msg';
 
 const errorCod = 'ERROR_AUTH';
 

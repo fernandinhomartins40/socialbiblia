@@ -3,9 +3,9 @@ import http from 'http';
 import https from 'https';
 import colorTxt from 'ansi-colors';
 
-import app from '@server/app';
-import config from '@config/app';
-import logger from '@utils/logger/winston/logger';
+import app from './app';
+import config from '../config/app';
+import logger from '../utils/logger/winston/logger';
 
 export default async (silent: boolean) => {
     const serverHost = config.app.host;

@@ -1,6 +1,6 @@
-import logger from '@utils/logger/winston/logger';
-import httpMsg from '@utils/http_messages/http_msg';
-import config from '@config/app';
+import logger from '../utils/logger/winston/logger';
+import httpMsg from '../utils/http_messages/http_msg';
+import config from '../config/app';
 
 const lblErr = 'Root error';
 

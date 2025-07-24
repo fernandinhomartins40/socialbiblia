@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import ctrlCommons from '@controllers/commons/commons_controller';
+import ctrlCommons from '../controllers/commons/commons_controller';
 
 const router = Router();
 

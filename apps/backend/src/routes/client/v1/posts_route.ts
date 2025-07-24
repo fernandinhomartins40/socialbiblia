@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
-import auth from '@middlewares/auth/authenticate';
-import ctrlPosts from '@controllers/client/posts_controller';
+import auth from '../middlewares/auth/authenticate';
+import ctrlPosts from '../controllers/client/posts_controller';
 
 const router = Router();
 

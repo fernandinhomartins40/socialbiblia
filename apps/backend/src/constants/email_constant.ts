@@ -1,4 +1,4 @@
-import globalUrl from '@utils/global_http_url/global_http_url';
+import globalUrl from '../utils/global_http_url/global_http_url';
 
 const IS_NOTIFICATE = {
     welcome: true,
