@@ -127,7 +127,7 @@ jobs:
             "src/dao/posts/post_delete_dao.ts"
             "src/dao/comments/comment_create_dao.ts"
             "src/dao/comments/comment_get_all_dao.ts"
-            "prisma/migrations/20250123_recommendations_system/migration.sql"
+            "prisma/migrations/20250724100141_initial_sqlite/migration.sql"
           )
           
           echo "Verificando arquivos críticos das implementações..."
