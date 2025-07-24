@@ -1,5 +1,5 @@
-import logger from '../utils/logger/winston/logger';
-import transporter from '../utils/mailer/nodemailer/core/oauth_client';
+import logger from '../../logger/winston/logger';
+import transporter from './oauth_client';
 
 const errorSendEmail = 'Error to send e-mail.';
 

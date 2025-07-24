@@ -2,8 +2,8 @@ import postmanToOpenApi from 'postman-to-openapi';
 import yaml from 'yamljs';
 import path from 'path';
 
-import apiUri from '../utils/global_api_path/global_api_path';
-import logger from '../utils/logger/winston/logger';
+import apiUri from '../global_api_path/global_api_path';
+import logger from '../logger/winston/logger';
 import pkg from '../../../package.json';
 const { name, version, description, author, license } = pkg;
 

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import presenter from '../services/client/user_me';
-import logger from '../utils/logger/winston/logger';
+import logger from '../../utils/logger/winston/logger';
 
 const showMe = (req: Request, res: Response, next: NextFunction) => {
     const user: any = req.user;

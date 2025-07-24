@@ -1,5 +1,5 @@
 import fg from 'fast-glob';
-import logger from '../utils/logger/winston/logger';
+import logger from '../../../utils/logger/winston/logger';
 
 const logsFolder = 'logs/';
 const logsExt = '.log';

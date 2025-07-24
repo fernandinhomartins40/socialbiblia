@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { CommentsService } from '../../modules/comments/comments.service';
 import { ResponseUtil } from '../../utils/responses';
 import { AuthenticatedRequest } from '../../types/auth';
-import logger from '../utils/logger/winston/logger';
+import logger from '../../utils/logger/winston/logger';
 
 const getAllComments = async (req: Request, res: Response, next: NextFunction) => {
     try {

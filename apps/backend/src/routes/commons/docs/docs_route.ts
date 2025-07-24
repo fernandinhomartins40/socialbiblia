@@ -2,7 +2,7 @@ import { Router } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import pkg from '../../../../package.json';
 
-import specs from '../utils/swagger/postman_to_swagger';
+import specs from '../../../utils/swagger/postman_to_swagger';
 
 const router = Router();
 

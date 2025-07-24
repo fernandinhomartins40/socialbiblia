@@ -1,6 +1,6 @@
 import { CommentsService } from '../../../modules/comments/comments.service';
-import httpMsg from '../utils/http_messages/http_msg';
-import logger from '../utils/logger/winston/logger';
+import httpMsg from '../../../utils/http_messages/http_msg';
+import logger from '../../../utils/logger/winston/logger';
 
 const errorCod = 'ERROR_COMMENTS_LIST';
 const errorMsg = 'Failed to list comments';

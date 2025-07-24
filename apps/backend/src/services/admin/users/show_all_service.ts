@@ -1,4 +1,4 @@
-import httpMsg from '../utils/http_messages/http_msg';
+import httpMsg from '../../../utils/http_messages/http_msg';
 import findAll from '../dao/users/user_get_all_dao';
 
 const errCode = 'ERROR_USERS_GET_ALL';

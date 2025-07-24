@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import presenter from '../services/commons/logs_infos';
-import logger from '../utils/logger/winston/logger';
+import logger from '../../../utils/logger/winston/logger';
 
 const welcomeUser = (req: Request, res: Response, next: NextFunction) => {
     presenter

@@ -1,6 +1,6 @@
 import { PostsService } from '../../../modules/posts/posts.service';
-import httpMsg from '../utils/http_messages/http_msg';
-import logger from '../utils/logger/winston/logger';
+import httpMsg from '../../../utils/http_messages/http_msg';
+import logger from '../../../utils/logger/winston/logger';
 
 const errorCod = 'ERROR_POSTS_LIST';
 const errorMsg = 'Failed to list posts';

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import logger from '../utils/logger/winston/logger';
+import logger from '../../../utils/logger/winston/logger';
 
 const userWelcome = (req: Request, res: Response) => {
     try {
