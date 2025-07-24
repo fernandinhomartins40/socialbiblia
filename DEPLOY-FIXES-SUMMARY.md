@@ -166,4 +166,54 @@ docker exec biblicai_postgres pg_isready -U biblicai_user -d biblicai_db
 4. **Monitoring:** Sistema completo implementado
 5. **Redis:** Configurações avançadas com circuit breaker
 
-**O problema de "Container reiniciando" deve estar resolvido com essas correções de configuração.** 
+**O problema de "Container reiniciando" deve estar resolvido com essas correções de configuração.**
+
+---
+
+## 🚨 **CORREÇÃO CRÍTICA ADICIONAL (24/01/2025):**
+
+### 6. **🐛 Erro do Módulo @packagejson**
+**Problema Crítico:** Container falhando com `Error: Cannot find module '@packagejson'`
+
+**Causa:** Alias do TypeScript `@packagejson` não funciona em runtime JavaScript.
+
+**Soluções:**
+```typescript
+// ANTES (problemático):
+import pkg from '@packagejson';
+
+// DEPOIS (corrigido):
+import pkg from '../../package.json';          // server/index.ts
+import pkg from '../../../package.json';       // services/commons/api_info_service.ts  
+import pkg from '../../../../package.json';    // routes/commons/docs/docs_route.ts
+```
+
+### 7. **📋 Docker Compose Version Obsoleta**
+**Problema:** Warning `version` is obsolete no docker-compose.new.yml
+
+**Solução:**
+```diff
+- version: '3.8'
++ # version removida (obsoleta no Docker Compose v2)
+```
+
+### 8. **📝 Atualização de Referências de Deploy**
+**Problema:** Referências antigas no workflow de deploy
+
+**Soluções:**
+```diff
+- Backend: Vincent Queimado Express + Prisma + TypeScript
++ Backend: Express + Prisma + TypeScript
+
+- # JWT Configuration (Vincent Queimado Format)  
++ # JWT Configuration
+```
+
+## ✅ **STATUS PÓS-CORREÇÃO CRÍTICA:**
+
+**TypeScript:** ✅ Passa sem erros (`npm run typecheck`)
+**Imports:** ✅ Todos os @packagejson corrigidos  
+**Docker:** ✅ Warnings removidos
+**Deploy:** ✅ Referências atualizadas
+
+**O container da API deve agora inicializar corretamente sem o erro MODULE_NOT_FOUND.** 

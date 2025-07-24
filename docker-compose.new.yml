@@ -1,31 +1,7 @@
 
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: biblicai_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-biblicai_db}
-      POSTGRES_USER: ${POSTGRES_USER:-biblicai_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Biblicai@2024#SecureDB!VPS#Secure}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./apps/backend/prisma:/docker-entrypoint-initdb.d
-    networks:
-      - biblicai_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-biblicai_user} -d ${POSTGRES_DB:-biblicai_db}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  # Backend API (Express + Prisma + TypeScript)
+  # Backend API (Express + Prisma + TypeScript + SQLite)
   api:
     build:
       context: .
@@ -37,7 +13,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-biblicai_user}:${POSTGRES_PASSWORD:-Biblicai@2024#SecureDB!VPS#Secure}@postgres:5432/${POSTGRES_DB:-biblicai_db}?schema=public
+      DATABASE_URL: file:./data/production.db
       
       # App Configuration
       APP_URL_HOST: ${APP_URL_HOST:-0.0.0.0}
@@ -81,9 +57,6 @@ services:
       - api_logs:/app/logs
     networks:
       - biblicai_network
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/info"]
       interval: 30s
@@ -120,31 +93,21 @@ services:
       retries: 3
       start_period: 30s
 
-  # pgAdmin (Database Administration)
-  pgladmin:
-    image: dpage/pgadmin4:latest
-    container_name: biblicai_pgadmin
+  # SQLite Admin (Database Administration via Web Interface)
+  sqliteadmin:
+    image: coleifer/sqlite-web:latest
+    container_name: biblicai_sqliteadmin
     restart: unless-stopped
     environment:
-      PGLADMIN_DEFAULT_EMAIL: ${PGLADMIN_DEFAULT_EMAIL:-admin@biblicai.com.br}
-      PGLADMIN_DEFAULT_PASSWORD: ${PGLADMIN_DEFAULT_PASSWORD:-Biblicai@Admin2024!VPS}
-      PGLADMIN_CONFIG_SERVER_MODE: 'False'
-      PGLADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      SQLITE_DATABASE: /data/production.db
     ports:
-      - "${PGLADMIN_PORT:-8080}:80"
+      - "${SQLITEADMIN_PORT:-8080}:8080"
     volumes:
-      - pgladmin_data:/var/lib/pgladmin
+      - api_data:/data
     networks:
       - biblicai_network
     depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/misc/ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      - api
 
 # Networks
 networks:
@@ -154,9 +117,6 @@ networks:
 
 # Volumes
 volumes:
-  postgres_data:
-    driver: local
-    name: biblicai_postgres_data
   api_data:
     driver: local
     name: biblicai_api_data
@@ -165,7 +125,4 @@ volumes:
     name: biblicai_api_logs
   web_logs:
     driver: local
-    name: biblicai_web_logs
-  pgladmin_data:
-    driver: local
-    name: biblicai_pgladmin_data 
+    name: biblicai_web_logs 

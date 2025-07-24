@@ -184,10 +184,10 @@ jobs:
             # ====================================
             # ETAPA 1: PREPARAR AMBIENTE
             # ====================================
-            log "🚀 INICIANDO DEPLOY BIBLICAI"
-                         log "Backend: Express + Prisma + TypeScript"
-            log "Database: PostgreSQL"
-            log "Frontend: React + Vite"
+                         log "🚀 INICIANDO DEPLOY BIBLICAI"
+             log "Backend: Express + Prisma + TypeScript"
+             log "Database: SQLite"
+             log "Frontend: React + Vite"
             
             # Criar diretório da aplicação
             mkdir -p $APP_DIR
@@ -278,18 +278,14 @@ jobs:
                 cp .env.production .env
               else
                 log "📝 Criando arquivo .env de produção..."
-                cat > .env << 'EOF'
-            # ==============================================
-            # CONFIGURAÇÕES DE PRODUÇÃO - BIBLICAI
-                         # Backend: Express + Prisma + TypeScript
-            # ==============================================
-            
-            # Database Configuration (PostgreSQL)
-            POSTGRES_DB=biblicai_db
-            POSTGRES_USER=biblicai_user
-            POSTGRES_PASSWORD=Biblicai@2024#SecureDB!VPS
-            POSTGRES_PORT=5432
-            DATABASE_URL=postgresql://biblicai_user:Biblicai@2024#SecureDB!VPS@postgres:5432/biblicai_db?schema=public
+                                 cat > .env << 'EOF'
+             # ==============================================
+             # CONFIGURAÇÕES DE PRODUÇÃO - BIBLICAI
+             # Backend: Express + Prisma + TypeScript + SQLite
+             # ==============================================
+             
+             # Database Configuration (SQLite)
+             DATABASE_URL=file:./data/production.db
             
                          # API Configuration (Backend)
             APP_URL_HOST=0.0.0.0
@@ -314,14 +310,10 @@ jobs:
             DEBUG_HTTP_REQUEST=false
             DEBUG_HTTP_CONNECTION=false
             
-            # Service Ports
-            API_PORT=3000
-            WEB_PORT=3000
-            PGLADMIN_PORT=8080
-            
-            # pgAdmin Configuration
-            PGLADMIN_DEFAULT_EMAIL=admin@biblicai.com.br
-            PGLADMIN_DEFAULT_PASSWORD=Biblicai@Admin2024!VPS
+                         # Service Ports
+             API_PORT=3000
+             WEB_PORT=3000
+             SQLITEADMIN_PORT=8080
             
             # Email Configuration (Optional)
             EMAIL_USER=admin@biblicai.com.br
@@ -359,8 +351,8 @@ jobs:
             log "📦 Containers existentes:"
             docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -10
             
-            log "🔌 Portas em uso:"
-            netstat -tulpn | grep -E ':(3000|5432|8080) ' | head -5 || echo "  Portas principais livres"
+                         log "🔌 Portas em uso:"
+             netstat -tulpn | grep -E ':(3000|8080) ' | head -5 || echo "  Portas principais livres"
             
             # ====================================
             # ETAPA 6: LIMPEZA AGRESSIVA PRE-BUILD
@@ -370,17 +362,17 @@ jobs:
             # Parar containers do projeto
             docker compose -f docker-compose.new.yml down --remove-orphans 2>/dev/null || true
             
-            # LIMPEZA AGRESSIVA: Remover containers conflitantes por nome
-            log "🗑️ Removendo containers conflitantes..."
-            for container_name in biblicai_postgres biblicai_api biblicai_web biblicai_nginx biblicai_pgadmin; do
+                         # LIMPEZA AGRESSIVA: Remover containers conflitantes por nome
+             log "🗑️ Removendo containers conflitantes..."
+             for container_name in biblicai_api biblicai_web biblicai_nginx biblicai_sqliteadmin; do
               if docker ps -a --format "{{.Names}}" | grep -q "^${container_name}$"; then
                 log "Removendo container conflitante: $container_name"
                 docker rm -f $container_name 2>/dev/null || true
               fi
             done
             
-            # Remover também containers antigos socialbiblia (fallback)
-            for container_name in socialbiblia_postgres socialbiblia_api socialbiblia_web socialbiblia_nginx socialbiblia_pgadmin; do
+                         # Remover também containers antigos socialbiblia (fallback)
+             for container_name in socialbiblia_api socialbiblia_web socialbiblia_nginx socialbiblia_sqliteadmin; do
               if docker ps -a --format "{{.Names}}" | grep -q "^${container_name}$"; then
                 log "Removendo container antigo: $container_name"
                 docker rm -f $container_name 2>/dev/null || true
@@ -428,56 +420,48 @@ jobs:
             # ====================================
             log "⏳ Aguardando inicialização dos serviços..."
             
-            # Aguardar PostgreSQL
-            log "🐘 Aguardando PostgreSQL..."
-            timeout=120
-            while [ $timeout -gt 0 ]; do
-              if docker compose -f docker-compose.new.yml exec -T postgres pg_isready -U biblicai_user -d biblicai_db >/dev/null 2>&1; then
-                log "✅ PostgreSQL pronto!"
-                break
-              fi
-              sleep 2
-              timeout=$((timeout - 2))
-              if [ $((timeout % 20)) -eq 0 ]; then
-                log "⏳ Aguardando PostgreSQL... ($timeout segundos restantes)"
-              fi
-            done
+                         # Aguardar API (SQLite é arquivo local, não precisa esperar)
+             log "🗃️ SQLite configurado como arquivo local - nenhuma espera necessária para banco"
             
-            if [ $timeout -le 0 ]; then
-              log "❌ Timeout aguardando PostgreSQL"
-              docker compose -f docker-compose.new.yml logs postgres
-              exit 1
-            fi
-            
-            # Executar migrações do Prisma
-            log "🗃️ Executando migrações do banco..."
-            
-            # Verificar se as migrações existem
-            log "📋 Verificando migrações disponíveis..."
-            docker compose -f docker-compose.new.yml exec -T api npx prisma migrate status || log "⚠️ Status das migrações não pôde ser verificado"
-            
-            # Tentar deploy das migrações
-            if ! docker compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy; then
-              log "⚠️ Migrações falharam na primeira tentativa, verificando causa..."
-              
-              # Verificar se o banco está acessível
-              if ! docker compose -f docker-compose.new.yml exec -T postgres pg_isready -U biblicai_user -d biblicai_db; then
-                log "❌ Banco não está acessível para migrações"
-                exit 1
-              fi
-              
-              # Verificar logs de erro
-              log "📋 Logs do container API para diagnóstico:"
-              docker compose -f docker-compose.new.yml logs api | tail -20
-              
-              log "⚠️ Tentando reset e nova migração..."
-              docker compose -f docker-compose.new.yml exec -T api npx prisma migrate reset --force
-              docker compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy
-            fi
-            
-            # Verificar se as novas tabelas foram criadas
-            log "🔍 Verificando tabelas criadas..."
-            docker compose -f docker-compose.new.yml exec -T postgres psql -U biblicai_user -d biblicai_db -c "\\dt" | grep -E "(posts|comments|users|user_interactions|recommendation_scores)" || log "⚠️ Algumas tabelas podem não ter sido criadas"
+                         # Executar migrações do Prisma (SQLite)
+             log "🗃️ Executando migrações do banco SQLite..."
+             
+             # Aguardar container API estar pronto antes das migrações
+             timeout=60
+             while [ $timeout -gt 0 ]; do
+               if docker compose -f docker-compose.new.yml ps api | grep -q "Up"; then
+                 log "✅ Container API rodando, iniciando migrações..."
+                 break
+               fi
+               sleep 2
+               timeout=$((timeout - 2))
+               if [ $((timeout % 10)) -eq 0 ]; then
+                 log "⏳ Aguardando container API... ($timeout segundos restantes)"
+               fi
+             done
+             
+             # Verificar se as migrações existem
+             log "📋 Verificando migrações disponíveis..."
+             docker compose -f docker-compose.new.yml exec -T api npx prisma migrate status || log "⚠️ Status das migrações não pôde ser verificado"
+             
+             # Deploy das migrações para SQLite
+             log "🚀 Executando prisma migrate deploy para SQLite..."
+             if ! docker compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy; then
+               log "⚠️ Migrações falharam, verificando logs..."
+               docker compose -f docker-compose.new.yml logs api | tail -20
+               
+               log "🔄 Tentando gerar cliente Prisma e migrar novamente..."
+               docker compose -f docker-compose.new.yml exec -T api npx prisma generate
+               docker compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy
+             fi
+             
+             # Verificar se o banco SQLite foi criado corretamente
+             log "🔍 Verificando arquivo SQLite criado..."
+             if docker compose -f docker-compose.new.yml exec -T api ls -la data/production.db; then
+               log "✅ Arquivo SQLite production.db criado com sucesso"
+             else
+               log "⚠️ Arquivo SQLite pode não ter sido criado corretamente"
+             fi
             
             # Executar seed (opcional)
             log "🌱 Executando seed do banco..."
@@ -571,15 +555,15 @@ jobs:
               HEALTH_ISSUES="frontend "
             fi
             
-            # Test pgAdmin
-            if curl -f http://localhost:8080 >/dev/null 2>&1; then
-              log "✅ pgAdmin Health Check: OK"
-            else
-              log "⚠️ pgAdmin Health Check: Pode estar inicializando"
-            fi
+                         # Test SQLite Admin
+             if curl -f http://localhost:8080 >/dev/null 2>&1; then
+               log "✅ SQLite Admin Health Check: OK"
+             else
+               log "⚠️ SQLite Admin Health Check: Pode estar inicializando"
+             fi
             
-            # Verificar se containers estão rodando
-            EXPECTED_CONTAINERS="biblicai_postgres biblicai_api biblicai_web"
+                         # Verificar se containers estão rodando
+             EXPECTED_CONTAINERS="biblicai_api biblicai_web biblicai_sqliteadmin"
             for container in $EXPECTED_CONTAINERS; do
               if docker ps --format "{{.Names}}" | grep -q "$container"; then
                 log "✅ Container $container: Rodando"
@@ -641,16 +625,16 @@ jobs:
               echo "  ❌ Frontend (3000): Não responde"
             fi
             
-            if curl -f http://localhost:8080 >/dev/null 2>&1; then
-              echo "  ✅ pgAdmin (8080): Respondendo"
-            else
-              echo "  ⚠️ pgAdmin (8080): Não responde (normal durante inicialização)"
-            fi
+                         if curl -f http://localhost:8080 >/dev/null 2>&1; then
+               echo "  ✅ SQLite Admin (8080): Respondendo"
+             else
+               echo "  ⚠️ SQLite Admin (8080): Não responde (normal durante inicialização)"
+             fi
             echo ""
             
-            # Portas em uso
-            echo "🔌 PORTAS:"
-            for port in 3000 5432 8080; do
+                         # Portas em uso
+             echo "🔌 PORTAS:"
+             for port in 3000 8080; do
               if netstat -tuln 2>/dev/null | grep -q ":$port "; then
                 process=$(netstat -tulpn 2>/dev/null | grep ":$port " | head -1 | awk '{print $7}' | cut -d'/' -f2)
                 echo "  Port $port: Em uso por ${process:-unknown}"
@@ -662,8 +646,8 @@ jobs:
             
             # Se há problemas, mostrar logs críticos
             if [ -n "$HEALTH_ISSUES" ]; then
-              echo "📋 LOGS CRÍTICOS (últimas 3 linhas por container):"
-              for container in biblicai_postgres biblicai_api biblicai_web; do
+                             echo "📋 LOGS CRÍTICOS (últimas 3 linhas por container):"
+               for container in biblicai_api biblicai_web biblicai_sqliteadmin; do
                 if docker ps -a --format "{{.Names}}" | grep -q "$container"; then
                   echo "--- $container ---"
                   docker logs $container 2>&1 | tail -3 2>/dev/null
@@ -720,11 +704,11 @@ jobs:
               log "   ✅ Frontend (React):     http://${{ env.VPS_HOST }}:3000"
                           log "   ✅ API (Vincent Q.):     http://${{ env.VPS_HOST }}:3000/api/"
             log "   ✅ API Docs (Swagger):  http://${{ env.VPS_HOST }}:3000/api/docs"
-              log "   ✅ pgAdmin:             http://${{ env.VPS_HOST }}:8080"
+                             log "   ✅ SQLite Admin:        http://${{ env.VPS_HOST }}:8080"
               log ""
-              log "🔧 TECNOLOGIAS DEPLOYADAS:"
-                             log "   • Backend: Express + Prisma + TypeScript"
-              log "   • Database: PostgreSQL 15"
+                             log "🔧 TECNOLOGIAS DEPLOYADAS:"
+               log "   • Backend: Express + Prisma + TypeScript"
+               log "   • Database: SQLite"
               log "   • Frontend: React 18 + Vite"
               log "   • Container: Docker + Docker Compose"
               log ""
