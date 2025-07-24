@@ -463,9 +463,21 @@ jobs:
                log "⚠️ Arquivo SQLite pode não ter sido criado corretamente"
              fi
             
-            # Executar seed (opcional)
-            log "🌱 Executando seed do banco..."
-            docker compose -f docker-compose.new.yml exec -T api npm run prisma:seed || log "⚠️ Seed falhou ou já executado"
+                         # Executar seed (opcional)
+             log "🌱 Executando seed do banco..."
+             if docker compose -f docker-compose.new.yml exec -T api npm run prisma:seed; then
+               log "✅ Seed executado com sucesso"
+             else
+               log "⚠️ Seed falhou - verificando se banco já tem dados..."
+               # Verificar se já existem usuários (banco já populado)
+               user_count=$(docker compose -f docker-compose.new.yml exec -T api npx prisma db execute --stdin <<< "SELECT COUNT(*) as count FROM users;" 2>/dev/null | grep -o '[0-9]*' | tail -1 || echo "0")
+               if [ "$user_count" -gt 0 ]; then
+                 log "✅ Banco já contém dados ($user_count usuários) - seed desnecessário"
+               else
+                 log "❌ Seed falhou e banco está vazio - problema crítico"
+                 docker compose -f docker-compose.new.yml logs api | tail -10
+               fi
+             fi
             
             # Aguardar API
             log "🔌 Aguardando API..."
