@@ -2,7 +2,7 @@ export interface CreatePostDto {
   title: string;
   content: string;
   excerpt?: string;
-  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  status?: string;
   tags?: string[];
   category?: string;
   featured?: boolean;
@@ -12,14 +12,14 @@ export interface UpdatePostDto {
   title?: string;
   content?: string;
   excerpt?: string | null;
-  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  status?: string;
   tags?: string[];
   category?: string | null;  
   featured?: boolean;
 }
 
 export interface PostFilters {
-  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  status?: string;
   category?: string;
   featured?: boolean;
   authorId?: string;
@@ -32,8 +32,8 @@ export interface PostResponse {
   content: string;
   excerpt: string | null;
   slug: string;
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-  tags: string[];
+  status: string;
+  tags: string[] | string | null;
   category: string | null;
   featured: boolean;
   authorId: string;

@@ -1,5 +1,6 @@
 export interface JwtPayload {
   userId: string;
+  id: string; // Alias para compatibilidade
   email: string;
   role: string;
   iat?: number;

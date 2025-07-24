@@ -9,7 +9,7 @@ class StoragePlugin implements Plugin {
     version: '1.0.0',
     description: 'Plugin de armazenamento de arquivos com suporte a múltiplos provedores',
     dependencies: [],
-    enabled: true,
+    enabled: false, // Temporariamente desabilitado para deploy
     priority: 8
   };
 

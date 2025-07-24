@@ -1,4 +1,4 @@
-import { logger } from '../../../core/logger';
+import { Logger } from '../../../utils/logger';
 import { webSocketManager, PluginWebSocket } from '../../../core/websocket';
 
 interface SubscriptionOptions {
@@ -19,16 +19,16 @@ export class RealtimeService extends PluginWebSocket {
   private userChannels: Map<string, Set<string>> = new Map();
 
   async init(): Promise<void> {
-    logger.info(`Inicializando ${this.constructor.name}...`);
+    Logger.info(`Inicializando ${this.constructor.name}...`);
     
     // Configurar eventos personalizados do WebSocket
     this.setupWebSocketEvents();
     
-    logger.info(`${this.constructor.name} inicializado com sucesso`);
+    Logger.info(`${this.constructor.name} inicializado com sucesso`);
   }
 
   async cleanup(): Promise<void> {
-    logger.info(`Finalizando ${this.constructor.name}...`);
+    Logger.info(`Finalizando ${this.constructor.name}...`);
     
     this.subscriptions.clear();
     this.userChannels.clear();
@@ -36,7 +36,7 @@ export class RealtimeService extends PluginWebSocket {
 
   private setupWebSocketEvents(): void {
     // Aqui podemos adicionar listeners customizados se necessário
-    logger.debug('Eventos WebSocket configurados para o plugin realtime');
+    Logger.debug('Eventos WebSocket configurados para o plugin realtime');
   }
 
   // Gerenciar subscriptions
@@ -60,9 +60,9 @@ export class RealtimeService extends PluginWebSocket {
         }
       }
 
-      logger.debug(`Subscription criada para conexão ${connectionId}`, options);
+      Logger.debug(`Subscription criada para conexão ${connectionId}`, options);
     } catch (error) {
-      logger.error('Erro ao criar subscription:', error);
+      Logger.error('Erro ao criar subscription:', error);
       throw error;
     }
   }
@@ -86,9 +86,9 @@ export class RealtimeService extends PluginWebSocket {
         }
       }
 
-      logger.debug(`Subscription removida para conexão ${connectionId}`, { channels });
+      Logger.debug(`Subscription removida para conexão ${connectionId}`, { channels });
     } catch (error) {
-      logger.error('Erro ao remover subscription:', error);
+      Logger.error('Erro ao remover subscription:', error);
       throw error;
     }
   }
@@ -113,9 +113,9 @@ export class RealtimeService extends PluginWebSocket {
         this.broadcast(event, message);
       }
 
-      logger.debug(`Mensagem broadcast enviada:`, { event, options });
+      Logger.debug(`Mensagem broadcast enviada:`, { event, options });
     } catch (error) {
-      logger.error('Erro ao enviar broadcast:', error);
+      Logger.error('Erro ao enviar broadcast:', error);
       throw error;
     }
   }

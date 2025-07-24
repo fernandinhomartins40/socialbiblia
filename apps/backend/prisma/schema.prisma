@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -15,7 +15,7 @@ model User {
   firstName String?
   lastName  String?
   avatar    String?
-  role      Role     @default(USER)
+  role      String   @default("USER")
   isEmailVerified Boolean @default(false)
   isActive  Boolean  @default(true)
   lastLogin DateTime?
@@ -25,6 +25,7 @@ model User {
 
   // Relacionamentos
   posts     Post[]
+  products  Product[]
   refreshTokens RefreshToken[]
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
@@ -71,11 +72,11 @@ model Post {
   slug        String    @unique
   content     String
   excerpt     String?
-  status      PostStatus @default(DRAFT)
+  status      String    @default("DRAFT")
   publishedAt DateTime?
   authorId    String
   author      User      @relation(fields: [authorId], references: [id])
-  tags        String[]
+  tags        String?   // JSON string com array de tags
   category    String?
   featured    Boolean   @default(false)
   views       Int       @default(0)
@@ -86,14 +87,57 @@ model Post {
   @@map("posts")
 }
 
-enum Role {
-  USER
-  MODERATOR
-  ADMIN
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  parentId    String?
+  parent      Category? @relation("CategoryChildren", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryChildren")
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relacionamentos
+  products    Product[]
+
+  @@map("categories")
 }
 
-enum PostStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
+model Product {
+  id                String    @id @default(cuid())
+  name              String
+  slug              String    @unique
+  description       String?
+  shortDescription  String?
+  price             Float     @default(0)
+  comparePrice      Float?
+  costPrice         Float?
+  sku               String?   @unique
+  stock             Int       @default(0)
+  minStock          Int       @default(0)
+  weight            Float?
+  dimensions        String?   // JSON string {width, height, depth}
+  categoryId        String?
+  category          Category? @relation(fields: [categoryId], references: [id])
+  userId            String    // Referência lógica para User
+  user              User      @relation(fields: [userId], references: [id])
+  brand             String?
+  status            String    @default("DRAFT")
+  featured          Boolean   @default(false)
+  tags              String?   // JSON string com array de tags
+  metaTitle         String?
+  metaDescription   String?
+  images            String?   // JSON string com array de URLs das imagens
+  attributes        String    @default("{}")
+  isDigital         Boolean   @default(false)
+  requiresShipping  Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  @@map("products")
 }
+
+

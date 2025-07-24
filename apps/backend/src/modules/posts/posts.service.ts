@@ -85,6 +85,7 @@ export class PostsService {
         ...data,
         slug,
         authorId,
+        tags: data.tags ? JSON.stringify(data.tags) : null,
       },
       include: {
         author: {
@@ -117,7 +118,10 @@ export class PostsService {
 
     const updatedPost = await prisma.post.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        tags: data.tags ? JSON.stringify(data.tags) : undefined,
+      },
       include: {
         author: {
           select: {

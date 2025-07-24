@@ -8,7 +8,7 @@ interface GenerateOptions {
 export function createControllerTemplate(pluginName: string, className: string, options: GenerateOptions): string {
   return `import { Request, Response } from 'express';
 import { ${className}Service } from '../services/${pluginName}.service';
-import { logger } from '../../../core/logger';
+import { Logger } from '../../../utils/logger';
 import { ApiResponse } from '../../../types/api';
 
 export class ${className}Controller {

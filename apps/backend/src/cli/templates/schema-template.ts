@@ -8,7 +8,7 @@ interface GenerateOptions {
 export function createSchemaTemplate(pluginName: string, className: string, options: GenerateOptions): string {
   return `import { z } from 'zod';
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '../../../core/logger';
+import { Logger } from '../../../utils/logger';
 
 // Schema para criação
 export const create${className}Schema = z.object({

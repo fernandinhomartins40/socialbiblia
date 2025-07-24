@@ -7,7 +7,7 @@ interface GenerateOptions {
 
 export function createServiceTemplate(pluginName: string, className: string, options: GenerateOptions): string {
   return `import { prisma } from '../../../core/database';
-import { logger } from '../../../core/logger';
+import { Logger } from '../../../utils/logger';
 ${options.database ? `import { runMigrations } from '../../../core/migrations';` : ''}
 import { PaginatedResult } from '../../../types/pagination';
 

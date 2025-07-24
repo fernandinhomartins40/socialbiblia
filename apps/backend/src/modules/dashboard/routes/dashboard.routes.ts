@@ -1,54 +1,32 @@
+import { Router } from 'express';
 import { PluginRoute } from '../../../types/plugin';
 import { DashboardController } from '../controllers/dashboard.controller';
 
 export function dashboardRoutes(controller: DashboardController): PluginRoute[] {
-  return [
-    // Dashboard principal (API + UI)
-    {
-      method: 'GET',
-      path: '/dashboard',
-      handler: controller.getDashboardUI.bind(controller),
-      middleware: []
-    },
-    
-    // API para dados do dashboard
-    {
-      method: 'GET',
-      path: '/api/dashboard',
-      handler: controller.getDashboard.bind(controller),
-      middleware: []
-    },
-    
-    // API para lista de plugins
-    {
-      method: 'GET',
-      path: '/api/dashboard/plugins',
-      handler: controller.getPlugins.bind(controller),
-      middleware: []
-    },
-    
-    // API para estatísticas
-    {
-      method: 'GET',
-      path: '/api/dashboard/stats',
-      handler: controller.getStats.bind(controller),
-      middleware: []
-    },
-    
-    // API para habilitar/desabilitar plugin
-    {
-      method: 'POST',
-      path: '/api/dashboard/plugins/:name/toggle',
-      handler: controller.togglePlugin.bind(controller),
-      middleware: []
-    },
-    
-    // API para executar migrations
-    {
-      method: 'POST',
-      path: '/api/dashboard/migrations/run',
-      handler: controller.runMigrations.bind(controller),
-      middleware: []
-    }
-  ];
+  const router = Router();
+  
+  // Dashboard principal (API + UI)
+  router.get('/dashboard', controller.getDashboardUI.bind(controller));
+  
+  // API para dados do dashboard
+  router.get('/api/dashboard', controller.getDashboard.bind(controller));
+       
+   // API para lista de plugins
+   router.get('/api/dashboard/plugins', controller.getPlugins.bind(controller));
+   
+   // API para estatísticas
+   router.get('/api/dashboard/stats', controller.getStats.bind(controller));
+   
+   // API para habilitar/desabilitar plugin
+   router.post('/api/dashboard/plugins/:name/toggle', controller.togglePlugin.bind(controller));
+   
+   // API para executar migrations
+   router.post('/api/dashboard/migrations/run', controller.runMigrations.bind(controller));
+   
+   return [
+     {
+       path: '/',
+       router,
+     }
+   ];
 }

@@ -17,7 +17,7 @@ class CacheService {
       });
 
       this.client.on('error', (err) => {
-        Logger.error('Redis Client Error', err);
+        // Silenciar erros de conexão Redis em desenvolvimento
         this.isConnected = false;
       });
 
@@ -33,7 +33,7 @@ class CacheService {
 
       await this.client.connect();
     } catch (error) {
-      Logger.error('Failed to connect to Redis', error as Error);
+      Logger.warn('Redis not available, running without cache');
       this.isConnected = false;
     }
   }

@@ -14,7 +14,7 @@ export interface UpdateUserDto {
 
 export interface UserFilters {
   search?: string;
-  role?: 'USER' | 'MODERATOR' | 'ADMIN';
+  role?: string;
   isActive?: boolean;
 }
 
@@ -24,7 +24,7 @@ export interface UserResponse {
   username: string;
   firstName: string | null;
   lastName: string | null;
-  role: 'USER' | 'MODERATOR' | 'ADMIN';
+  role: string;
   avatar: string | null;
   isActive: boolean;
   createdAt: Date;

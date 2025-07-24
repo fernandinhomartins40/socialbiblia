@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { RealtimeService } from '../services/realtime.service';
-import { logger } from '../../../core/logger';
+import { Logger } from '../../../utils/logger';
 import { ApiResponse } from '../../../types/api';
 
 export class RealtimeController {
@@ -18,7 +18,7 @@ export class RealtimeController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao buscar estatísticas do realtime:', error);
+      Logger.error('Erro ao buscar estatísticas do realtime:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -38,7 +38,7 @@ export class RealtimeController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao buscar canais ativos:', error);
+      Logger.error('Erro ao buscar canais ativos:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -63,7 +63,7 @@ export class RealtimeController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao buscar subscribers do canal:', error);
+      Logger.error('Erro ao buscar subscribers do canal:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -94,7 +94,7 @@ export class RealtimeController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao enviar broadcast:', error);
+      Logger.error('Erro ao enviar broadcast:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -130,7 +130,7 @@ export class RealtimeController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao enviar notificação:', error);
+      Logger.error('Erro ao enviar notificação:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -169,7 +169,7 @@ export class RealtimeController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao enviar atualização de dados:', error);
+      Logger.error('Erro ao enviar atualização de dados:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -214,7 +214,7 @@ export class RealtimeController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao enviar mensagem de chat:', error);
+      Logger.error('Erro ao enviar mensagem de chat:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -254,7 +254,7 @@ export class RealtimeController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao atualizar status do usuário:', error);
+      Logger.error('Erro ao atualizar status do usuário:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -299,7 +299,7 @@ export class RealtimeController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao enviar atualização de progresso:', error);
+      Logger.error('Erro ao enviar atualização de progresso:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -314,7 +314,7 @@ export class RealtimeController {
       res.setHeader('Content-Type', 'text/html');
       res.send(html);
     } catch (error) {
-      logger.error('Erro ao gerar página de teste:', error);
+      Logger.error('Erro ao gerar página de teste:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'

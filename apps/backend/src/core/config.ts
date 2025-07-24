@@ -71,10 +71,5 @@ export async function findAvailablePort(startPort: number = 3000): Promise<numbe
   });
 }
 
-// Configuração dinâmica de porta para desenvolvimento
-if (config.server.nodeEnv === 'development') {
-  findAvailablePort(config.server.port).then((port) => {
-    config.server.port = port;
-    console.log(`🚀 Servidor iniciará na porta ${port}`);
-  });
-}
+// Configuração dinâmica de porta apenas se necessário
+// Esta função será chamada no app.ts se a porta estiver ocupada

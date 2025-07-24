@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { logger } from '../../../core/logger';
+import { Logger } from '../../../utils/logger';
 import { MigrationManager } from '../../../core/migrations';
 
 interface PluginInfo {
@@ -30,16 +30,16 @@ export class DashboardService {
   private cacheTimeout = 30000; // 30 segundos
 
   async init(): Promise<void> {
-    logger.info(`Inicializando ${this.constructor.name}...`);
+    Logger.info(`Inicializando ${this.constructor.name}...`);
     
     // Cache inicial
     await this.refreshPluginsCache();
     
-    logger.info(`${this.constructor.name} inicializado com sucesso`);
+    Logger.info(`${this.constructor.name} inicializado com sucesso`);
   }
 
   async cleanup(): Promise<void> {
-    logger.info(`Finalizando ${this.constructor.name}...`);
+    Logger.info(`Finalizando ${this.constructor.name}...`);
     this.pluginsCache = [];
   }
 
@@ -96,11 +96,11 @@ export class DashboardService {
       // Atualizar cache
       await this.refreshPluginsCache();
       
-      logger.info(`Plugin ${pluginName} ${enabled ? 'habilitado' : 'desabilitado'} com sucesso`);
+      Logger.info(`Plugin ${pluginName} ${enabled ? 'habilitado' : 'desabilitado'} com sucesso`);
       return true;
       
     } catch (error) {
-      logger.error('Erro ao alterar estado do plugin:', error);
+      Logger.error('Erro ao alterar estado do plugin:', error);
       throw error;
     }
   }
@@ -121,7 +121,7 @@ export class DashboardService {
       };
       
     } catch (error) {
-      logger.error('Erro ao executar migrations:', error);
+      Logger.error('Erro ao executar migrations:', error);
       return {
         success: false,
         message: `Erro ao executar migrations: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
@@ -180,7 +180,7 @@ export class DashboardService {
           });
           
         } catch (error) {
-          logger.warn(`Erro ao processar plugin ${pluginDir.name}:`, error);
+          Logger.warn(`Erro ao processar plugin ${pluginDir.name}:`, error);
           
           // Adicionar plugin com informações básicas
           plugins.push({
@@ -204,10 +204,10 @@ export class DashboardService {
       this.pluginsCache = plugins;
       this.lastCacheUpdate = Date.now();
       
-      logger.debug(`Cache de plugins atualizado: ${plugins.length} plugins`);
+      Logger.debug(`Cache de plugins atualizado: ${plugins.length} plugins`);
       
     } catch (error) {
-      logger.error('Erro ao atualizar cache de plugins:', error);
+      Logger.error('Erro ao atualizar cache de plugins:', error);
       throw error;
     }
   }

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { DashboardService } from '../services/dashboard.service';
-import { logger } from '../../../core/logger';
+import { Logger } from '../../../utils/logger';
 import { ApiResponse } from '../../../types/api';
 
 export class DashboardController {
@@ -24,7 +24,7 @@ export class DashboardController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao buscar dados do dashboard:', error);
+      Logger.error('Erro ao buscar dados do dashboard:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -44,7 +44,7 @@ export class DashboardController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao buscar plugins:', error);
+      Logger.error('Erro ao buscar plugins:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -64,7 +64,7 @@ export class DashboardController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao buscar estatísticas:', error);
+      Logger.error('Erro ao buscar estatísticas:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -96,7 +96,7 @@ export class DashboardController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao alterar estado do plugin:', error);
+      Logger.error('Erro ao alterar estado do plugin:', error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Erro interno do servidor'
@@ -122,7 +122,7 @@ export class DashboardController {
         res.status(500).json(response);
       }
     } catch (error) {
-      logger.error('Erro ao executar migrations:', error);
+      Logger.error('Erro ao executar migrations:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -138,7 +138,7 @@ export class DashboardController {
       res.setHeader('Content-Type', 'text/html');
       res.send(html);
     } catch (error) {
-      logger.error('Erro ao gerar UI do dashboard:', error);
+      Logger.error('Erro ao gerar UI do dashboard:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'

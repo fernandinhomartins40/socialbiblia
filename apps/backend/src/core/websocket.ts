@@ -1,7 +1,7 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server } from 'http';
 import jwt from 'jsonwebtoken';
-import { logger } from './logger';
+import { Logger } from '../utils/logger';
 import { prisma } from './database';
 
 export interface WebSocketUser {
@@ -64,7 +64,7 @@ export class WebSocketManager {
         socket.data.user = user;
         next();
       } catch (error) {
-        logger.warn('Erro na autenticação WebSocket:', error);
+        Logger.warn('Erro na autenticação WebSocket:', error);
         // Permitir conexão anônima em caso de erro de token
         socket.data.user = null;
         next();
@@ -75,14 +75,14 @@ export class WebSocketManager {
       this.handleConnection(socket);
     });
 
-    logger.info('WebSocket Server inicializado');
+    Logger.info('WebSocket Server inicializado');
   }
 
   private handleConnection(socket: Socket): void {
     const connectionId = socket.id;
     const user = socket.data.user as WebSocketUser | null;
 
-    logger.info(`Nova conexão WebSocket: ${connectionId}${user ? ` (${user.email})` : ' (anônimo)'}`);
+    Logger.info(`Nova conexão WebSocket: ${connectionId}${user ? ` (${user.email})` : ' (anônimo)'}`);
 
     // Registrar conexão
     this.connections.set(connectionId, {
@@ -139,7 +139,7 @@ export class WebSocketManager {
     }
     this.rooms.get(room)!.add(socket.id);
 
-    logger.debug(`Socket ${socket.id} entrou na room: ${room}`);
+    Logger.debug(`Socket ${socket.id} entrou na room: ${room}`);
     
     socket.emit('room_joined', { room, timestamp: new Date().toISOString() });
   }
@@ -157,7 +157,7 @@ export class WebSocketManager {
       this.rooms.delete(room);
     }
 
-    logger.debug(`Socket ${socket.id} saiu da room: ${room}`);
+    Logger.debug(`Socket ${socket.id} saiu da room: ${room}`);
     
     socket.emit('room_left', { room, timestamp: new Date().toISOString() });
   }
@@ -188,7 +188,7 @@ export class WebSocketManager {
     const connection = this.connections.get(socket.id);
     if (!connection) return;
 
-    logger.debug(`Plugin event de ${socket.id}:`, data);
+    Logger.debug(`Plugin event de ${socket.id}:`, data);
 
     // Broadcast para outros sockets na mesma room (se especificada)
     if (data.room) {
@@ -204,7 +204,7 @@ export class WebSocketManager {
     const connection = this.connections.get(socket.id);
     if (!connection) return;
 
-    logger.info(`Desconexão WebSocket: ${socket.id}`);
+    Logger.info(`Desconexão WebSocket: ${socket.id}`);
 
     // Remover de todas as rooms
     for (const room of connection.rooms) {

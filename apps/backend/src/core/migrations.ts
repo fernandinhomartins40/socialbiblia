@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { prisma } from './database';
-import { logger } from './logger';
+import { Logger } from '../utils/logger';
 
 interface Migration {
   filename: string;

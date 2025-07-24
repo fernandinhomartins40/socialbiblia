@@ -147,3 +147,6 @@ export async function optionalAuth(req: AuthenticatedRequest, _res: Response, ne
 
   next();
 }
+
+// Alias para compatibilidade
+export const authenticate = authenticateToken;

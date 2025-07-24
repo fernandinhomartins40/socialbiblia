@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api";
+import { extendedApiClient } from "@/lib/api-adapters";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ export default function CreatePost() {
       verseText?: string;
       isPublic?: boolean;
     }) => {
-      return await apiClient.createPost(data);
+      return await extendedApiClient.createPost(data);
     },
     onSuccess: () => {
       toast({
@@ -183,30 +183,21 @@ export default function CreatePost() {
                 className="text-gray-600 hover:text-spiritual-blue hover:bg-spiritual-blue/5 px-3 py-2 rounded-xl transition-all duration-200"
               >
                 <Image className="w-4 h-4 mr-2" />
-                <span className="text-sm">Adicionar Foto</span>
+                Imagem
               </Button>
-              
-              <div className="text-xs text-muted-foreground">
-                {content.length}/500 caracteres
-              </div>
             </div>
             
-            <Button 
+            <Button
               onClick={handleSubmit}
               disabled={createPostMutation.isPending || !content.trim()}
-              className="btn-primary group px-6 py-3 h-auto"
+              className="bg-gradient-spiritual hover:opacity-90 text-white font-semibold px-6 py-2 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               {createPostMutation.isPending ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                  Publicando...
-                </>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
               ) : (
-                <>
-                  <Send className="w-4 h-4 mr-2 group-hover:translate-x-0.5 transition-transform" />
-                  <span>Compartilhar</span>
-                </>
+                <Send className="w-4 h-4 mr-2" />
               )}
+              {createPostMutation.isPending ? 'Publicando...' : 'Publicar'}
             </Button>
           </div>
         </div>

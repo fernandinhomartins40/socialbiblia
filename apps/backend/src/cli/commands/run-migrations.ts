@@ -1,5 +1,5 @@
 import { MigrationManager } from '../../core/migrations';
-import { logger } from '../../core/logger';
+import { Logger } from '../../utils/logger';
 
 interface MigrateOptions {
   plugin?: string;

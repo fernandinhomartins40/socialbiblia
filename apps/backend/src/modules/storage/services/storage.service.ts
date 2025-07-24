@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { logger } from '../../../core/logger';
+import { Logger } from '../../../utils/logger';
 import { prisma } from '../../../core/database';
 
 export interface StorageProvider {
@@ -40,7 +40,7 @@ class LocalStorageProvider implements StorageProvider {
       await fs.access(this.basePath);
     } catch {
       await fs.mkdir(this.basePath, { recursive: true });
-      logger.info(`Diretório de uploads criado: ${this.basePath}`);
+      Logger.info(`Diretório de uploads criado: ${this.basePath}`);
     }
   }
 
@@ -68,7 +68,7 @@ class LocalStorageProvider implements StorageProvider {
       await fs.unlink(filePath);
       return true;
     } catch (error) {
-      logger.error('Erro ao deletar arquivo:', error);
+      Logger.error('Erro ao deletar arquivo:', error);
       return false;
     }
   }
@@ -115,7 +115,7 @@ export class StorageService {
   private defaultProvider: string = 'local';
 
   async init(): Promise<void> {
-    logger.info(`Inicializando ${this.constructor.name}...`);
+    Logger.info(`Inicializando ${this.constructor.name}...`);
     
     // Inicializar providers
     const localProvider = new LocalStorageProvider();
@@ -131,13 +131,13 @@ export class StorageService {
     // Criar tabela de metadados se não existir
     await this.initDatabase();
     
-    logger.info(`${this.constructor.name} inicializado com sucesso`);
-    logger.info(`Provider padrão: ${this.defaultProvider}`);
-    logger.info(`Providers disponíveis: ${Array.from(this.providers.keys()).join(', ')}`);
+    Logger.info(`${this.constructor.name} inicializado com sucesso`);
+    Logger.info(`Provider padrão: ${this.defaultProvider}`);
+    Logger.info(`Providers disponíveis: ${Array.from(this.providers.keys()).join(', ')}`);
   }
 
   async cleanup(): Promise<void> {
-    logger.info(`Finalizando ${this.constructor.name}...`);
+    Logger.info(`Finalizando ${this.constructor.name}...`);
     this.providers.clear();
   }
 
@@ -166,9 +166,9 @@ export class StorageService {
         CREATE INDEX IF NOT EXISTS idx_file_metadata_provider ON file_metadata(provider)
       `;
       
-      logger.debug('Tabela de metadados de arquivos inicializada');
+      Logger.debug('Tabela de metadados de arquivos inicializada');
     } catch (error) {
-      logger.error('Erro ao inicializar tabela de metadados:', error);
+      Logger.error('Erro ao inicializar tabela de metadados:', error);
       throw error;
     }
   }
@@ -215,11 +215,11 @@ export class StorageService {
         )
       `;
 
-      logger.info(`Arquivo uploaded: ${originalName} (${metadata.size} bytes) via ${provider.name}`);
+      Logger.info(`Arquivo uploaded: ${originalName} (${metadata.size} bytes) via ${provider.name}`);
       
       return metadata;
     } catch (error) {
-      logger.error('Erro ao fazer upload de arquivo:', error);
+      Logger.error('Erro ao fazer upload de arquivo:', error);
       throw error;
     }
   }
@@ -261,7 +261,7 @@ export class StorageService {
         }
       };
     } catch (error) {
-      logger.error('Erro ao fazer download de arquivo:', error);
+      Logger.error('Erro ao fazer download de arquivo:', error);
       throw error;
     }
   }
@@ -293,12 +293,12 @@ export class StorageService {
           DELETE FROM file_metadata WHERE id = ${fileId}
         `;
         
-        logger.info(`Arquivo deletado: ${metadata.original_name} (${fileId})`);
+        Logger.info(`Arquivo deletado: ${metadata.original_name} (${fileId})`);
       }
 
       return deleted;
     } catch (error) {
-      logger.error('Erro ao deletar arquivo:', error);
+      Logger.error('Erro ao deletar arquivo:', error);
       throw error;
     }
   }
@@ -327,7 +327,7 @@ export class StorageService {
         updatedAt: metadata.updated_at
       };
     } catch (error) {
-      logger.error('Erro ao buscar metadados do arquivo:', error);
+      Logger.error('Erro ao buscar metadados do arquivo:', error);
       throw error;
     }
   }
@@ -403,7 +403,7 @@ export class StorageService {
         totalPages: Math.ceil(total / limit)
       };
     } catch (error) {
-      logger.error('Erro ao listar arquivos:', error);
+      Logger.error('Erro ao listar arquivos:', error);
       throw error;
     }
   }
@@ -422,7 +422,7 @@ export class StorageService {
 
       return provider.getPublicUrl(metadata.url);
     } catch (error) {
-      logger.error('Erro ao gerar URL pública:', error);
+      Logger.error('Erro ao gerar URL pública:', error);
       throw error;
     }
   }

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs/promises';
-import { logger } from '../core/logger';
+import { Logger } from '../utils/logger';
 
 export function staticFiles(req: Request, res: Response, next: NextFunction): void {
   // Verificar se é uma requisição para /uploads/
@@ -18,7 +18,7 @@ export function staticFiles(req: Request, res: Response, next: NextFunction): vo
       res.sendFile(filePath);
     })
     .catch(() => {
-      logger.warn(`Arquivo não encontrado: ${filePath}`);
+      Logger.warn(`Arquivo não encontrado: ${filePath}`);
       res.status(404).json({
         success: false,
         error: 'Arquivo não encontrado'

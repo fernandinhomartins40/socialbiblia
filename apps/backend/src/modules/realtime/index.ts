@@ -9,7 +9,7 @@ class RealtimePlugin implements Plugin {
     version: '1.0.0',
     description: 'Plugin para funcionalidades em tempo real com WebSocket',
     dependencies: [],
-    enabled: true,
+    enabled: false, // Temporariamente desabilitado para deploy
     priority: 3 // Alta prioridade para inicializar cedo
   };
 

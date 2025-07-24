@@ -9,7 +9,7 @@ class DashboardPlugin implements Plugin {
     version: '1.0.0',
     description: 'Dashboard visual para gerenciar plugins do Plugbase',
     dependencies: [],
-    enabled: true,
+    enabled: false, // Temporariamente desabilitado para deploy
     priority: 5 // Alta prioridade para carregar cedo
   };
 

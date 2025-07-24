@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import multer from 'multer';
 import { StorageService } from '../services/storage.service';
-import { logger } from '../../../core/logger';
+import { Logger } from '../../../utils/logger';
 import { ApiResponse } from '../../../types/api';
 
 // Configuração do multer para upload de arquivos
@@ -66,7 +66,7 @@ export class StorageController {
 
       res.status(201).json(response);
     } catch (error) {
-      logger.error('Erro ao fazer upload de arquivo:', error);
+      Logger.error('Erro ao fazer upload de arquivo:', error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Erro interno do servidor'
@@ -107,7 +107,7 @@ export class StorageController {
 
       res.status(201).json(response);
     } catch (error) {
-      logger.error('Erro ao fazer upload de múltiplos arquivos:', error);
+      Logger.error('Erro ao fazer upload de múltiplos arquivos:', error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Erro interno do servidor'
@@ -128,7 +128,7 @@ export class StorageController {
 
       res.send(buffer);
     } catch (error) {
-      logger.error('Erro ao fazer download de arquivo:', error);
+      Logger.error('Erro ao fazer download de arquivo:', error);
       res.status(404).json({
         success: false,
         error: error instanceof Error ? error.message : 'Arquivo não encontrado'
@@ -149,7 +149,7 @@ export class StorageController {
 
       res.send(buffer);
     } catch (error) {
-      logger.error('Erro ao visualizar arquivo:', error);
+      Logger.error('Erro ao visualizar arquivo:', error);
       res.status(404).json({
         success: false,
         error: error instanceof Error ? error.message : 'Arquivo não encontrado'
@@ -179,7 +179,7 @@ export class StorageController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao deletar arquivo:', error);
+      Logger.error('Erro ao deletar arquivo:', error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Erro interno do servidor'
@@ -209,7 +209,7 @@ export class StorageController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao buscar metadados do arquivo:', error);
+      Logger.error('Erro ao buscar metadados do arquivo:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -244,7 +244,7 @@ export class StorageController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao listar arquivos:', error);
+      Logger.error('Erro ao listar arquivos:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -266,7 +266,7 @@ export class StorageController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao gerar URL pública:', error);
+      Logger.error('Erro ao gerar URL pública:', error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Erro interno do servidor'
@@ -290,7 +290,7 @@ export class StorageController {
 
       res.json(response);
     } catch (error) {
-      logger.error('Erro ao buscar providers:', error);
+      Logger.error('Erro ao buscar providers:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
@@ -305,7 +305,7 @@ export class StorageController {
       res.setHeader('Content-Type', 'text/html');
       res.send(html);
     } catch (error) {
-      logger.error('Erro ao gerar página de teste:', error);
+      Logger.error('Erro ao gerar página de teste:', error);
       res.status(500).json({
         success: false,
         error: 'Erro interno do servidor'
