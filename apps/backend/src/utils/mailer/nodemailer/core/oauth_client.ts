@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import { OAuth2Client } from 'google-auth-library';
-import config from '../config/email';
+import config from '../../../config/email';
 import logger from '../../logger/winston/logger';
 
 const OAuth2 = OAuth2Client;

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import CtrlLogs from '../controllers/commons/logs/logs_controller';
+import CtrlLogs from '../../../controllers/commons/logs/logs_controller';
 
 const router = Router();
 

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import ctrlTemplates from '../controllers/commons/templates/templates_emails_controller';
+import ctrlTemplates from '../../../controllers/commons/templates/templates_emails_controller';
 
 const router = Router();
 

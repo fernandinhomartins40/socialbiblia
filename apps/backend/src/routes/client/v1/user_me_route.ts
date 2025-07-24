@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
-import auth from '../middlewares/auth/authenticate';
-import ctrlUserMe from '../controllers/client/users_me_controller';
+import auth from '../../../middlewares/auth/authenticate';
+import ctrlUserMe from '../../../controllers/client/users_me_controller';
 
 const router = Router();
 

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import presenter from '../services/client/user_me';
+import presenter from '../../services/client/user_me';
 import logger from '../../utils/logger/winston/logger';
 
 const showAll = (req: Request, res: Response, next: NextFunction) => {

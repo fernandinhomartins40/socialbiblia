@@ -1,13 +1,13 @@
 import path from 'path';
 
-import config from '../config/app/index';
-import constError from '../constants/error_constant';
-import constEmail from '../constants/email_constant';
+import config from '../../../config/app/index';
+import constError from '../../../constants/error_constant';
+import constEmail from '../../../constants/email_constant';
 import httpMsg from '../../../utils/http_messages/http_msg';
 import sender from '../../../utils/mailer/nodemailer/sender';
-import uppercaseWords from '../functions/uppercase_words';
-import updateUser from '../dao/users/user_update_dao';
-import findOneUser from '../dao/users/user_get_one_dao';
+import uppercaseWords from '../../../functions/uppercase_words';
+import updateUser from '../../../dao/users/user_update_dao';
+import findOneUser from '../../../dao/users/user_get_one_dao';
 
 export default async (data: any) => {
     // Check required user data

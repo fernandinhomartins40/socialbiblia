@@ -1,10 +1,10 @@
 import { Router } from 'express';
 
-import auth from '../middlewares/auth/authenticate';
-import ctrlUserAuth from '../controllers/client/users_auth_controller';
+import auth from '../../../middlewares/auth/authenticate';
+import ctrlUserAuth from '../../../controllers/client/users_auth_controller';
 
-import { register, login, forgotPasswordRequest, registerConfirmation } from '../schemas/auth_schema';
-import { validate } from '../middlewares/validate_schema/validade_schema';
+import { register, login, forgotPasswordRequest, registerConfirmation } from '../../../schemas/auth_schema';
+import { validate } from '../../../middlewares/validate_schema/validade_schema';
 
 const router = Router();
 

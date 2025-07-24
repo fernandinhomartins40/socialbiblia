@@ -1,6 +1,6 @@
 import morgan, { StreamOptions } from 'morgan';
 
-import config from '../config/app';
+import config from '../../config/app';
 import logger from '../../utils/logger/winston/logger';
 
 const stream: StreamOptions = {
