@@ -59,7 +59,7 @@ function generateMockComment(id: string = '1', postId: string = '1') {
 // Extended API client with adapters
 class ApiAdapters {
   // Posts functionality (simulated until backend implements)
-  async getFeed(limit: number = 20, offset: number = 0, communityId?: string) {
+  async getFeed(limit: number = 20, offset: number = 0) {
     console.warn('📝 Feed endpoints not implemented in backend yet - using mock data');
     
     // Generate mock posts
@@ -91,7 +91,7 @@ class ApiAdapters {
     };
   }
 
-  async deletePost(postId: string) {
+  async deletePost() {
     console.warn('🗑️ Delete post endpoints not implemented in backend yet');
     return {
       success: true,
@@ -110,7 +110,7 @@ class ApiAdapters {
     return { comments };
   }
 
-  async createComment(data: { content: string; postId: string }) {
+  async createComment(data: { content: string }) {
     console.warn('💬 Create comment endpoints not implemented in backend yet');
     return {
       success: true,
@@ -120,7 +120,7 @@ class ApiAdapters {
   }
 
   // Bible functionality (simulated until backend implements)
-  async searchBible(data: { query: string }) {
+  async searchBible() {
     console.warn('📖 Bible search endpoints not implemented in backend yet');
     return {
       success: true,
@@ -143,7 +143,7 @@ class ApiAdapters {
     };
   }
 
-  async searchBibleAI(data: { query: string }) {
+  async searchBibleAI() {
     console.warn('🤖 AI Bible search endpoints not implemented in backend yet');
     return {
       success: true,
@@ -216,7 +216,7 @@ class ApiAdapters {
     };
   }
 
-  async submitAIFeedback(data: any) {
+  async submitAIFeedback() {
     console.warn('📊 AI Feedback endpoints not implemented in backend yet');
     return {
       success: true,
@@ -234,7 +234,8 @@ class ApiAdapters {
         description: 'Comunidade para jovens cristãos',
         memberCount: 142,
         icon: 'fas fa-seedling',
-        color: 'spiritual-blue'
+        color: 'spiritual-blue',
+        createdAt: new Date().toISOString()
       },
       {
         id: '2',
@@ -242,12 +243,13 @@ class ApiAdapters {
         description: 'Reflexões sobre família cristã',
         memberCount: 89,
         icon: 'fas fa-heart',
-        color: 'hope-green'
+        color: 'hope-green',
+        createdAt: new Date().toISOString()
       }
     ];
   }
 
-  async joinCommunity(communityId: string) {
+  async joinCommunity() {
     console.warn('👥 Join community endpoints not implemented in backend yet');
     return {
       joined: true,
@@ -286,4 +288,4 @@ export const apiAdapters = new ApiAdapters();
 export const extendedApiClient = {
   ...apiClient,
   ...apiAdapters,
-}; 
+} as typeof apiClient & ApiAdapters; 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Bell, X, Check, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -212,7 +212,7 @@ export function NotificationCenter() {
 
 // Toast de notificação em tempo real
 export function RealtimeNotificationToast() {
-  const { notifications } = useWebSocket()
+  useWebSocket()
 
   // Este componente pode ser usado para mostrar toasts automáticos
   // das notificações recebidas via WebSocket

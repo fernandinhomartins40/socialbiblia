@@ -7,13 +7,10 @@ import CreatePost from "@/components/CreatePost";
 import Post from "@/components/Post";
 import AIChat from "@/components/AIChat";
 import Communities from "@/components/Communities";
-import AdvancedBibleSearch from "@/components/AdvancedBibleSearch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageCircle, Users, BookOpen, Bell, Plus, Sparkles, Heart } from "lucide-react";
+import { MessageCircle, Users, BookOpen, Plus, Sparkles, Heart } from "lucide-react";
 import { redirectToAuth } from "@/lib/authUtils";
 
 export default function Home() {
@@ -21,7 +18,6 @@ export default function Home() {
   const { toast } = useToast();
   const [showAIChat, setShowAIChat] = useState(false);
   const [showCommunities, setShowCommunities] = useState(false);
-  const [showCreatePost, setShowCreatePost] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -144,7 +140,7 @@ export default function Home() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button
-                  onClick={() => setShowCreatePost(true)}
+                  onClick={() => {}}
                   className="w-full bg-gradient-spiritual hover:opacity-90 text-white rounded-xl"
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -223,7 +219,7 @@ export default function Home() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhuma publicação ainda</h3>
                   <p className="text-gray-600 mb-4">Seja o primeiro a compartilhar sua inspiração!</p>
                   <Button
-                    onClick={() => setShowCreatePost(true)}
+                    onClick={() => {}}
                     className="bg-gradient-spiritual hover:opacity-90 text-white rounded-xl"
                   >
                     <Plus className="w-4 h-4 mr-2" />

@@ -36,7 +36,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Toaster />
         </AuthProvider>
       </BrowserRouter>
-      {import.meta.env.DEV && (
+      {import.meta.env?.DEV && (
         React.createElement(
           React.lazy(() => import('@tanstack/react-query-devtools').then(m => ({ default: m.ReactQueryDevtools }))),
           { initialIsOpen: false }

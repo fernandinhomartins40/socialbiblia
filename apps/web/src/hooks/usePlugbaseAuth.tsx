@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: 'Até logo!',
       })
     },
-    onError: (error: Error) => {
+    onError: () => {
       // Mesmo com erro, fazer logout local
       setIsAuthenticated(false)
       queryClient.clear()

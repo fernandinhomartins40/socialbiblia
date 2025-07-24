@@ -194,7 +194,7 @@ class UnifiedApiClient {
     };
   }
 
-  async getFeed(limit: number = 20, offset: number = 0): Promise<ApiResponse> {
+  async getFeed(): Promise<ApiResponse> {
     // For now, simulate since posts endpoints don't exist yet
     console.warn('Feed endpoints not implemented in backend yet');
     return {
@@ -212,7 +212,7 @@ class UnifiedApiClient {
     };
   }
 
-  async deletePost(postId: string): Promise<ApiResponse> {
+  async deletePost(): Promise<ApiResponse> {
     // For now, simulate since posts endpoints don't exist yet
     console.warn('Delete post endpoints not implemented in backend yet');
     return {
@@ -221,7 +221,7 @@ class UnifiedApiClient {
     };
   }
 
-  async getComments(postId: string): Promise<{ comments: any[] }> {
+  async getComments(): Promise<{ comments: any[] }> {
     // For now, simulate since comments endpoints don't exist yet
     console.warn('Comments endpoints not implemented in backend yet');
     return { comments: [] };

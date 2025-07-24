@@ -4,11 +4,9 @@ import { userService } from '@/services/user.service'
 import { plugbaseAPI } from '@/lib/plugbase-api'
 import { 
   Post, 
-  User, 
   CreatePostRequest, 
   UpdatePostRequest, 
-  UpdateUserRequest,
-  StorageFile 
+  UpdateUserRequest
 } from '@/lib/plugbase-api'
 import { toast } from '@/hooks/use-toast'
 
@@ -116,7 +114,7 @@ export function useUpdateUser() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateUserRequest }) => 
       userService.updateUser(id, data),
-    onSuccess: (updatedUser) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       queryClient.invalidateQueries({ queryKey: ['currentUser'] })
       toast({
