@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { usePlugbaseAuth } from "@/hooks/usePlugbaseAuth";
+import { usePlugbaseAuth } from "@/hooks/usePlugbaseAuth.tsx";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

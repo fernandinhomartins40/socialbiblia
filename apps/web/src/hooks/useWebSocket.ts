@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState } from 'react'
 import { webSocketService, NotificationData, RealtimeEvent } from '@/services/websocket.service'
-import { usePlugbaseAuth } from './usePlugbaseAuth'
+import { usePlugbaseAuth } from './usePlugbaseAuth.tsx'
 
 export function useWebSocket() {
   const { isAuthenticated } = usePlugbaseAuth()

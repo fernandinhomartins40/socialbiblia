@@ -1,9 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { BrowserRouter } from 'react-router-dom'
-import { AuthProvider } from '@/hooks/usePlugbaseAuth'
+import { AuthProvider } from '@/hooks/usePlugbaseAuth.tsx'
 import { Toaster } from '@/components/ui/toaster'
 import App from './App'
 import './index.css'
@@ -37,7 +36,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Toaster />
         </AuthProvider>
       </BrowserRouter>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {import.meta.env.DEV && (
+        React.createElement(
+          React.lazy(() => import('@tanstack/react-query-devtools').then(m => ({ default: m.ReactQueryDevtools }))),
+          { initialIsOpen: false }
+        )
+      )}
     </QueryClientProvider>
   </React.StrictMode>
 )
