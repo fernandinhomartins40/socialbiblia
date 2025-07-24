@@ -9,7 +9,7 @@ export default async (id: string, userId: string, userRole: string) => {
     if (!checkRequiredDatas(id, userId)) return httpMsg.http422(errorMsg, errorCod);
 
     try {
-        const comment = await CommentsService.approveComment(id, userId, userRole);
+        const comment = await CommentsService.approveComment(id, userId);
         
         logger.info(`Comentário ${id} aprovado com sucesso pelo usuário ${userId}`);
         
