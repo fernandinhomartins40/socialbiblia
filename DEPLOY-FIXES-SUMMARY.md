@@ -216,4 +216,72 @@ import pkg from '../../../../package.json';    // routes/commons/docs/docs_route
 **Docker:** ✅ Warnings removidos
 **Deploy:** ✅ Referências atualizadas
 
-**O container da API deve agora inicializar corretamente sem o erro MODULE_NOT_FOUND.** 
+**O container da API deve agora inicializar corretamente sem o erro MODULE_NOT_FOUND.**
+
+---
+
+## 🚨 **CORREÇÃO CRÍTICA DE BANCO (24/01/2025):**
+
+### 9. **🗃️ Inconsistência de Banco de Dados**
+**Problema Crítico:** Deploy configurado para PostgreSQL mas backend usa SQLite
+
+**Diagnóstico:**
+- ✅ Backend: `schema.prisma` → `provider = "sqlite"`
+- ✅ Desenvolvimento: `DATABASE_URL="file:./prisma/dev.db"`
+- ❌ Deploy: Container PostgreSQL + URLs PostgreSQL
+- ❌ Migrações: Tentando executar em PostgreSQL inexistente
+
+**Soluções:**
+
+#### Docker Compose (docker-compose.new.yml):
+```diff
+- # PostgreSQL Database  
+- postgres: image: postgres:15-alpine
+
++ # Backend API (Express + Prisma + TypeScript + SQLite)
++ DATABASE_URL: file:./data/production.db
+
+- # pgAdmin (Database Administration)
+- pgladmin: image: dpage/pgadmin4:latest
+
++ # SQLite Admin (Database Administration)  
++ sqliteadmin: image: coleifer/sqlite-web:latest
+```
+
+#### Workflow Deploy (.github/workflows/deploy.yml):
+```diff
+- log "Database: PostgreSQL"
++ log "Database: SQLite"
+
+- # Aguardar PostgreSQL
+- pg_isready -U biblicai_user
+
++ # Aguardar API (SQLite é arquivo local)
++ log "SQLite configurado como arquivo local"
+
+- # Verificar tabelas PostgreSQL
+- psql -U biblicai_user -c "\\dt"
+
++ # Verificar arquivo SQLite  
++ ls -la data/production.db
+```
+
+#### Ambiente (.env.production):
+```diff
+- # Database Configuration (PostgreSQL)
+- POSTGRES_DB=biblicai_db
+- DATABASE_URL=postgresql://biblicai_user:...
+
++ # Database Configuration (SQLite)
++ DATABASE_URL=file:./data/production.db
+```
+
+## ✅ **STATUS PÓS-CORREÇÃO DE BANCO:**
+
+**Consistência:** ✅ SQLite em desenvolvimento E produção  
+**Deploy:** ✅ Zero dependências externas de banco  
+**Migrações:** ✅ Executam no mesmo provider (SQLite)  
+**Admin:** ✅ SQLite Admin na porta 8080  
+**Performance:** ✅ Adequado para aplicações pequenas/médias
+
+**As migrações devem agora funcionar corretamente com SQLite em produção.** 
