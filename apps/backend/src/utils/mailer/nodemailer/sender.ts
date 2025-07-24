@@ -1,6 +1,6 @@
 import ejs from 'ejs';
 import nodemailer from './core/transporter';
-import config from '../../config/email';
+import config from '../../../config/email';
 
 export default async (template: any, data: any) => {
     const htmlText = await ejs.renderFile(template.path, data || null);

@@ -1,4 +1,4 @@
-import logger from '../../logger/winston/logger';
+import logger from '../../../logger/winston/logger';
 import transporter from './oauth_client';
 
 const errorSendEmail = 'Error to send e-mail.';
