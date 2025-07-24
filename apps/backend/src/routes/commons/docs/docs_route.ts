@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import swaggerUi from 'swagger-ui-express';
-import pkg from '@packagejson';
+import pkg from '../../../../package.json';
 
 import specs from '@utils/swagger/postman_to_swagger';
 

@@ -4,7 +4,8 @@ import path from 'path';
 
 import apiUri from '@utils/global_api_path/global_api_path';
 import logger from '@utils/logger/winston/logger';
-import { name, version, description, author, license } from '@packagejson';
+import pkg from '../../../package.json';
+const { name, version, description, author, license } = pkg;
 
 const openApi = 'docs/openapi/swagger.yml';
 const postmanCollection = 'docs/postman/postman_collection.json';

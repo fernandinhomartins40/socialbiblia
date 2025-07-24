@@ -1,6 +1,6 @@
 import logger from '@utils/logger/winston/logger';
 import httpMsg from '@utils/http_messages/http_msg';
-import pkg from '@packagejson';
+import pkg from '../../../package.json';
 
 const lblErr = 'API Info error';
 

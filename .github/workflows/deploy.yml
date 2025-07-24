@@ -185,7 +185,7 @@ jobs:
             # ETAPA 1: PREPARAR AMBIENTE
             # ====================================
             log "🚀 INICIANDO DEPLOY BIBLICAI"
-            log "Backend: Vincent Queimado Express + Prisma + TypeScript"
+                         log "Backend: Express + Prisma + TypeScript"
             log "Database: PostgreSQL"
             log "Frontend: React + Vite"
             
@@ -281,7 +281,7 @@ jobs:
                 cat > .env << 'EOF'
             # ==============================================
             # CONFIGURAÇÕES DE PRODUÇÃO - BIBLICAI
-            # Backend: Vincent Queimado Express + Prisma + TypeScript
+                         # Backend: Express + Prisma + TypeScript
             # ==============================================
             
             # Database Configuration (PostgreSQL)
@@ -291,7 +291,7 @@ jobs:
             POSTGRES_PORT=5432
             DATABASE_URL=postgresql://biblicai_user:Biblicai@2024#SecureDB!VPS@postgres:5432/biblicai_db?schema=public
             
-            # API Configuration (Vincent Queimado Backend)
+                         # API Configuration (Backend)
             APP_URL_HOST=0.0.0.0
             APP_URL_PORT=3000
             SSL_ALLOW=false
@@ -300,7 +300,7 @@ jobs:
             API_EXT_URLENCODED=false
             CORS_ALLOW_ORIGIN=*
             
-            # JWT Configuration (Vincent Queimado Format)
+                         # JWT Configuration
             JWT_SECRET_USER=Biblicai@VincentQueimado#UserJWT2024!VPS#Secure
             JWT_SECRET_DEVICE=Biblicai@VincentQueimado#DeviceJWT2024!VPS#Secure
             JWT_EXPIRED_IN=24h
@@ -723,7 +723,7 @@ jobs:
               log "   ✅ pgAdmin:             http://${{ env.VPS_HOST }}:8080"
               log ""
               log "🔧 TECNOLOGIAS DEPLOYADAS:"
-              log "   • Backend: Vincent Queimado Express + Prisma + TypeScript"
+                             log "   • Backend: Express + Prisma + TypeScript"
               log "   • Database: PostgreSQL 15"
               log "   • Frontend: React 18 + Vite"
               log "   • Container: Docker + Docker Compose"
