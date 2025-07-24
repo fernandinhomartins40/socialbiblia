@@ -36,12 +36,12 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: 3344
+      PORT: 3000
       DATABASE_URL: postgresql://${POSTGRES_USER:-biblicai_user}:${POSTGRES_PASSWORD:-Biblicai@2024#SecureDB!VPS#Secure}@postgres:5432/${POSTGRES_DB:-biblicai_db}?schema=public
       
       # App Configuration
       APP_URL_HOST: ${APP_URL_HOST:-0.0.0.0}
-      APP_URL_PORT: ${APP_URL_PORT:-3344}
+      APP_URL_PORT: ${APP_URL_PORT:-3000}
       SSL_ALLOW: ${SSL_ALLOW:-false}
       
       # API Configuration
@@ -75,7 +75,7 @@ services:
       # Timezone
       TZ: ${TZ:-America/Sao_Paulo}
     ports:
-      - "${API_PORT:-3344}:3344"
+      - "${API_PORT:-3000}:3000"
     volumes:
       - api_data:/app/data
       - api_logs:/app/logs
@@ -85,7 +85,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3344/api/info"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/info"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -103,8 +103,8 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      VITE_API_URL: http://localhost:${API_PORT:-3344}
-      VITE_WS_URL: ws://localhost:${API_PORT:-3344}
+      VITE_API_URL: http://localhost:${API_PORT:-3000}
+      VITE_WS_URL: ws://localhost:${API_PORT:-3000}
     ports:
       - "${WEB_PORT:-3000}:3000"
     volumes:
