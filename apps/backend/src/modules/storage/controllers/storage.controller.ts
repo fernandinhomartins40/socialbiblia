@@ -1,8 +1,9 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthenticatedRequest } from '../../../types/auth';
 import multer from 'multer';
 import { StorageService } from '../services/storage.service';
 import { Logger } from '../../../utils/logger';
-import { ApiResponse } from '../../../types/api';
+import { ApiResponse, PaginatedResponse } from '../../../types/api';
 
 // Configuração do multer para upload de arquivos
 const upload = multer({
@@ -38,7 +39,7 @@ export class StorageController {
   constructor(private storageService: StorageService) {}
 
   // POST /api/storage/upload
-  async uploadFile(req: Request, res: Response): Promise<void> {
+  async uploadFile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.file) {
         res.status(400).json({
@@ -75,7 +76,7 @@ export class StorageController {
   }
 
   // POST /api/storage/upload/multiple
-  async uploadMultipleFiles(req: Request, res: Response): Promise<void> {
+  async uploadMultipleFiles(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
         res.status(400).json({
@@ -116,7 +117,7 @@ export class StorageController {
   }
 
   // GET /api/storage/download/:id
-  async downloadFile(req: Request, res: Response): Promise<void> {
+  async downloadFile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
@@ -137,7 +138,7 @@ export class StorageController {
   }
 
   // GET /api/storage/view/:id
-  async viewFile(req: Request, res: Response): Promise<void> {
+  async viewFile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
@@ -158,7 +159,7 @@ export class StorageController {
   }
 
   // DELETE /api/storage/:id
-  async deleteFile(req: Request, res: Response): Promise<void> {
+  async deleteFile(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
@@ -188,7 +189,7 @@ export class StorageController {
   }
 
   // GET /api/storage/:id/metadata
-  async getFileMetadata(req: Request, res: Response): Promise<void> {
+  async getFileMetadata(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
@@ -218,7 +219,7 @@ export class StorageController {
   }
 
   // GET /api/storage
-  async listFiles(req: Request, res: Response): Promise<void> {
+  async listFiles(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { provider, mimeType, page = 1, limit = 10 } = req.query;
       const userId = req.user?.id;
@@ -231,14 +232,18 @@ export class StorageController {
         limit: Number(limit)
       });
 
-      const response: ApiResponse = {
+      const response: PaginatedResponse<any> = {
         success: true,
         data: result.files,
         meta: {
           page: result.page,
           limit: result.limit,
           total: result.total,
-          totalPages: result.totalPages
+          totalPages: result.totalPages,
+          hasNext: result.page * result.limit < result.total,
+          hasPrev: result.page > 1,
+          timestamp: new Date().toISOString(),
+          requestId: req.header('x-request-id') || 'unknown'
         }
       };
 
@@ -253,7 +258,7 @@ export class StorageController {
   }
 
   // GET /api/storage/:id/url
-  async getPublicUrl(req: Request, res: Response): Promise<void> {
+  async getPublicUrl(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
 
@@ -275,7 +280,7 @@ export class StorageController {
   }
 
   // GET /api/storage/providers
-  async getProviders(req: Request, res: Response): Promise<void> {
+  async getProviders(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const providers = this.storageService.getAvailableProviders();
       const stats = this.storageService.getStorageStats();
@@ -299,7 +304,7 @@ export class StorageController {
   }
 
   // GET /api/storage/test
-  async getTestPage(req: Request, res: Response): Promise<void> {
+  async getTestPage(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const html = this.generateTestHTML();
       res.setHeader('Content-Type', 'text/html');

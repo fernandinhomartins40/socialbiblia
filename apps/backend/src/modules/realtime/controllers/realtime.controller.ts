@@ -1,4 +1,5 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthenticatedRequest } from '../../../types/auth';
 import { RealtimeService } from '../services/realtime.service';
 import { Logger } from '../../../utils/logger';
 import { ApiResponse } from '../../../types/api';
@@ -7,7 +8,7 @@ export class RealtimeController {
   constructor(private realtimeService: RealtimeService) {}
 
   // GET /api/realtime/stats
-  async getStats(req: Request, res: Response): Promise<void> {
+  async getStats(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const stats = this.realtimeService.getRealtimeStats();
 
@@ -27,7 +28,7 @@ export class RealtimeController {
   }
 
   // GET /api/realtime/channels
-  async getChannels(req: Request, res: Response): Promise<void> {
+  async getChannels(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const channels = this.realtimeService.getActiveChannels();
 
@@ -47,7 +48,7 @@ export class RealtimeController {
   }
 
   // GET /api/realtime/channels/:channel/subscribers
-  async getChannelSubscribers(req: Request, res: Response): Promise<void> {
+  async getChannelSubscribers(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { channel } = req.params;
       const subscribers = this.realtimeService.getChannelSubscribers(channel);
@@ -72,7 +73,7 @@ export class RealtimeController {
   }
 
   // POST /api/realtime/broadcast
-  async broadcast(req: Request, res: Response): Promise<void> {
+  async broadcast(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { event, data, options = {} } = req.body;
 
@@ -103,7 +104,7 @@ export class RealtimeController {
   }
 
   // POST /api/realtime/notification
-  async sendNotification(req: Request, res: Response): Promise<void> {
+  async sendNotification(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { userId, title, message, type, action } = req.body;
 
@@ -139,7 +140,7 @@ export class RealtimeController {
   }
 
   // POST /api/realtime/data-update
-  async sendDataUpdate(req: Request, res: Response): Promise<void> {
+  async sendDataUpdate(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { channel, entityType, operation, data } = req.body;
 
@@ -178,7 +179,7 @@ export class RealtimeController {
   }
 
   // POST /api/realtime/chat
-  async sendChatMessage(req: Request, res: Response): Promise<void> {
+  async sendChatMessage(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { room, message: messageText } = req.body;
       const userId = req.user?.id;
@@ -223,7 +224,7 @@ export class RealtimeController {
   }
 
   // POST /api/realtime/user-status
-  async updateUserStatus(req: Request, res: Response): Promise<void> {
+  async updateUserStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { status } = req.body;
       const userId = req.user?.id;
@@ -263,7 +264,7 @@ export class RealtimeController {
   }
 
   // POST /api/realtime/progress
-  async sendProgressUpdate(req: Request, res: Response): Promise<void> {
+  async sendProgressUpdate(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { taskId, percentage, message, completed, error: taskError } = req.body;
       const userId = req.user?.id;
@@ -308,7 +309,7 @@ export class RealtimeController {
   }
 
   // GET /api/realtime/test
-  async getTestPage(req: Request, res: Response): Promise<void> {
+  async getTestPage(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const html = this.generateTestHTML();
       res.setHeader('Content-Type', 'text/html');

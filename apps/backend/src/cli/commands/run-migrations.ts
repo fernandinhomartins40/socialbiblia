@@ -35,7 +35,7 @@ export async function runMigrations(options: MigrateOptions) {
     console.log('✅ Todas as migrations foram executadas com sucesso!');
     
   } catch (error) {
-    logger.error('Erro ao executar migrations:', error);
+    Logger.error('Erro ao executar migrations:', error instanceof Error ? error : new Error(String(error)));
     console.error('❌ Erro ao executar migrations');
     process.exit(1);
   }

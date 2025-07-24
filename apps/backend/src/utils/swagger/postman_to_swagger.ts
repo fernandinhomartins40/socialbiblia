@@ -20,8 +20,8 @@ export default async () => {
             title: name,
             version,
             description,
-            license: { name: license, url: author.url },
-            contact: { name: author.name, email: author.email },
+            license: { name: license || 'MIT', url: '' },
+            contact: { name: typeof author === 'string' ? author : (author as any)?.name || 'Author', email: typeof author === 'string' ? '' : (author as any)?.email || '' },
         },
         servers,
     })

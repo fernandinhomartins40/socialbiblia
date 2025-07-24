@@ -58,6 +58,6 @@ program
   .command('migration <name>')
   .description('Cria uma nova migration para um plugin')
   .option('-p, --plugin <plugin>', 'Plugin alvo (obrigatório)')
-  .action(createMigration);
+  .action((name: string, options: any) => createMigration(name, options));
 
 program.parse();

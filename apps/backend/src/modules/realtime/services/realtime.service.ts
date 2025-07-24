@@ -60,7 +60,9 @@ export class RealtimeService extends PluginWebSocket {
         }
       }
 
-      Logger.debug(`Subscription criada para conexão ${connectionId}`, options);
+      Logger.debug(`Subscription criada para conexão ${connectionId}`, {
+        userId: options.userId
+      });
     } catch (error) {
       Logger.error('Erro ao criar subscription:', error);
       throw error;

@@ -1,87 +1,45 @@
+import { Router } from 'express';
 import { PluginRoute } from '../../../types/plugin';
 import { StorageController } from '../controllers/storage.controller';
 import { authenticate } from '../../../middleware/auth';
 
 export function storageRoutes(controller: StorageController): PluginRoute[] {
+  const router = Router();
+  
+  // Página de teste do Storage
+  router.get('/storage/test', controller.getTestPage.bind(controller));
+  
+  // Upload de arquivo único
+  router.post('/api/storage/upload', controller.upload.single('file'), controller.uploadFile.bind(controller));
+  
+  // Upload de múltiplos arquivos
+  router.post('/api/storage/upload/multiple', controller.upload.array('files', 5), controller.uploadMultipleFiles.bind(controller));
+  
+  // Download de arquivo
+  router.get('/api/storage/download/:id', controller.downloadFile.bind(controller));
+  
+  // Visualizar arquivo (inline)
+  router.get('/api/storage/view/:id', controller.viewFile.bind(controller));
+  
+  // Deletar arquivo
+  router.delete('/api/storage/:id', controller.deleteFile.bind(controller));
+  
+  // Obter metadados do arquivo
+  router.get('/api/storage/:id/metadata', controller.getFileMetadata.bind(controller));
+  
+  // Listar arquivos
+  router.get('/api/storage', controller.listFiles.bind(controller));
+  
+  // Obter URL pública do arquivo
+  router.get('/api/storage/:id/url', controller.getPublicUrl.bind(controller));
+  
+  // Listar providers disponíveis
+  router.get('/api/storage/providers', controller.getProviders.bind(controller));
+  
   return [
-    // Página de teste do Storage
     {
-      method: 'GET',
-      path: '/storage/test',
-      handler: controller.getTestPage.bind(controller),
-      middleware: []
-    },
-
-    // Upload de arquivo único
-    {
-      method: 'POST',
-      path: '/api/storage/upload',
-      handler: controller.uploadFile.bind(controller),
-      middleware: [controller.upload.single('file')]
-    },
-
-    // Upload de múltiplos arquivos
-    {
-      method: 'POST',
-      path: '/api/storage/upload/multiple',
-      handler: controller.uploadMultipleFiles.bind(controller),
-      middleware: [controller.upload.array('files', 5)]
-    },
-
-    // Download de arquivo
-    {
-      method: 'GET',
-      path: '/api/storage/download/:id',
-      handler: controller.downloadFile.bind(controller),
-      middleware: []
-    },
-
-    // Visualizar arquivo (inline)
-    {
-      method: 'GET',
-      path: '/api/storage/view/:id',
-      handler: controller.viewFile.bind(controller),
-      middleware: []
-    },
-
-    // Deletar arquivo
-    {
-      method: 'DELETE',
-      path: '/api/storage/:id',
-      handler: controller.deleteFile.bind(controller),
-      middleware: []
-    },
-
-    // Obter metadados do arquivo
-    {
-      method: 'GET',
-      path: '/api/storage/:id/metadata',
-      handler: controller.getFileMetadata.bind(controller),
-      middleware: []
-    },
-
-    // Listar arquivos
-    {
-      method: 'GET',
-      path: '/api/storage',
-      handler: controller.listFiles.bind(controller),
-      middleware: []
-    },
-
-    // Obter URL pública do arquivo
-    {
-      method: 'GET',
-      path: '/api/storage/:id/url',
-      handler: controller.getPublicUrl.bind(controller),
-      middleware: []
-    },
-
-    // Listar providers disponíveis
-    {
-      method: 'GET',
-      path: '/api/storage/providers',
-      handler: controller.getProviders.bind(controller),
-      middleware: []
+      path: '/',
+      router,
     }
   ];
 }

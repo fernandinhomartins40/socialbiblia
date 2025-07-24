@@ -38,7 +38,7 @@ export async function disablePlugin(name: string) {
     console.log(`📋 Reinicie o servidor para aplicar as mudanças: npm run dev`);
     
   } catch (error) {
-    logger.error('Erro ao desabilitar plugin:', error);
+    Logger.error('Erro ao desabilitar plugin:', error instanceof Error ? error : new Error(String(error)));
     console.error('❌ Erro ao desabilitar plugin');
     process.exit(1);
   }

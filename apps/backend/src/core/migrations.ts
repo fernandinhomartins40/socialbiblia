@@ -37,9 +37,9 @@ export class MigrationManager {
         ON plugin_migrations(plugin_name)
       `;
       
-      logger.info('Tabela de migrations inicializada');
+      Logger.info('Tabela de migrations inicializada');
     } catch (error) {
-      logger.error('Erro ao inicializar tabela de migrations:', error);
+      Logger.error('Erro ao inicializar tabela de migrations:', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -58,7 +58,7 @@ export class MigrationManager {
       
       return result.map(row => row.migration_name);
     } catch (error) {
-      logger.error('Erro ao buscar migrations executadas:', error);
+      Logger.error('Erro ao buscar migrations executadas:', error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -72,7 +72,7 @@ export class MigrationManager {
         !executed.includes(migration.name)
       );
     } catch (error) {
-      logger.error('Erro ao buscar migrations pendentes:', error);
+      Logger.error('Erro ao buscar migrations pendentes:', error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -121,7 +121,7 @@ export class MigrationManager {
       
       return migrations.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
     } catch (error) {
-      logger.error('Erro ao buscar migrations disponíveis:', error);
+      Logger.error('Erro ao buscar migrations disponíveis:', error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }
@@ -157,7 +157,7 @@ export class MigrationManager {
       
       const sql = await fs.readFile(migrationPath, 'utf-8');
       
-      logger.info(`Executando migration: ${migration.plugin}/${migration.filename}`);
+      Logger.info(`Executando migration: ${migration.plugin}/${migration.filename}`);
       
       // Executar migration em uma transação
       await prisma.$transaction(async (tx) => {
@@ -172,9 +172,9 @@ export class MigrationManager {
         `;
       });
       
-      logger.info(`Migration executada com sucesso: ${migration.plugin}/${migration.filename}`);
+      Logger.info(`Migration executada com sucesso: ${migration.plugin}/${migration.filename}`);
     } catch (error) {
-      logger.error(`Erro ao executar migration ${migration.plugin}/${migration.filename}:`, error);
+      Logger.error(`Erro ao executar migration ${migration.plugin}/${migration.filename}:`, error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -186,22 +186,22 @@ export class MigrationManager {
       const pending = await this.getPendingMigrations(pluginName);
       
       if (pending.length === 0) {
-        logger.info(pluginName ? 
+        Logger.info(pluginName ? 
           `Nenhuma migration pendente para o plugin ${pluginName}` :
           'Nenhuma migration pendente'
         );
         return;
       }
       
-      logger.info(`Executando ${pending.length} migration(s)...`);
+      Logger.info(`Executando ${pending.length} migration(s)...`);
       
       for (const migration of pending) {
         await this.runMigration(migration);
       }
       
-      logger.info('Todas as migrations foram executadas com sucesso');
+      Logger.info('Todas as migrations foram executadas com sucesso');
     } catch (error) {
-      logger.error('Erro ao executar migrations:', error);
+      Logger.error('Erro ao executar migrations:', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -240,10 +240,10 @@ ON CONFLICT (plugin_name, migration_name) DO NOTHING;
       
       await fs.writeFile(migrationPath, template);
       
-      logger.info(`Migration criada: ${migrationPath}`);
+      Logger.info(`Migration criada: ${migrationPath}`);
       return migrationPath;
     } catch (error) {
-      logger.error('Erro ao criar migration:', error);
+      Logger.error('Erro ao criar migration:', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

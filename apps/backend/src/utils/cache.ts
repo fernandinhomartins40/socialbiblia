@@ -59,7 +59,7 @@ class CacheService {
         return null;
       }
 
-      const parsed = JSON.parse(value) as T;
+      const parsed = JSON.parse(String(value)) as T;
       Logger.debug('Cache hit', { key });
       return parsed;
     } catch (error) {

@@ -35,7 +35,7 @@ export async function createMigration(name: string, options: CreateMigrationOpti
     console.log(`2. Execute a migration: plugbase migrate -p ${options.plugin}`);
     
   } catch (error) {
-    logger.error('Erro ao criar migration:', error);
+    Logger.error('Erro ao criar migration:', error instanceof Error ? error : new Error(String(error)));
     console.error('❌ Erro ao criar migration');
     process.exit(1);
   }

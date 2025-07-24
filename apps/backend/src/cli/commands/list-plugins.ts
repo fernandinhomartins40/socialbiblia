@@ -64,7 +64,7 @@ export async function listPlugins(options: ListOptions) {
     }
     
   } catch (error) {
-    logger.error('Erro ao listar plugins:', error);
+    Logger.error('Erro ao listar plugins:', error instanceof Error ? error : new Error(String(error)));
     console.error('❌ Erro ao listar plugins');
     process.exit(1);
   }
@@ -75,7 +75,7 @@ function extractPluginMetadata(pluginContent: string): any {
     // Extrair o objeto metadata usando regex
     const metadataMatch = pluginContent.match(/metadata\s*=\s*{([^}]+)}/s);
     
-    if (!metadataMatch) {
+    if (!metadataMatch || !metadataMatch[1]) {
       return { enabled: true };
     }
     
@@ -90,18 +90,18 @@ function extractPluginMetadata(pluginContent: string): any {
     const dependenciesMatch = metadataStr.match(/dependencies:\s*\[([^\]]*)\]/);
     
     const metadata: any = {
-      name: nameMatch?.[1],
-      version: versionMatch?.[1],
-      description: descriptionMatch?.[1],
+      name: nameMatch?.[1] || '',
+      version: versionMatch?.[1] || '',
+      description: descriptionMatch?.[1] || '',
       enabled: enabledMatch?.[1] === 'true',
-      priority: priorityMatch ? parseInt(priorityMatch[1]) : undefined
+      priority: priorityMatch ? parseInt(priorityMatch[1]) : 0
     };
     
-    if (dependenciesMatch) {
+    if (dependenciesMatch && dependenciesMatch[1]) {
       metadata.dependencies = dependenciesMatch[1]
         .split(',')
-        .map(dep => dep.replace(/['"`\s]/g, ''))
-        .filter(dep => dep.length > 0);
+        .map((dep: string) => dep.replace(/['"`\s]/g, ''))
+        .filter((dep: string) => dep.length > 0);
     }
     
     return metadata;

@@ -99,6 +99,8 @@ const updateUserPassword = async (id: string, plainPassword: string) => {
             constError.RESET_PASSWORD_MSG.failToRequest,
             constError.ERROR_CODE.resetPassword,
         );
+    
+    return updated;
 };
 
 const sendEmail = async (data: any) => {
