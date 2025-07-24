@@ -1,10 +1,11 @@
-import prisma from '../../../prisma/prisma-client';
+import { PrismaClient } from '@prisma/client';
 import logger from '../../utils/logger/winston/logger';
 
+const prisma = new PrismaClient();
 const msgError = 'Failed to update a post.';
 
-export default async (where: any, data: any, select: object) => {
-    const result = await prisma.post
+export default (where: object, data: object, select: object) => {
+    const result = prisma.post
         .update({ where, data, select })
         .then((res: any) => ({ success: true, data: res, error: null }))
         .catch((error: any) => /* istanbul ignore next */ {

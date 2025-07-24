@@ -1,16 +1,14 @@
-import prisma from '../../../prisma/prisma-client';
+import { PrismaClient } from '@prisma/client';
 import logger from '../../utils/logger/winston/logger';
 
+const prisma = new PrismaClient();
 const msgError = 'Failed to delete a comment.';
 
 export default async (id: string) => {
     const where = { id };
 
     const result = await prisma.comment
-        .update({ 
-            where, 
-            data: { deletedAt: new Date() }
-        })
+        .delete({ where })
         .then((data: any) => ({ success: true, data, error: null }))
         .catch((error: any) => /* istanbul ignore next */ {
             logger.error(`${msgError} ${error}`);

@@ -1,12 +1,13 @@
-import prisma from '../../../prisma/prisma-client';
+import { PrismaClient } from '@prisma/client';
 import logger from '../../utils/logger/winston/logger';
 
-const msgError = 'Failed to get a comment.';
+const prisma = new PrismaClient();
+const msgError = 'Failed to get one comment.';
 
-export default async (where: any, select: object) => {
-    const result = await prisma.comment
+export default (where: object, select: object) => {
+    const result = prisma.comment
         .findFirst({ where, select })
-        .then((data: any) => ({ success: true, data, error: null }))
+        .then((res: any) => ({ success: true, data: res, error: null }))
         .catch((error: any) => /* istanbul ignore next */ {
             logger.error(`${msgError} ${error}`);
             return { success: false, data: null, error: msgError };

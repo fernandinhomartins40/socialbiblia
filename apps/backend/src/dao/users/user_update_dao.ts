@@ -1,17 +1,12 @@
-import prisma from '../../../prisma/prisma-client';
+import { PrismaClient } from '@prisma/client';
 import logger from '../../utils/logger/winston/logger';
 
-const msgError = 'Failed to update a user.';
+const prisma = new PrismaClient();
+const msgError = 'Failed to update an user.';
 
-export default async (id: string, data: any, select: object) => {
-    const where = { id };
-
-    const result = await prisma.user
-        .update({
-            where,
-            data,
-            select,
-        })
+export default (where: object, data: object, select: object) => {
+    const result = prisma.user
+        .update({ where, data, select })
         .then((res: any) => ({ success: true, data: res, error: null }))
         .catch((error: any) => /* istanbul ignore next */ {
             logger.error(`${msgError} ${error}`);

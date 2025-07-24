@@ -1,6 +1,7 @@
-import prisma from '../../../prisma/prisma-client';
+import { PrismaClient } from '@prisma/client';
 import logger from '../../utils/logger/winston/logger';
 
+const prisma = new PrismaClient();
 const msgError = 'Failed to create a user.';
 
 export default (datas: any, select: object) => {

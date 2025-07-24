@@ -1,6 +1,7 @@
-import prisma from '../../../prisma/prisma-client';
+import { PrismaClient } from '@prisma/client';
 import logger from '../../utils/logger/winston/logger';
 
+const prisma = new PrismaClient();
 const msgError = 'Failed to get one user.';
 
 export default (where: object, select: object) => {
