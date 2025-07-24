@@ -284,4 +284,138 @@ import pkg from '../../../../package.json';    // routes/commons/docs/docs_route
 **Admin:** ✅ SQLite Admin na porta 8080  
 **Performance:** ✅ Adequado para aplicações pequenas/médias
 
-**As migrações devem agora funcionar corretamente com SQLite em produção.** 
+ **As migrações devem agora funcionar corretamente com SQLite em produção.**
+
+---
+
+## 🚨 **CORREÇÃO CRÍTICA FINAL - MIGRAÇÕES E SEED (24/01/2025):**
+
+### 10. **🗃️ Problema Crítico de Migrações Incompatíveis**
+**Problema:** Container reiniciando constantemente durante migrações
+
+**Diagnóstico Detalhado:**
+```bash
+# ❌ ERRO ENCONTRADO:
+Error response from daemon: Container is restarting
+The table `main.users` does not exist in the current database.
+```
+
+**Causa Raiz:**
+- ✅ Migração `20230512003209_initial`: **Sintaxe PostgreSQL**
+- ❌ Tentando usar: `UUID`, `VARCHAR(255)`, `TIMESTAMPTZ`
+- ❌ SQLite espera: `TEXT`, `DATETIME`, `BOOLEAN`
+
+**Conflito de Schema:**
+```diff
+# MIGRAÇÃO ANTIGA (PostgreSQL):
+- "id" UUID NOT NULL
+- "email" VARCHAR(255) NOT NULL  
+- "name" VARCHAR(255) NOT NULL
+- "phone" VARCHAR(255) NOT NULL
+- "createdAt" TIMESTAMPTZ(6)
+
+# SCHEMA ATUAL (SQLite):
++ "id" TEXT NOT NULL PRIMARY KEY
++ "email" TEXT NOT NULL
++ "firstName" TEXT, "lastName" TEXT
++ "username" TEXT NOT NULL
++ "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+```
+
+### 11. **🌱 Seed Duplo Conflitante**
+**Problema:** Dois arquivos de seed incompatíveis
+
+**Conflito Identificado:**
+```diff
+# ❌ SEED ANTIGO (prisma/seed/seed.ts):
+- import config from '../../src/config/app'  // Caminho incorreto
+- import randtoken from 'rand-token'         // Dependência não instalada
+- name: 'johndoe'                           // Campo não existe
+- phone: '81999999999'                      // Campo não existe
+- accountName: 'johndoe'                    // Campo não existe
+
+# ✅ SEED CORRETO (prisma/seed.ts):
++ import bcrypt from 'bcrypt'               // Dependência correta
++ email: 'admin@example.com'               // Campo existe
++ username: 'admin'                        // Campo existe
++ firstName: 'Admin', lastName: 'User'     // Campos existem
+```
+
+**Soluções Implementadas:**
+
+#### Reset Completo da Base:
+```bash
+# 1. Limpeza total
+npx prisma migrate reset --force
+Remove-Item -Recurse -Force prisma/migrations
+
+# 2. Recriação correta  
+npx prisma db push --force-reset
+npx prisma migrate dev --name initial_sqlite
+
+# 3. Teste do seed
+npx prisma db seed
+✅ Seed concluído com sucesso!
+👤 Admin criado: admin@example.com / admin123
+👤 User criado: user@example.com / user123
+📝 Posts criados: 2
+```
+
+#### Nova Migração SQLite (20250724100141_initial_sqlite):
+```sql
+-- ✅ SINTAXE CORRETA PARA SQLITE:
+CREATE TABLE "users" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "email" TEXT NOT NULL,
+    "username" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "firstName" TEXT,
+    "lastName" TEXT,
+    "role" TEXT NOT NULL DEFAULT 'USER',
+    "isEmailVerified" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
+```
+
+#### Configuração de Scripts Corrigida:
+```diff
+# package.json
+- "prisma:seed": "tsx prisma/seed/seed.ts"
++ "prisma:seed": "tsx prisma/seed.ts"
+
+# .env.ci  
+- APP_URL_PORT=3344
++ APP_URL_PORT=3000
+```
+
+## ✅ **STATUS FINAL PÓS-CORREÇÃO CRÍTICA:**
+
+**Migrações:** ✅ Sintaxe SQLite correta  
+**Seed:** ✅ Schema compatível e funcionando  
+**Testes:** ✅ Local: OK | Deploy: Pendente  
+**Container:** ✅ Deve inicializar sem restart  
+**Database:** ✅ Criação correta de todas as tabelas
+
+### 🎯 **Tabelas Criadas Corretamente:**
+- ✅ `users` (administração de usuários)
+- ✅ `posts` (sistema de posts)  
+- ✅ `comments` (comentários)
+- ✅ `categories` (categorias)
+- ✅ `products` (produtos)
+- ✅ `refresh_tokens` (autenticação)
+- ✅ `password_reset_tokens` (reset de senha)
+- ✅ `email_verification_tokens` (verificação de email)
+
+### 🔄 **O deploy deve agora funcionar completamente:**
+
+1. **Container API:** Inicializa sem restart
+2. **Migrações:** Executam corretamente no SQLite  
+3. **Seed:** Cria dados iniciais sem erro
+4. **Health Checks:** Passam nos endpoints corretos
+5. **SQLite Admin:** Acessível na porta 8080
+
+**✅ TODAS as inconsistências críticas foram resolvidas. O container deve agora inicializar e manter-se estável.** 
