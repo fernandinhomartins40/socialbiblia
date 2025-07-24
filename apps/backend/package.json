@@ -40,6 +40,9 @@
   ],
   "author": "Plugbase Team",
   "license": "MIT",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^5.7.1",
     "@types/redis": "^4.0.10",

@@ -5,6 +5,7 @@ import logsRoute from '@routes/commons/logs/logs_route';
 import docsRoute from '@routes/commons/docs/docs_route';
 import emailsRoute from '@routes/commons/templates/emails_route';
 import smsRoute from '@routes/commons/templates/sms_route';
+import healthRoute from '@routes/commons/health/health.routes';
 import config from '@config/app';
 
 const router = Router();
@@ -21,6 +22,10 @@ const defaultRoutes = [
     {
         path: '/logs',
         route: logsRoute,
+    },
+    {
+        path: '/health',
+        route: healthRoute,
     },
 ];
 
