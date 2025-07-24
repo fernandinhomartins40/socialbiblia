@@ -25,7 +25,7 @@ services:
     build: .
     container_name: plugbase-backend
     ports:
-      - "${PORT:-8080}:8080"
+      - "${PORT:-3000}:3000"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/plugbase

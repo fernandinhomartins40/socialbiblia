@@ -5,7 +5,7 @@ dotenv.config();
 
 export const config = {
   server: {
-    port: parseInt(process.env.PORT || '8080', 10),
+    port: parseInt(process.env.PORT || '3000', 10),
     nodeEnv: process.env.NODE_ENV || 'development',
     appName: process.env.APP_NAME || 'plugbase-backend',
   },
