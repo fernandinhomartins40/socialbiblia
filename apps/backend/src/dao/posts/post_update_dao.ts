@@ -1,10 +1,14 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import logger from '../../utils/logger/winston/logger';
 
 const prisma = new PrismaClient();
 const msgError = 'Failed to update a post.';
 
-export default (where: object, data: object, select: object) => {
+export default (
+    where: Prisma.PostWhereUniqueInput, 
+    data: Prisma.PostUpdateInput, 
+    select?: Prisma.PostSelect
+) => {
     const result = prisma.post
         .update({ where, data, select })
         .then((res: any) => ({ success: true, data: res, error: null }))

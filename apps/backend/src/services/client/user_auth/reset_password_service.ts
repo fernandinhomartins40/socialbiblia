@@ -93,7 +93,7 @@ const updateUserPassword = async (id: string, plainPassword: string) => {
         );
 
     // Update user password
-    const updated = await servUpdateUser(id, { password: hashed.data }, select);
+    const updated = await servUpdateUser({ id }, { password: hashed.data }, select);
     if (!updated.success)
         return httpMsg.http422(
             constError.RESET_PASSWORD_MSG.failToRequest,

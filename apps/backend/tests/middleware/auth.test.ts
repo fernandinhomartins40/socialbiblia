@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { authenticateToken, authorizeRoles } from '../../src/middleware/auth';
+import auth from '../../src/middlewares/auth/authenticate';
 import { UnauthorizedError, ForbiddenError } from '../../src/utils/errors';
 import { prisma } from '../../src/core/database';
 import { config } from '../../src/core/config';

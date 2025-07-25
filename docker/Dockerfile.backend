@@ -9,17 +9,11 @@ COPY package*.json ./
 COPY turbo.json ./
 COPY tsconfig.base.json ./
 
-# Copiar packages
-COPY packages/ ./packages/
-
 # Copiar aplicação backend
 COPY apps/backend/ ./apps/backend/
 
 # Instalar dependências
 RUN npm ci
-
-# Build dos packages compartilhados primeiro
-RUN npm run build:packages
 
 # Build da aplicação backend
 RUN npm run build:backend

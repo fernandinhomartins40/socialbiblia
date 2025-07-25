@@ -1,7 +1,7 @@
 import { Plugin } from '../../types/plugin';
 import { postsRouter } from './posts.routes';
 import { Logger } from '../../utils/logger';
-import { createContentLimiter } from '../../middleware/rateLimiting';
+import { createContentLimiter } from '../../core/middlewares';
 
 const postsPlugin: Plugin = {
   metadata: {

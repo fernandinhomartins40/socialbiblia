@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { Plugin } from '../../types/plugin';
 import { Logger } from '../../utils/logger';
 import { ResponseUtil } from '../../utils/responses';
-import { authenticateToken } from '../../middleware/auth';
+import { authenticateToken } from '../../core/middlewares';
 
 // Criar router para o plugin exemplo
 const exampleRouter = Router();

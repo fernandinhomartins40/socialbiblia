@@ -2,7 +2,7 @@ export interface IProcessEnv {
     [key: string]: string | undefined;
 }
 
-interface IDatabase {
+export interface IDatabase {
     url: string;
 }
 

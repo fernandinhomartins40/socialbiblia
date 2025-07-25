@@ -57,10 +57,7 @@ cd socialbiblia
 npm install
 ```
 
-3. **Configure o banco de dados (usando Docker):**
-```bash
-docker-compose up -d postgres
-```
+3. **O banco de dados SQLite será criado automaticamente na primeira execução**
 
 4. **Configure as variáveis de ambiente:**
 ```bash
@@ -190,12 +187,12 @@ src/
 
 ### Banco de Dados
 
-O projeto utiliza PostgreSQL com Prisma ORM. O schema está definido em `apps/api/prisma/schema.prisma`.
+O projeto utiliza SQLite com Prisma ORM para simplicidade e facilidade de deploy. O schema está definido em `apps/backend/prisma/schema.prisma`.
 
 **Comandos úteis do Prisma:**
 
 ```bash
-cd apps/api
+cd apps/backend
 
 # Criar nova migração
 npx prisma migrate dev --name nome_da_migracao
@@ -212,36 +209,32 @@ npx prisma migrate reset
 
 ## 🐳 Docker
 
-Para desenvolvimento com Docker:
+Para desenvolvimento e produção com Docker:
 
 ```bash
-# Iniciar apenas o banco
-docker-compose up -d postgres
-
-# Iniciar banco + pgAdmin
-docker-compose up -d postgres pgadmin
+# Build e iniciar todos os serviços
+npm run docker:build
+npm run docker:up
 
 # Ver logs
-docker-compose logs -f postgres
+docker-compose -f docker-compose.new.yml logs -f
 
 # Parar serviços
-docker-compose down
+npm run docker:down
 ```
 
-**pgAdmin:** Acesse em `http://localhost:8080`
-- Email: `admin@socialbiblia.com`
-- Senha: `admin`
+**SQLite Admin:** Acesse em `http://localhost:8080` para administração web do banco SQLite
 
 ## 🔧 Configurações
 
 ### Variáveis de Ambiente
 
-O arquivo `.env.example` no backend contém todas as variáveis necessárias. Principais configurações:
+O arquivo `.env.production` contém todas as configurações necessárias. Principais configurações:
 
-- `DATABASE_URL`: String de conexão PostgreSQL
+- `DATABASE_URL`: Caminho do arquivo SQLite (ex: `file:./data/production.db`)
 - `JWT_SECRET_*`: Chaves secretas para JWT
 - `CORS_ALLOW_ORIGIN`: Origem permitida para CORS
-- `APP_URL_PORT`: Porta do servidor backend
+- `APP_URL_PORT`: Porta do servidor backend (padrão: 3000)
 
 ### TypeScript
 
@@ -263,10 +256,10 @@ O projeto está configurado com deploy automático via GitHub Actions para a VPS
    - Deploy manual via GitHub Actions
 
 **URLs de acesso após deploy:**
-- **Principal:** `http://31.97.85.98` (via Nginx - se disponível)
-- **Frontend:** `http://31.97.85.98:3000`
-- **API:** `http://31.97.85.98:4000`
-- **pgAdmin:** `http://31.97.85.98:8080`
+- **Principal:** `http://31.97.85.98` (Frontend via Nginx Proxy)
+- **API:** `http://31.97.85.98/api` (Backend via Nginx Proxy)
+- **Health Check:** `http://31.97.85.98/health` (Status do sistema)
+- **SQLite Admin:** `http://31.97.85.98:8080` (Administração de banco)
 
 ### Deploy Manual (Docker)
 
@@ -275,14 +268,18 @@ O projeto está configurado com deploy automático via GitHub Actions para a VPS
 cp .env.example .env.production
 # Editar .env.production com suas configurações
 
-# 2. Build e iniciar
-docker compose -f docker-compose.production.yml up -d --build
+# 2. Build e iniciar todos os serviços
+docker compose -f docker-compose.new.yml up -d --build
 
-# 3. Executar migrações
-docker compose -f docker-compose.production.yml exec api npm run prisma:migrate deploy
+# 3. Executar migrações do banco SQLite
+docker compose -f docker-compose.new.yml exec api npx prisma migrate deploy
 
 # 4. Seed inicial (opcional)
-docker compose -f docker-compose.production.yml exec api npm run prisma:seed
+docker compose -f docker-compose.new.yml exec api npm run prisma:seed
+
+# 5. Verificar status dos serviços
+docker compose -f docker-compose.new.yml ps
+curl http://localhost:80/health
 ```
 
 ### Deploy Local (Desenvolvimento)
@@ -302,11 +299,20 @@ npm run build
 ### Monitoramento
 
 ```bash
-# Ver logs
-docker compose -f docker-compose.production.yml logs -f
+# Ver logs de todos os serviços
+docker compose -f docker-compose.new.yml logs -f
+
+# Ver logs específicos
+docker compose -f docker-compose.new.yml logs -f api     # Backend
+docker compose -f docker-compose.new.yml logs -f web     # Frontend
+docker compose -f docker-compose.new.yml logs -f nginx   # Proxy
 
 # Status dos containers
-docker compose -f docker-compose.production.yml ps
+docker compose -f docker-compose.new.yml ps
+
+# Health checks
+curl http://localhost:80/health        # Nginx proxy
+curl http://localhost:80/api/info      # API status
 
 # Uso de recursos
 docker stats

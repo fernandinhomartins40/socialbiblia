@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { PluginRoute } from '../../../types/plugin';
 import { StorageController } from '../controllers/storage.controller';
-import { authenticate } from '../../../middleware/auth';
+import auth from '../../../middlewares/auth/authenticate';
 
 export function storageRoutes(controller: StorageController): PluginRoute[] {
   const router = Router();

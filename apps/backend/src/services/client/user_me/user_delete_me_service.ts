@@ -49,7 +49,7 @@ const updateUser = async (id: string, datas: any) => {
         isDeleted: true,
     };
 
-    const result = await servUpdateUser(id, datas, select);
+    const result = await servUpdateUser({ id }, datas, select);
 
     /* istanbul ignore if */
     if (!result.success || !result.data) return { success: false, data: null };

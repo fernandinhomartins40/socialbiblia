@@ -161,7 +161,7 @@ const updateUsr = async (id: string, datas: any) => {
     datas.tokenOfResetPassword = randtoken.suid(16);
 
     // Update user
-    const updated = await updateUser(id, datas, select);
+    const updated = await updateUser({ id }, datas, select);
 
     /* istanbul ignore if */
     if (!updated.success || !updated.data) return { success: false, data: null };

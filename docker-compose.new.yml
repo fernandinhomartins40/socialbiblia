@@ -1,4 +1,8 @@
-
+# ==============================================
+# DOCKER COMPOSE - BIBLICAI PRODUCTION
+# Backend: Express + Prisma + TypeScript + SQLite
+# Frontend: React + Vite
+# ==============================================
 
 services:
   # Backend API (Express + Prisma + TypeScript + SQLite)
@@ -50,8 +54,8 @@ services:
       
       # Timezone
       TZ: ${TZ:-America/Sao_Paulo}
-    ports:
-      - "${API_PORT:-3000}:3000"
+    expose:
+      - "3000"
     volumes:
       - api_data:/app/data
       - api_logs:/app/logs
@@ -69,6 +73,9 @@ services:
     build:
       context: .
       dockerfile: configs/docker/Dockerfile.web
+      args:
+        - VITE_API_URL=http://nginx/api
+        - VITE_WS_URL=ws://nginx/api
       cache_from:
         - node:18-alpine
         - nginx:alpine
@@ -76,10 +83,8 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      VITE_API_URL: http://localhost:${API_PORT:-3000}
-      VITE_WS_URL: ws://localhost:${API_PORT:-3000}
-    ports:
-      - "${WEB_PORT:-3000}:3000"
+    expose:
+      - "80"
     volumes:
       - web_logs:/var/log/nginx
     networks:
@@ -87,11 +92,34 @@ services:
     depends_on:
       - api
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: biblicai_nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    volumes:
+      - ./configs/docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./configs/docker/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - biblicai_network
+    depends_on:
+      - api
+      - web
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   # SQLite Admin (Database Administration via Web Interface)
   sqliteadmin:
@@ -125,4 +153,7 @@ volumes:
     name: biblicai_api_logs
   web_logs:
     driver: local
-    name: biblicai_web_logs 
+    name: biblicai_web_logs
+  nginx_logs:
+    driver: local
+    name: biblicai_nginx_logs 

@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { PostsController } from './posts.controller';
-import { validateQuery, validateRequest } from '../../middleware/validation';
+import { validateQuery, validateRequest, authenticateToken } from '../../core/middlewares';
+import { validate } from '../../middlewares/validate_schema/validade_schema';
 import { createPostSchema, updatePostSchema, queryParamsSchema } from '../../utils/validation';
-import { authenticateToken } from '../../middleware/auth';
+import auth from '../../middlewares/auth/authenticate';
 
 const router = Router();
 

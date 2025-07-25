@@ -31,6 +31,7 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             apps/backend/package-lock.json
+            apps/web/package-lock.json
 
       - name: 🔍 Verify project structure
         run: |
@@ -43,13 +44,17 @@ jobs:
             "apps/backend/tsconfig.json"
             "apps/backend/prisma/schema.prisma"
             "apps/backend/.env.ci"
-            "apps/backend/src/app.ts"
+            "apps/backend/src/server/app.ts"
             "apps/web/package.json"
             "apps/web/vite.config.ts"
             "configs/docker/Dockerfile.backend"
             "configs/docker/Dockerfile.web"
+            "configs/docker/nginx.conf"
+            "configs/docker/default.conf"
             ".env.production"
             "scripts/deploy-vps.sh"
+            "turbo.json"
+            "tsconfig.base.json"
           )
           
           for file in "${REQUIRED_FILES[@]}"; do
@@ -185,9 +190,9 @@ jobs:
             # ETAPA 1: PREPARAR AMBIENTE
             # ====================================
                          log "🚀 INICIANDO DEPLOY BIBLICAI"
-             log "Backend: Express + Prisma + TypeScript"
-             log "Database: SQLite"
-             log "Frontend: React + Vite"
+            log "Backend: Express + Prisma + TypeScript"
+            log "Database: SQLite"
+            log "Frontend: React + Vite"
             
             # Criar diretório da aplicação
             mkdir -p $APP_DIR
@@ -214,7 +219,7 @@ jobs:
             fi
             
             # Verificar se arquivos essenciais existem
-            REQUIRED_FILES="docker-compose.new.yml apps/backend/package.json apps/web/package.json configs/docker/Dockerfile.backend configs/docker/Dockerfile.web"
+            REQUIRED_FILES="docker-compose.new.yml apps/backend/package.json apps/web/package.json configs/docker/Dockerfile.backend configs/docker/Dockerfile.web configs/docker/nginx.conf configs/docker/default.conf"
             for file in $REQUIRED_FILES; do
               if [ ! -f "$file" ]; then
                 log "❌ Arquivo obrigatório não encontrado: $file"
@@ -533,22 +538,30 @@ jobs:
             # Health checks
             HEALTH_ISSUES=""
             
-            # Test API endpoints
-            if curl -f http://localhost:3000/api/info >/dev/null 2>&1; then
+            # Test Nginx Proxy Health
+            if curl -f http://localhost:80/health >/dev/null 2>&1; then
+              log "✅ Nginx Proxy Health Check: OK"
+            else
+              log "❌ Nginx Proxy Health Check: FALHOU"
+              HEALTH_ISSUES="nginx "
+            fi
+            
+            # Test API endpoints via Nginx Proxy
+            if curl -f http://localhost:80/api/info >/dev/null 2>&1; then
               log "✅ API Health Check: OK"
               
               # Test specific API endpoints for new features
               log "🔍 Testando endpoints específicos..."
               
               # Test posts feed endpoint
-              if curl -f -H "Accept: application/json" http://localhost:3000/api/client/posts/feed >/dev/null 2>&1; then
+              if curl -f -H "Accept: application/json" http://localhost:80/api/client/posts/feed >/dev/null 2>&1; then
                 log "✅ Posts Feed Endpoint: OK"
               else
                 log "⚠️ Posts Feed Endpoint: Não acessível"
               fi
               
               # Test auth endpoints
-              if curl -f -H "Accept: application/json" http://localhost:3000/api/client/auth/register >/dev/null 2>&1 || [ $? -eq 22 ]; then
+              if curl -f -H "Accept: application/json" http://localhost:80/api/client/auth/register >/dev/null 2>&1 || [ $? -eq 22 ]; then
                 log "✅ Auth Register Endpoint: OK (method not allowed é esperado)"
               else
                 log "⚠️ Auth Register Endpoint: Problemas de conectividade"
@@ -559,8 +572,8 @@ jobs:
               HEALTH_ISSUES="api "
             fi
             
-            # Test Frontend
-            if curl -f http://localhost:3000 >/dev/null 2>&1; then
+            # Test Frontend via Nginx Proxy
+            if curl -f http://localhost:80 >/dev/null 2>&1; then
               log "✅ Frontend Health Check: OK"
             else
               log "❌ Frontend Health Check: FALHOU"
@@ -575,7 +588,7 @@ jobs:
              fi
             
                          # Verificar se containers estão rodando
-             EXPECTED_CONTAINERS="biblicai_api biblicai_web biblicai_sqliteadmin"
+             EXPECTED_CONTAINERS="biblicai_api biblicai_web biblicai_nginx biblicai_sqliteadmin"
             for container in $EXPECTED_CONTAINERS; do
               if docker ps --format "{{.Names}}" | grep -q "$container"; then
                 log "✅ Container $container: Rodando"

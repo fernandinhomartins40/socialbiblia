@@ -9,7 +9,7 @@ export function createRoutesTemplate(pluginName: string, className: string, opti
   return `import { PluginRoute } from '../../../types/plugin';
 import { ${className}Controller } from '../controllers/${pluginName}.controller';
 import { validate${className}Create, validate${className}Update } from '../schemas/${pluginName}.schema';
-${options.auth ? `import { authenticate } from '../../../middleware/auth';` : ''}
+${options.auth ? `import auth from '../../../middlewares/auth/authenticate';` : ''}
 
 export function ${pluginName}Routes(controller: ${className}Controller): PluginRoute[] {
   return [

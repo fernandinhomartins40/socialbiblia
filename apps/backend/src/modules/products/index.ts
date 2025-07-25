@@ -2,7 +2,7 @@ import { Plugin } from '../../types/plugin';
 import { productsRouter } from './products.routes';
 import { ProductsDatabase } from './database';
 import { Logger } from '../../utils/logger';
-import { createContentLimiter } from '../../middleware/rateLimiting';
+import { createContentLimiter } from '../../core/middlewares';
 
 const productsPlugin: Plugin = {
   metadata: {

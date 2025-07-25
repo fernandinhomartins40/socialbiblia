@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { PluginRoute } from '../../../types/plugin';
 import { RealtimeController } from '../controllers/realtime.controller';
-import { authenticate } from '../../../middleware/auth';
+import { authenticate } from '../../../core/middlewares';
 
 export function realtimeRoutes(controller: RealtimeController): PluginRoute[] {
   const router = Router();

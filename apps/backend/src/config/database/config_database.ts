@@ -5,7 +5,7 @@ const devConfig = (env: IProcessEnv): IEnvConfig => {
         database: {
             url:
                 env.DATABASE_URL ||
-                'postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public',
+                'file:./data/development.db',
         },
     };
 };
@@ -15,7 +15,7 @@ const stageConfig = (env: IProcessEnv): IEnvConfig => {
         database: {
             url:
                 env.DATABASE_URL ||
-                'postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public',
+                'file:./data/staging.db',
         },
     };
 };
@@ -25,7 +25,7 @@ const prodConfig = (env: IProcessEnv): IEnvConfig => {
         database: {
             url:
                 env.DATABASE_URL ||
-                'postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public',
+                'file:./data/production.db',
         },
     };
 };

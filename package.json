@@ -6,8 +6,7 @@
   "license": "MIT",
   "packageManager": "npm@10.9.0",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
     "dev": "turbo run dev",
@@ -24,9 +23,10 @@
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "clean:dist": "rm -rf apps/*/dist packages/*/dist",
     "install-all": "npm install --workspaces",
-    "deploy:local": "./tools/deploy/deploy-vps.sh",
-    "deploy:remote": "./tools/deploy/deploy-remote.sh",
-    "test:build": "./tools/deploy/test-build.sh"
+    "deploy:local": "./scripts/deploy-vps.sh",
+    "docker:build": "docker-compose -f docker-compose.new.yml build",
+    "docker:up": "docker-compose -f docker-compose.new.yml up -d",
+    "docker:down": "docker-compose -f docker-compose.new.yml down"
   },
   "devDependencies": {
     "@types/node": "^20.10.5",

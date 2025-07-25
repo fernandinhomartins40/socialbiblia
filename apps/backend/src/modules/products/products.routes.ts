@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { ProductsController } from './products.controller';
-import { authenticateToken, optionalAuth } from '../../middleware/auth';
-import { validateRequest, validateQuery } from '../../middleware/validation';
-import { createContentLimiter, generalLimiter } from '../../middleware/rateLimiting';
+import { validateQuery, validateRequest, authenticateToken, generalLimiter, createContentLimiter } from '../../core/middlewares';
+import auth from '../../middlewares/auth/authenticate';
+import { validate } from '../../middlewares/validate_schema/validade_schema';
+import rateLimit from '../../middlewares/rate_limiter/rate_limiter';
 import { z } from 'zod';
 
 const router = Router();

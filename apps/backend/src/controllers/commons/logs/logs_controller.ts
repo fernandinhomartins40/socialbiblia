@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import pkg from '@packagejson';
+import pkg from '../../../../package.json';
 import presenter from '../../../services/commons/logs_infos';
 import logger from '../../../utils/logger/winston/logger';
 

@@ -1,5 +1,6 @@
 import { Logger } from '../../../utils/logger';
 import { webSocketManager, PluginWebSocket } from '../../../core/websocket';
+import { Server as SocketIOServer } from 'socket.io';
 
 interface SubscriptionOptions {
   channels?: string[];
@@ -14,9 +15,14 @@ interface BroadcastOptions {
   exclude?: string[];
 }
 
-export class RealtimeService extends PluginWebSocket {
+export class RealtimeService implements PluginWebSocket {
+  public io: SocketIOServer;
   private subscriptions: Map<string, Set<string>> = new Map();
   private userChannels: Map<string, Set<string>> = new Map();
+
+  constructor() {
+    this.io = webSocketManager.getIO()!; // Get IO instance from webSocketManager
+  }
 
   async init(): Promise<void> {
     Logger.info(`Inicializando ${this.constructor.name}...`);
@@ -32,6 +38,38 @@ export class RealtimeService extends PluginWebSocket {
     
     this.subscriptions.clear();
     this.userChannels.clear();
+  }
+
+  // Implementação dos métodos da interface PluginWebSocket
+  emit(event: string, data: any): void {
+    if (this.io) {
+      this.io.emit(event, data);
+    }
+  }
+
+  broadcast(event: string, data: any): void {
+    if (this.io) {
+      this.io.emit(event, data);
+    }
+  }
+
+  // Métodos específicos de broadcast
+  broadcastToChannel(channel: string, event: string, data: any): void {
+    if (this.io) {
+      this.io.to(channel).emit(event, data);
+    }
+  }
+
+  broadcastToRoom(room: string, event: string, data: any): void {
+    if (this.io) {
+      this.io.to(room).emit(event, data);
+    }
+  }
+
+  broadcastToUser(userId: string, event: string, data: any): void {
+    if (this.io) {
+      this.io.to(`user:${userId}`).emit(event, data);
+    }
   }
 
   private setupWebSocketEvents(): void {

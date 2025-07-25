@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { AuthController } from './auth.controller';
-import { validateRequest } from '../../middleware/validation';
+import { validate } from '../../middlewares/validate_schema/validade_schema';
 import { registerSchema, loginSchema, refreshTokenSchema } from '../../utils/validation';
-import { authLimiter } from '../../middleware/rateLimiting';
-import { authenticateToken } from '../../middleware/auth';
+import rateLimit from '../../middlewares/rate_limiter/rate_limiter';
+import auth from '../../middlewares/auth/authenticate';
+import { validateRequest, authenticateToken, authLimiter } from '../../core/middlewares';
 
 const router = Router();
 

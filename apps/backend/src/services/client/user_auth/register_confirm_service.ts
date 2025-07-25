@@ -92,7 +92,7 @@ const updateUsr = async (id: string, datas: any) => {
         isRegistered: true,
     };
 
-    const result = await updateUser(id, datas, select);
+    const result = await updateUser({ id }, datas, select);
 
     /* istanbul ignore if */
     if (!result.success || !result.data) return { success: false, data: null };

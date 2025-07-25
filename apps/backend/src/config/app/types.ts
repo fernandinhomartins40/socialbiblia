@@ -2,45 +2,45 @@ export interface IProcessEnv {
     [key: string]: string | undefined;
 }
 
-interface IApp {
+export interface IApp {
     host: string;
     port: number;
 }
 
-interface ISsl {
+export interface ISsl {
     isHttps: boolean;
     privateKey: string;
     certificate: string;
 }
 
-interface IApi {
+export interface IApi {
     prefix: string;
     version: string;
     jsonLimit: string;
     extUrlencoded: boolean;
 }
 
-interface IRatelimiter {
+export interface IRatelimiter {
     max: string;
     window: string;
 }
 
-interface IJwt {
+export interface IJwt {
     secretUser: string;
     secretAdmin: string;
     secretApp: string;
     expiredIn: string;
 }
 
-interface ICors {
+export interface ICors {
     allowOrigin: string;
 }
 
-interface IBcrypt {
+export interface IBcrypt {
     saltRounds: number;
 }
 
-interface IDebug {
+export interface IDebug {
     http_request: boolean;
     http_connection: boolean;
 }
