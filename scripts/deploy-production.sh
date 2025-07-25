@@ -276,6 +276,11 @@ while [ $timeout -gt 0 ]; do
   # Verificar se container está rodando (não reiniciando)
   container_status=$(docker compose -f docker-compose.new.yml ps api --format "{{.Status}}" 2>/dev/null || echo "not found")
   
+  # DEBUG INTENSIVO: Log sempre o status e logs recentes
+  log "🔍 DEBUG: Container status: $container_status"
+  log "📋 DEBUG: Últimos 10 logs do container:"
+  docker compose -f docker-compose.new.yml logs --tail 10 api || true
+  
   if echo "$container_status" | grep -q "Up" && ! echo "$container_status" | grep -q "restarting"; then
     log "✅ Container API rodando estável, aguardando mais 10s..."
     sleep 10
@@ -286,18 +291,40 @@ while [ $timeout -gt 0 ]; do
       log "✅ Container API estável, iniciando migrações..."
       container_stable=true
       break
+    else
+      log "⚠️ Container voltou a reiniciar após parecer estável"
+      log "📋 Logs completos para diagnóstico:"
+      docker compose -f docker-compose.new.yml logs api || true
     fi
   fi
   
   if echo "$container_status" | grep -q "restarting"; then
-    log "⚠️ Container API reiniciando, aguardando estabilizar..."
-    log "📋 Últimos logs do container:"
-    docker compose -f docker-compose.new.yml logs --tail 5 api || true
+    log "⚠️ Container API reiniciando constantemente!"
+    log "🔧 AÇÃO CRÍTICA: Alternando para Dockerfile Debian para melhor compatibilidade Prisma"
+    
+    # Switch para Dockerfile Debian
+    log "🔄 Parando serviços para alternar Dockerfile..."
+    docker compose -f docker-compose.new.yml down || true
+    
+    # Backup do dockerfile atual e switch para Debian
+    cp configs/docker/Dockerfile.backend configs/docker/Dockerfile.backend.alpine-backup
+    cp configs/docker/Dockerfile.backend.debian configs/docker/Dockerfile.backend
+    
+    log "🏗️ Rebuilding com Dockerfile Debian..."
+    docker compose -f docker-compose.new.yml build --no-cache api
+    
+    log "🚀 Iniciando serviços com Debian..."
+    docker compose -f docker-compose.new.yml up -d
+    
+    # Resetar timeout para nova tentativa
+    timeout=60
+    log "🔄 Aguardando container com Debian estabilizar..."
+    continue
   fi
   
   sleep 5
   timeout=$((timeout - 5))
-  if [ $((timeout % 20)) -eq 0 ]; then
+  if [ $((timeout % 10)) -eq 0 ]; then
     log "⏳ Aguardando container API estabilizar... ($timeout segundos restantes)"
     log "Status atual: $container_status"
   fi
