@@ -25,7 +25,7 @@ const prodConfig = (env: IProcessEnv): IEnvConfig => {
         database: {
             url:
                 env.DATABASE_URL ||
-                'file:./data/production.db',
+                'file:/app/data/production.db',
         },
     };
 };

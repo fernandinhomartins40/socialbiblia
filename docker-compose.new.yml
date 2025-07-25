@@ -17,7 +17,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: file:./data/production.db
+      DATABASE_URL: file:/app/data/production.db
       
       # App Configuration
       APP_URL_HOST: ${APP_URL_HOST:-0.0.0.0}

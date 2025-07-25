@@ -449,6 +449,11 @@ jobs:
              log "📋 Verificando migrações disponíveis..."
              docker compose -f docker-compose.new.yml exec -T api npx prisma migrate status || log "⚠️ Status das migrações não pôde ser verificado"
              
+             # Garantir que o diretório data existe e tem permissões corretas
+             log "📁 Criando diretório data se não existir..."
+             docker compose -f docker-compose.new.yml exec -T api mkdir -p /app/data || true
+             docker compose -f docker-compose.new.yml exec -T api chown backend:nodejs /app/data || true
+             
              # Deploy das migrações para SQLite
              log "🚀 Executando prisma migrate deploy para SQLite..."
              if ! docker compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy; then
@@ -462,10 +467,12 @@ jobs:
              
              # Verificar se o banco SQLite foi criado corretamente
              log "🔍 Verificando arquivo SQLite criado..."
-             if docker compose -f docker-compose.new.yml exec -T api ls -la data/production.db; then
+             if docker compose -f docker-compose.new.yml exec -T api ls -la /app/data/production.db; then
                log "✅ Arquivo SQLite production.db criado com sucesso"
              else
                log "⚠️ Arquivo SQLite pode não ter sido criado corretamente"
+               log "🔍 Listando conteúdo do diretório data..."
+               docker compose -f docker-compose.new.yml exec -T api ls -la /app/data/ || true
              fi
             
                          # Executar seed (opcional)
