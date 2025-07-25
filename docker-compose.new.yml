@@ -122,20 +122,21 @@ services:
       start_period: 15s
 
   # SQLite Admin (Database Administration via Web Interface)
-  sqliteadmin:
-    image: coleifer/sqlite-web:latest
-    container_name: biblicai_sqliteadmin
-    restart: unless-stopped
-    environment:
-      SQLITE_DATABASE: /data/production.db
-    ports:
-      - "${SQLITEADMIN_PORT:-8080}:8080"
-    volumes:
-      - api_data:/data
-    networks:
-      - biblicai_network
-    depends_on:
-      - api
+  # TEMPORARIAMENTE DESABILITADO: Docker Hub rate limit
+  # sqliteadmin:
+  #   image: coleifer/sqlite-web:latest
+  #   container_name: biblicai_sqliteadmin
+  #   restart: unless-stopped
+  #   environment:
+  #     SQLITE_DATABASE: /data/production.db
+  #   ports:
+  #     - "${SQLITEADMIN_PORT:-8080}:8080"
+  #   volumes:
+  #     - api_data:/data
+  #   networks:
+  #     - biblicai_network
+  #   depends_on:
+  #     - api
 
 # Networks
 networks:
