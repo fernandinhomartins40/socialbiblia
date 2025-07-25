@@ -1,0 +1,79 @@
+# Multi-stage build para backend Biblicai - Monorepo (Debian Version)
+FROM node:18-slim AS builder
+
+# Instalar dependências básicas para build
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Copiar arquivos de configuração de dependências (monorepo)
+COPY package*.json ./
+COPY turbo.json ./
+COPY tsconfig.base.json ./
+
+# Copiar aplicação backend
+COPY apps/backend/ ./apps/backend/
+
+# Instalar dependências usando workspaces  
+RUN npm install --frozen-lockfile --ignore-scripts
+
+# Gerar cliente Prisma antes do build
+RUN cd apps/backend && npx prisma generate
+
+# Build da aplicação backend
+RUN npm run build:backend
+
+# Estágio de produção
+FROM node:18-slim
+
+# Instalar dependências de runtime
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Criar usuário não-root
+RUN groupadd -r nodejs && useradd -r -g nodejs backend
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Copiar apenas os arquivos necessários para produção
+COPY --from=builder --chown=backend:nodejs /app/package*.json ./
+COPY --from=builder --chown=backend:nodejs /app/apps/backend/package*.json ./apps/backend/
+COPY --from=builder --chown=backend:nodejs /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder --chown=backend:nodejs /app/apps/backend/prisma ./apps/backend/prisma
+COPY --from=builder --chown=backend:nodejs /app/apps/backend/public ./apps/backend/public
+
+# Copiar node_modules com Prisma Client gerado
+COPY --from=builder --chown=backend:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=backend:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+
+# Instalar apenas dependências de produção
+RUN npm ci --only=production && npm cache clean --force
+
+# Regenerar cliente Prisma para o ambiente de produção
+RUN cd apps/backend && npx prisma generate
+
+# Criar diretórios necessários com permissões corretas
+RUN mkdir -p /app/data /app/logs
+RUN chown -R backend:nodejs /app/data /app/logs
+
+# Mudar para usuário não-root
+USER backend
+
+# Expor porta
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:3000/api/info || exit 1
+
+# Comando para iniciar a aplicação
+CMD ["node", "apps/backend/dist/src/server/index.js"] 
