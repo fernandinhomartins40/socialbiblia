@@ -1,6 +1,12 @@
 # Multi-stage build para backend Biblicai - Monorepo
 FROM node:18-alpine AS builder
 
+# Instalar dependências para Prisma no build stage
+RUN apk add --no-cache \
+    openssl \
+    openssl-dev \
+    libc6-compat
+
 # Definir diretório de trabalho
 WORKDIR /app
 
@@ -15,6 +21,10 @@ COPY apps/backend/ ./apps/backend/
 # Instalar dependências usando workspaces  
 RUN npm install --frozen-lockfile --ignore-scripts
 
+# Configurar variáveis de ambiente para Prisma Alpine
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+ENV PRISMA_CLI_BINARY_TARGETS=linux-musl
+
 # Gerar cliente Prisma antes do build
 RUN cd apps/backend && npx prisma generate
 
@@ -24,8 +34,12 @@ RUN npm run build:backend
 # Estágio de produção
 FROM node:18-alpine
 
-# Instalar curl para health checks
-RUN apk add --no-cache curl
+# Instalar dependências para Prisma + health checks
+RUN apk add --no-cache \
+    curl \
+    openssl \
+    openssl-dev \
+    libc6-compat
 
 # Criar usuário não-root
 RUN addgroup -g 1001 -S nodejs
@@ -47,6 +61,10 @@ COPY --from=builder --chown=backend:nodejs /app/node_modules/@prisma ./node_modu
 
 # Instalar apenas dependências de produção
 RUN npm ci --only=production && npm cache clean --force
+
+# Configurar variáveis de ambiente para Prisma Alpine
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+ENV PRISMA_CLI_BINARY_TARGETS=linux-musl
 
 # Regenerar cliente Prisma para o ambiente de produção
 RUN cd apps/backend && npx prisma generate
