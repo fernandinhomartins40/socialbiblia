@@ -45,4 +45,11 @@ const checkDatabase = async (silent: boolean) => {
     /* eslint-enable no-console */
 };
 
+// Iniciar a aplicação
+startup(false).catch((error) => {
+    console.error('❌ Falha crítica na inicialização:', error);
+    logger.error('Falha crítica na inicialização:', error);
+    process.exit(1);
+});
+
 export default startup;

@@ -432,18 +432,47 @@ jobs:
              log "🗃️ Executando migrações do banco SQLite..."
              
              # Aguardar container API estar pronto antes das migrações
-             timeout=60
+             timeout=120
+             container_stable=false
+             
              while [ $timeout -gt 0 ]; do
-               if docker compose -f docker-compose.new.yml ps api | grep -q "Up"; then
-                 log "✅ Container API rodando, iniciando migrações..."
-                 break
+               # Verificar se container está rodando (não reiniciando)
+               container_status=$(docker compose -f docker-compose.new.yml ps api --format "{{.Status}}" 2>/dev/null || echo "not found")
+               
+               if echo "$container_status" | grep -q "Up" && ! echo "$container_status" | grep -q "restarting"; then
+                 log "✅ Container API rodando estável, aguardando mais 10s..."
+                 sleep 10
+                 
+                 # Verificar novamente se ainda está estável
+                 container_status=$(docker compose -f docker-compose.new.yml ps api --format "{{.Status}}" 2>/dev/null || echo "not found")
+                 if echo "$container_status" | grep -q "Up" && ! echo "$container_status" | grep -q "restarting"; then
+                   log "✅ Container API estável, iniciando migrações..."
+                   container_stable=true
+                   break
+                 fi
                fi
-               sleep 2
-               timeout=$((timeout - 2))
-               if [ $((timeout % 10)) -eq 0 ]; then
-                 log "⏳ Aguardando container API... ($timeout segundos restantes)"
+               
+               if echo "$container_status" | grep -q "restarting"; then
+                 log "⚠️ Container API reiniciando, aguardando estabilizar..."
+                 log "📋 Últimos logs do container:"
+                 docker compose -f docker-compose.new.yml logs --tail 5 api || true
+               fi
+               
+               sleep 5
+               timeout=$((timeout - 5))
+               if [ $((timeout % 20)) -eq 0 ]; then
+                 log "⏳ Aguardando container API estabilizar... ($timeout segundos restantes)"
+                 log "Status atual: $container_status"
                fi
              done
+             
+             if [ "$container_stable" = false ]; then
+               log "❌ Container API não estabilizou em tempo hábil"
+               log "📋 Status final: $container_status"
+               log "📋 Logs completos do container:"
+               docker compose -f docker-compose.new.yml logs api || true
+               exit 1
+             fi
              
              # Verificar se as migrações existem
              log "📋 Verificando migrações disponíveis..."
@@ -451,45 +480,72 @@ jobs:
              
              # Garantir que o diretório data existe e tem permissões corretas
              log "📁 Criando diretório data se não existir..."
-             docker compose -f docker-compose.new.yml exec -T api mkdir -p /app/data || true
-             docker compose -f docker-compose.new.yml exec -T api chown backend:nodejs /app/data || true
+             execute_in_container "mkdir -p /app/data" || true
+             execute_in_container "chown backend:nodejs /app/data" || true
              
              # Deploy das migrações para SQLite
              log "🚀 Executando prisma migrate deploy para SQLite..."
-             if ! docker compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy; then
+             
+             # Função para executar comando com retry se container estiver reiniciando
+             execute_in_container() {
+               local cmd="$1"
+               local retries=3
+               local delay=10
+               
+               for i in $(seq 1 $retries); do
+                 if docker compose -f docker-compose.new.yml exec -T api $cmd; then
+                   return 0
+                 else
+                   log "⚠️ Comando falhou (tentativa $i/$retries), verificando status do container..."
+                   container_status=$(docker compose -f docker-compose.new.yml ps api --format "{{.Status}}" 2>/dev/null || echo "not found")
+                   log "Status do container: $container_status"
+                   
+                   if echo "$container_status" | grep -q "restarting"; then
+                     log "Container reiniciando, aguardando $delay segundos..."
+                     sleep $delay
+                   else
+                     log "Container estável mas comando falhou"
+                     return 1
+                   fi
+                 fi
+               done
+               return 1
+             }
+             
+             if ! execute_in_container "npx prisma migrate deploy"; then
                log "⚠️ Migrações falharam, verificando logs..."
                docker compose -f docker-compose.new.yml logs api | tail -20
                
                log "🔄 Tentando gerar cliente Prisma e migrar novamente..."
-               docker compose -f docker-compose.new.yml exec -T api npx prisma generate
-               docker compose -f docker-compose.new.yml exec -T api npx prisma migrate deploy
+               execute_in_container "npx prisma generate"
+               execute_in_container "npx prisma migrate deploy"
              fi
              
              # Verificar se o banco SQLite foi criado corretamente
              log "🔍 Verificando arquivo SQLite criado..."
-             if docker compose -f docker-compose.new.yml exec -T api ls -la /app/data/production.db; then
+             if execute_in_container "ls -la /app/data/production.db"; then
                log "✅ Arquivo SQLite production.db criado com sucesso"
              else
                log "⚠️ Arquivo SQLite pode não ter sido criado corretamente"
                log "🔍 Listando conteúdo do diretório data..."
-               docker compose -f docker-compose.new.yml exec -T api ls -la /app/data/ || true
+               execute_in_container "ls -la /app/data/" || true
              fi
             
-                         # Executar seed (opcional)
-             log "🌱 Executando seed do banco..."
-             if docker compose -f docker-compose.new.yml exec -T api npm run prisma:seed; then
-               log "✅ Seed executado com sucesso"
-             else
-               log "⚠️ Seed falhou - verificando se banco já tem dados..."
-               # Verificar se já existem usuários (banco já populado)
-               user_count=$(docker compose -f docker-compose.new.yml exec -T api npx prisma db execute --stdin <<< "SELECT COUNT(*) as count FROM users;" 2>/dev/null | grep -o '[0-9]*' | tail -1 || echo "0")
-               if [ "$user_count" -gt 0 ]; then
-                 log "✅ Banco já contém dados ($user_count usuários) - seed desnecessário"
-               else
-                 log "❌ Seed falhou e banco está vazio - problema crítico"
-                 docker compose -f docker-compose.new.yml logs api | tail -10
-               fi
-             fi
+                                                  # Executar seed (opcional)
+              log "🌱 Executando seed do banco..."
+              if execute_in_container "npm run prisma:seed"; then
+                log "✅ Seed executado com sucesso"
+              else
+                log "⚠️ Seed falhou - verificando se banco já tem dados..."
+                # Verificar se já existem usuários (banco já populado)
+                user_count=$(execute_in_container "npx prisma db execute --stdin <<< \"SELECT COUNT(*) as count FROM users;\"" 2>/dev/null | grep -o '[0-9]*' | tail -1 || echo "0")
+                if [ -n "$user_count" ] && [ "$user_count" -gt 0 ] 2>/dev/null; then
+                  log "✅ Banco já contém dados ($user_count usuários) - seed desnecessário"
+                else
+                  log "❌ Seed falhou e banco está vazio - problema crítico"
+                                     docker compose -f docker-compose.new.yml logs api | tail -10
+                fi
+              fi
             
             # Aguardar API
             log "🔌 Aguardando API..."
