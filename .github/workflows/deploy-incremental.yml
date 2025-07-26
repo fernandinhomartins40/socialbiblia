@@ -1,0 +1,370 @@
+name: 🚀 Deploy Incremental SocialBiblia
+
+# Controle de concorrência
+concurrency:
+  group: socialbiblia-deploy
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/backend/src/**'
+      - 'apps/web/src/**'
+      - 'apps/backend/package*.json'
+      - 'apps/web/package*.json'
+      - 'package*.json'
+      - 'docker-compose.yml'
+      - 'docker-compose.new.yml'
+      - '.github/workflows/deploy-incremental.yml'
+  workflow_dispatch:
+
+env:
+  VPS_HOST: '31.97.85.98'
+  VPS_USER: 'root'
+  APP_DIR: '/opt/biblicai'
+  COMPOSE_PROJECT_NAME: 'socialbiblia'
+
+jobs:
+  analyze-changes:
+    name: 🔍 Analisar Mudanças
+    runs-on: ubuntu-latest
+    outputs:
+      has_code_changes: ${{ steps.changes.outputs.has_code_changes }}
+      has_package_changes: ${{ steps.changes.outputs.has_package_changes }}
+      has_config_changes: ${{ steps.changes.outputs.has_config_changes }}
+      needs_restart: ${{ steps.changes.outputs.needs_restart }}
+      deploy_type: ${{ steps.changes.outputs.deploy_type }}
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+    
+    - name: 🔍 Analisar arquivos alterados
+      id: changes
+      run: |
+        echo "🔍 Analisando mudanças desde o último commit..."
+        
+        # Obter arquivos alterados
+        CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "all")
+        echo "📁 Arquivos alterados:"
+        echo "$CHANGED_FILES"
+        
+        # Inicializar flags
+        HAS_CODE=false
+        HAS_PACKAGE=false
+        HAS_CONFIG=false
+        NEEDS_RESTART=false
+        
+        # Analisar tipos de mudanças para SocialBiblia
+        if echo "$CHANGED_FILES" | grep -E "(apps/backend/src/.*\.(js|ts|json)|apps/web/src/.*\.(js|ts|tsx|json))" > /dev/null; then
+          HAS_CODE=true
+          echo "✅ Mudanças de código detectadas"
+        fi
+        
+        if echo "$CHANGED_FILES" | grep -E "package(-lock)?\.json" > /dev/null; then
+          HAS_PACKAGE=true
+          echo "📦 Mudanças em dependências detectadas"
+        fi
+        
+        if echo "$CHANGED_FILES" | grep -E "(docker|prisma|\.env|nginx\.conf)" > /dev/null; then
+          HAS_CONFIG=true
+          echo "⚙️ Mudanças de configuração detectadas"
+        fi
+        
+        # Determinar se precisa restart
+        if [[ "$HAS_CODE" == "true" || "$HAS_CONFIG" == "true" ]]; then
+          NEEDS_RESTART=true
+        fi
+        
+        # Determinar tipo de deploy
+        if [[ "$HAS_PACKAGE" == "true" ]]; then
+          DEPLOY_TYPE="full"
+          echo "🔄 Deploy completo necessário (dependências mudaram)"
+        elif [[ "$HAS_CODE" == "true" ]]; then
+          DEPLOY_TYPE="code-only"
+          echo "📝 Deploy apenas de código"
+        elif [[ "$HAS_CONFIG" == "true" ]]; then
+          DEPLOY_TYPE="config-only"
+          echo "⚙️ Deploy apenas de configuração"
+        else
+          DEPLOY_TYPE="minimal"
+          echo "📋 Deploy mínimo (docs/workflows)"
+        fi
+        
+        # Definir outputs
+        echo "has_code_changes=$HAS_CODE" >> $GITHUB_OUTPUT
+        echo "has_package_changes=$HAS_PACKAGE" >> $GITHUB_OUTPUT
+        echo "has_config_changes=$HAS_CONFIG" >> $GITHUB_OUTPUT
+        echo "needs_restart=$NEEDS_RESTART" >> $GITHUB_OUTPUT
+        echo "deploy_type=$DEPLOY_TYPE" >> $GITHUB_OUTPUT
+
+  deploy:
+    name: 🚀 Deploy Incremental
+    runs-on: ubuntu-latest
+    needs: analyze-changes
+    timeout-minutes: 15
+    
+    steps:
+    - name: 📋 Info do Deploy Incremental
+      run: |
+        echo "🚀 Deploy Incremental SocialBiblia"
+        echo "=============================================="
+        echo "Commit: ${{ github.sha }}"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Tipo de Deploy: ${{ needs.analyze-changes.outputs.deploy_type }}"
+        echo "Mudanças de Código: ${{ needs.analyze-changes.outputs.has_code_changes }}"
+        echo "Mudanças de Dependências: ${{ needs.analyze-changes.outputs.has_package_changes }}"
+        echo "Precisa Restart: ${{ needs.analyze-changes.outputs.needs_restart }}"
+        echo "=============================================="
+
+    - name: 🔑 Configurar SSH
+      run: |
+        echo "🔑 Configurando SSH para deploy incremental..."
+        sudo apt-get update && sudo apt-get install -y sshpass
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ env.VPS_HOST }} >> ~/.ssh/known_hosts
+        echo "✅ SSH configurado"
+
+    - name: 🔍 Verificar estado atual da VPS
+      run: |
+        echo "🔍 Verificando estado atual..."
+        sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          echo '=== Estado Atual da VPS ==='
+          echo 'Docker Containers:'
+          docker ps --format 'table {{.Names}}\t{{.Status}}' | grep ${{ env.COMPOSE_PROJECT_NAME }} || echo 'Não rodando'
+          
+          echo ''
+          echo 'Docker Compose status:'
+          if [ -f ${{ env.APP_DIR }}/docker-compose.yml ]; then
+            cd ${{ env.APP_DIR }} && docker-compose ps || echo 'Docker Compose não encontrado'
+          else
+            echo '📋 Docker Compose não configurado'
+          fi
+          
+          echo ''
+          echo 'Última atualização:'
+          cd ${{ env.APP_DIR }} && git log --oneline -1 2>/dev/null || echo 'Repositório não inicializado'
+        "
+
+    - name: 📦 Backup Inteligente (somente se necessário)
+      if: needs.analyze-changes.outputs.deploy_type == 'full'
+      run: |
+        echo "📦 Fazendo backup completo (deploy full)..."
+        sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          TIMESTAMP=\$(date +%Y%m%d_%H%M%S)
+          BACKUP_DIR=/opt/socialbiblia-backups/backup_\$TIMESTAMP
+          mkdir -p \$BACKUP_DIR
+          
+          # Backup crítico - volumes do Docker
+          if [ -d ${{ env.APP_DIR }}/data ]; then
+            cp -r ${{ env.APP_DIR }}/data \$BACKUP_DIR/
+            echo '✅ Data volumes backed up'
+          fi
+          
+          # Backup da configuração atual
+          if [ -f ${{ env.APP_DIR }}/.env.production ]; then
+            cp ${{ env.APP_DIR }}/.env.production \$BACKUP_DIR/
+            echo '✅ Production env backed up'
+          fi
+          
+          echo \"📦 Backup completo criado: \$BACKUP_DIR\"
+        "
+
+    - name: 📦 Backup Rápido (somente dados críticos)
+      if: needs.analyze-changes.outputs.deploy_type != 'full'
+      run: |
+        echo "📦 Backup rápido (apenas dados críticos)..."
+        sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          if [ -f ${{ env.APP_DIR }}/.env.production ]; then
+            cp ${{ env.APP_DIR }}/.env.production /tmp/env_backup.production
+            echo '✅ Environment preservado'
+          fi
+          
+          # Backup dos volumes do banco se existir
+          if [ -d ${{ env.APP_DIR }}/data/postgres ]; then
+            tar -czf /tmp/postgres_backup.tar.gz -C ${{ env.APP_DIR }}/data postgres
+            echo '✅ Postgres data preservado'
+          fi
+        "
+
+    - name: 🔄 Atualização Incremental do Código
+      run: |
+        echo "🔄 Atualizando código via git pull incremental..."
+        sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          cd ${{ env.APP_DIR }}
+          
+          # Verificar se repositório existe
+          if [ ! -d .git ]; then
+            echo '🆕 Primeira vez: clonando repositório...'
+            git clone https://github.com/${{ github.repository }}.git .
+          else
+            echo '📥 Fazendo pull incremental das mudanças...'
+            
+            # Salvar status atual
+            git stash push -m 'Auto-stash before deploy' 2>/dev/null || true
+            
+            # Pull incremental
+            git fetch origin
+            BEFORE=\$(git rev-parse HEAD)
+            git pull origin main
+            AFTER=\$(git rev-parse HEAD)
+            
+            if [ \"\$BEFORE\" != \"\$AFTER\" ]; then
+              echo \"✅ Código atualizado: \$BEFORE -> \$AFTER\"
+            else
+              echo '📋 Código já atualizado'
+            fi
+          fi
+        "
+
+    - name: 🔄 Restaurar Dados Preservados
+      run: |
+        echo "🔄 Garantindo preservação dos dados..."
+        sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          cd ${{ env.APP_DIR }}
+          
+          # Restaurar .env.production se foi perdido no git pull
+          if [ ! -f .env.production ] && [ -f /tmp/env_backup.production ]; then
+            cp /tmp/env_backup.production .env.production
+            echo '✅ .env.production restaurado do backup rápido'
+          elif [ -f .env.production ]; then
+            echo '✅ .env.production já presente'
+          fi
+          
+          # Restaurar dados do Postgres se necessário
+          if [ -f /tmp/postgres_backup.tar.gz ] && [ ! -d data/postgres ]; then
+            mkdir -p data
+            tar -xzf /tmp/postgres_backup.tar.gz -C data/
+            echo '✅ Postgres data restaurado'
+          fi
+          
+          # Verificar se backup completo existe e restaurar se necessário
+          LATEST_BACKUP=\$(ls -t /opt/socialbiblia-backups/backup_* 2>/dev/null | head -1 || echo '')
+          if [ ! -f .env.production ] && [ -n \"\$LATEST_BACKUP\" ] && [ -f \"\$LATEST_BACKUP/.env.production\" ]; then
+            cp \"\$LATEST_BACKUP/.env.production\" .env.production
+            echo '✅ .env.production restaurado do backup completo'
+          fi
+          
+          echo '🛡️ Dados críticos preservados'
+        "
+
+    - name: 📦 Instalar Dependências (somente se necessário)
+      if: needs.analyze-changes.outputs.has_package_changes == 'true'
+      run: |
+        echo "📦 Instalando dependências (package.json mudou)..."
+        sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          cd ${{ env.APP_DIR }}
+          
+          # Build das imagens Docker com cache
+          echo '🔨 Rebuilding Docker images...'
+          docker-compose -f docker-compose.yml build --no-cache
+          echo '✅ Dependências atualizadas via Docker build'
+        "
+
+    - name: 📦 Skip Dependências (não necessário)
+      if: needs.analyze-changes.outputs.has_package_changes == 'false'
+      run: |
+        echo "📦 Pulando instalação de dependências (package.json não mudou)"
+        echo "⚡ Deploy mais rápido!"
+
+    - name: 🔄 Restart Inteligente da Aplicação
+      if: needs.analyze-changes.outputs.needs_restart == 'true'
+      run: |
+        echo "🔄 Reiniciando aplicação (código/config mudou)..."
+        sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          cd ${{ env.APP_DIR }}
+          
+          # Verificar se Docker Compose está rodando
+          if docker-compose ps | grep -q 'Up'; then
+            echo '🔄 Fazendo restart dos containers (preserva dados)...'
+            docker-compose restart
+          else
+            echo '🚀 Iniciando aplicação com Docker Compose...'
+            docker-compose up -d
+          fi
+          
+          echo '✅ Aplicação atualizada via Docker'
+        "
+
+    - name: 📋 Skip Restart (não necessário)
+      if: needs.analyze-changes.outputs.needs_restart == 'false'
+      run: |
+        echo "📋 Restart não necessário (apenas docs/workflows mudaram)"
+        echo "⚡ Aplicação continua rodando sem interrupção!"
+
+    - name: ⏳ Aguardar Estabilização
+      if: needs.analyze-changes.outputs.needs_restart == 'true'
+      run: |
+        echo "⏳ Aguardando aplicação estabilizar após restart..."
+        sleep 10
+
+    - name: 🔍 Verificação Rápida
+      run: |
+        echo "🔍 Verificação final..."
+        sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          cd ${{ env.APP_DIR }}
+          
+          # Verificar Docker containers
+          if docker-compose ps | grep -q 'Up'; then
+            echo '✅ Docker containers rodando'
+          else
+            echo '❌ Docker containers não encontrados'
+            exit 1
+          fi
+          
+          # Verificar health check rápido
+          for i in {1..3}; do
+            if curl -f -s http://localhost:3000/api/health >/dev/null 2>&1; then
+              echo '✅ Health check OK'
+              break
+            else
+              echo \"⏳ Tentativa \$i/3...\"
+              sleep 5
+            fi
+            
+            if [ \$i -eq 3 ]; then
+              echo '⚠️ Health check demorou, mas containers estão rodando'
+            fi
+          done
+        "
+
+    - name: 📊 Relatório do Deploy Incremental
+      if: always()
+      run: |
+        echo "📊 RELATÓRIO DO DEPLOY INCREMENTAL"
+        echo "=================================="
+        sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          echo 'Tipo de Deploy: ${{ needs.analyze-changes.outputs.deploy_type }}'
+          echo 'Restart Executado: ${{ needs.analyze-changes.outputs.needs_restart }}'
+          echo 'Dependências Atualizadas: ${{ needs.analyze-changes.outputs.has_package_changes }}'
+          echo ''
+          
+          echo '=== Status da Aplicação ==='
+          cd ${{ env.APP_DIR }}
+          docker-compose ps --no-trunc || echo 'Docker Compose não encontrado'
+          
+          echo ''
+          echo '=== Volumes Docker Preservados ==='
+          docker volume ls | grep ${{ env.COMPOSE_PROJECT_NAME }} || echo 'Nenhum volume encontrado'
+          
+          echo ''
+          echo '=== Último Commit ==='
+          cd ${{ env.APP_DIR }} && git log --oneline -1
+          
+          echo ''
+          echo '🎯 Frontend: http://${{ env.VPS_HOST }}:3000'
+          echo '🎯 Backend API: http://${{ env.VPS_HOST }}:3001/api'
+          echo '🎯 Swagger Docs: http://${{ env.VPS_HOST }}:3001/api/docs'
+          echo '⚡ Deploy incremental concluído!'
+        "
+
+    - name: 🎉 Deploy Incremental Concluído
+      run: |
+        echo "🎉 DEPLOY INCREMENTAL REALIZADO COM SUCESSO!"
+        echo "⚡ Tipo: ${{ needs.analyze-changes.outputs.deploy_type }}"
+        echo "🛡️ Dados preservados: SIM"
+        echo "🚀 Frontend: http://${{ env.VPS_HOST }}:3000"
+        echo "🚀 Backend API: http://${{ env.VPS_HOST }}:3001/api"

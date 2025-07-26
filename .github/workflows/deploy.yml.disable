@@ -1,8 +1,9 @@
-name: 🚀 Deploy Biblicai to VPS
+name: 🚀 Deploy Biblicai to VPS (LEGACY - DISABLED)
 
 on:
-  push:
-    branches: [main]
+  # Desabilitado temporariamente - usar deploy-incremental.yml
+  # push:
+  #   branches: [main]
   workflow_dispatch:
 
 env:

@@ -1,14 +1,11 @@
-import servHashPassword from '../functions/generate_hash_password';
-
-export default async () => {
-    const passwordLength = 8;
-    const password = Math.random().toString(36).slice(-passwordLength);
-
-    const resultHashPassword = await servHashPassword(password);
-    /* istanbul ignore next */
-    if (!resultHashPassword.success || !resultHashPassword.data) {
-        return { success: false, data: null, error: 'Eror to hash password' };
+export default function generatePassword(length: number = 12): string {
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    let password = '';
+    
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * charset.length);
+        password += charset[randomIndex];
     }
-
-    return { success: true, data: resultHashPassword.data, error: null };
-};
+    
+    return password;
+}

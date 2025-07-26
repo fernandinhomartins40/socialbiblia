@@ -5,6 +5,7 @@ import config from '../../../config/app';
 import logger from '../../../utils/logger/winston/logger';
 import servFindOneUser from '../../../dao/users/user_get_one_dao';
 import servCheckPassword from '../../../functions/check_password';
+import { refreshTokenService } from '../refresh-token';
 
 const errorMsg = 'Invalid token';
 
@@ -15,7 +16,7 @@ const localUserOpts = {
 
 const jwtUserOpts = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: config.jwt.secretUser,
+    secretOrKey: process.env.JWT_SECRET || config.jwt.secretUser,
 };
 
 const jwtUserStrategy = async (passport: any) => {
@@ -23,12 +24,22 @@ const jwtUserStrategy = async (passport: any) => {
         'jwt-user',
         new JWTStrategy(jwtUserOpts, async (payload, done) => {
             try {
+                // Verificar se é um access token válido
+                if (payload.type !== 'access') {
+                    logger.warn('Tentativa de uso de token não-access como access token');
+                    return done(errorMsg, {});
+                }
+
                 const newUser = await getUser({
                     id: payload.id,
                     isDeleted: false,
                     isRegistered: true,
                 });
-                if (!newUser.success) done(errorMsg, {});
+                
+                if (!newUser.success) {
+                    logger.warn(`Usuário não encontrado para JWT: ${payload.id}`);
+                    return done(errorMsg, {});
+                }
 
                 newUser.data ? done(null, newUser.data) : done(null, {});
             } catch (err) {

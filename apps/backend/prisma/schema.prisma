@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -31,6 +31,15 @@ model User {
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
 
+  // Índices para performance
+  @@index([email])
+  @@index([username])
+  @@index([isActive])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([email, isActive]) // Índice composto para queries de login
+  @@index([role, isActive]) // Índice para queries de admin
+  @@index([createdAt, updatedAt]) // Índice para relatórios
   @@map("users")
 }
 
@@ -71,16 +80,16 @@ model Post {
   id          String    @id @default(cuid())
   title       String
   slug        String    @unique
-  content     String
-  excerpt     String?
+  content     String    @db.Text
+  excerpt     String?   @db.Text
   status      String    @default("DRAFT")
   publishedAt DateTime?
   authorId    String
-  author      User      @relation(fields: [authorId], references: [id])
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   tags        String?   // JSON string com array de tags
   category    String?
   featured    Boolean   @default(false)
-  views       Int       @default(0)
+  views       Int       @default(0) @db.Integer
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
@@ -88,24 +97,54 @@ model Post {
   // Relacionamentos
   comments    Comment[]
 
+  // Constraints
+  @@check([length(title)] > 0, name: "title_not_empty")
+  @@check([length(content)] > 0, name: "content_not_empty")
+  @@check([length(slug)] > 0, name: "slug_not_empty")
+  @@check([views] >= 0, name: "views_non_negative")
+
+  // Índices para performance
+  @@index([authorId])
+  @@index([status])
+  @@index([featured])
+  @@index([publishedAt])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([slug])
+  @@index([status, publishedAt]) // Índice para posts publicados
+  @@index([authorId, status]) // Índice para posts por autor
+  @@index([featured, createdAt]) // Índice para posts em destaque
   @@map("posts")
 }
 
 model Comment {
   id        String   @id @default(cuid())
-  content   String
+  content   String   @db.Text
   postId    String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   parentId  String?
-  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[] @relation("CommentReplies")
   isApproved Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
 
+  // Constraints
+  @@check([length(content)] > 0, name: "content_not_empty")
+  @@check([length(content)] <= 5000, name: "content_max_length")
+
+  // Índices para performance
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentId])
+  @@index([isApproved])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([postId, isApproved]) // Índice para comentários aprovados por post
+  @@index([authorId, createdAt]) // Índice para comentários por autor
   @@map("comments")
 }
 
@@ -113,9 +152,9 @@ model Category {
   id          String    @id @default(cuid())
   name        String    @unique
   slug        String    @unique
-  description String?
+  description String?   @db.Text
   parentId    String?
-  parent      Category? @relation("CategoryChildren", fields: [parentId], references: [id])
+  parent      Category? @relation("CategoryChildren", fields: [parentId], references: [id], onDelete: Cascade)
   children    Category[] @relation("CategoryChildren")
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
@@ -124,6 +163,20 @@ model Category {
   // Relacionamentos
   products    Product[]
 
+  // Constraints
+  @@check([length(name)] > 0, name: "name_not_empty")
+  @@check([length(name)] <= 100, name: "name_max_length")
+  @@check([length(slug)] > 0, name: "slug_not_empty")
+  @@check([length(slug)] <= 120, name: "slug_max_length")
+  @@check([parentId] != [id], name: "no_self_reference")
+
+  // Índices para performance
+  @@index([parentId])
+  @@index([isActive])
+  @@index([slug])
+  @@index([createdAt])
+  @@index([parentId, isActive]) // Índice para categorias ativas por parent
+  @@index([name, isActive]) // Índice para busca por nome
   @@map("categories")
 }
 
@@ -131,35 +184,58 @@ model Product {
   id                String    @id @default(cuid())
   name              String
   slug              String    @unique
-  description       String?
-  shortDescription  String?
-  price             Float     @default(0)
-  comparePrice      Float?
-  costPrice         Float?
-  sku               String?   @unique
-  stock             Int       @default(0)
-  minStock          Int       @default(0)
-  weight            Float?
-  dimensions        String?   // JSON string {width, height, depth}
+  description       String?   @db.Text
+  shortDescription  String?   @db.VarChar(500)
+  price             Float     @default(0) @db.Decimal(10, 2)
+  comparePrice      Float?    @db.Decimal(10, 2)
+  costPrice         Float?    @db.Decimal(10, 2)
+  sku               String?   @unique @db.VarChar(50)
+  stock             Int       @default(0) @db.Integer
+  minStock          Int       @default(0) @db.Integer
+  weight            Float?    @db.Decimal(8, 3)
+  dimensions        String?   @db.VarChar(100) // JSON string {width, height, depth}
   categoryId        String?
-  category          Category? @relation(fields: [categoryId], references: [id])
+  category          Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   userId            String    // Referência lógica para User
-  user              User      @relation(fields: [userId], references: [id])
-  brand             String?
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand             String?   @db.VarChar(100)
   status            String    @default("DRAFT")
   featured          Boolean   @default(false)
-  tags              String?   // JSON string com array de tags
-  metaTitle         String?
-  metaDescription   String?
-  images            String?   // JSON string com array de URLs das imagens
-  attributes        String    @default("{}")
+  tags              String?   @db.Text // JSON string com array de tags
+  metaTitle         String?   @db.VarChar(60)
+  metaDescription   String?   @db.VarChar(160)
+  images            String?   @db.Text // JSON string com array de URLs das imagens
+  attributes        String    @default("{}") @db.Text
   isDigital         Boolean   @default(false)
   requiresShipping  Boolean   @default(true)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
 
+  // Constraints
+  @@check([length(name)] > 0, name: "name_not_empty")
+  @@check([length(name)] <= 200, name: "name_max_length")
+  @@check([length(slug)] > 0, name: "slug_not_empty")
+  @@check([length(slug)] <= 250, name: "slug_max_length")
+  @@check([price] >= 0, name: "price_non_negative")
+  @@check([stock] >= 0, name: "stock_non_negative")
+  @@check([minStock] >= 0, name: "min_stock_non_negative")
+  @@check([comparePrice] >= 0, name: "compare_price_non_negative")
+  @@check([costPrice] >= 0, name: "cost_price_non_negative")
+
+  // Índices para performance
+  @@index([userId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([featured])
+  @@index([sku])
+  @@index([slug])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([status, featured]) // Índice para produtos em destaque
+  @@index([categoryId, status]) // Índice para produtos por categoria
+  @@index([price, status]) // Índice para produtos por preço
+  @@index([userId, status]) // Índice para produtos por usuário
+  @@index([sku, status]) // Índice para busca por SKU
   @@map("products")
 }
-
-

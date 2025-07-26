@@ -1,43 +1,38 @@
 {
-  "name": "biblicai-monorepo",
+  "name": "socialbiblia",
   "version": "1.0.0",
+  "description": "Plataforma de estudo bíblico colaborativo",
   "private": true,
-  "type": "module",
-  "license": "MIT",
-  "packageManager": "npm@10.9.0",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "dev": "turbo run dev",
-    "dev:web": "npm run dev --workspace=apps/web",
-    "dev:backend": "npm run dev --workspace=apps/backend",
     "build": "turbo run build",
-    "build:web": "npm run build --workspace=apps/web",
-    "build:backend": "npm run build --workspace=apps/backend",
-    "build:packages": "echo 'Packages build skipped for now'",
-    "build:all": "turbo run build",
+    "test": "turbo run test",
+    "test:backend": "npm run test --workspace=apps/backend",
+    "test:web": "npm run test --workspace=apps/web",
+    "test:coverage": "turbo run test:coverage",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
-    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
-    "clean:dist": "rm -rf apps/*/dist packages/*/dist",
-    "install-all": "npm install --workspaces",
-    "deploy:local": "./scripts/deploy-vps.sh",
-    "docker:build": "docker-compose -f docker-compose.new.yml build",
-    "docker:up": "docker-compose -f docker-compose.new.yml up -d",
-    "docker:down": "docker-compose -f docker-compose.new.yml down"
+    "db:migrate": "npm run db:migrate --workspace=apps/backend",
+    "db:seed": "npm run db:seed --workspace=apps/backend",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "health-check": "node scripts/health-check.js",
+    "security-audit": "npm audit --audit-level=high",
+    "performance-test": "artillery run tests/performance/load-test.yml",
+    "deploy:staging": "./scripts/deploy-staging.sh",
+    "deploy:production": "./scripts/deploy-production.sh",
+    "rollback": "./scripts/rollback.sh"
   },
   "devDependencies": {
-    "@types/node": "^20.10.5",
-    "copyfiles": "^2.4.1",
-    "tsup": "^8.0.1",
-    "turbo": "^2.0.0",
-    "typescript": "^5.6.3"
+    "@turbo/gen": "^1.10.12",
+    "turbo": "^1.10.12"
   },
-  "dependencies": {
-    "@prisma/client": "^5.7.1",
-    "glob": "^11.0.3",
-    "prisma": "^5.7.1"
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

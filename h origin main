@@ -1,0 +1,3 @@
+[33mee4b60f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m  CRITICAL: Auto-switch to Debian + intensive debugging for container issues
+[33mdda284a[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m  Add Debian-slim Dockerfile backup for Prisma compatibility
+[33m1f83d4b[m  Fix Prisma OpenSSL compatibility with Alpine Linux

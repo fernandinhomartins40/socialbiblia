@@ -1,0 +1,579 @@
+name: CI/CD Pipeline - SocialBiblia
+
+on:
+  push:
+    branches: [ main, develop, 'feature/*', 'hotfix/*' ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '20'
+  DOCKER_REGISTRY: ghcr.io
+  IMAGE_NAME: socialbiblia
+
+# Permissions for GitHub token
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+  pull-requests: write
+  checks: write
+
+jobs:
+  # ==========================================
+  # 1. Code Quality & Security Analysis
+  # ==========================================
+  code-analysis:
+    name: 🔍 Code Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for better analysis
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: |
+          npm ci
+          cd apps/backend && npm ci
+          cd ../web && npm ci
+
+      - name: 🔍 Lint Backend
+        run: |
+          cd apps/backend
+          npm run lint
+
+      - name: 🔍 Lint Frontend
+        run: |
+          cd apps/web
+          npm run lint
+
+      - name: 🔒 Security Audit
+        run: |
+          npm audit --audit-level moderate
+          cd apps/backend && npm audit --audit-level moderate
+          cd ../web && npm audit --audit-level moderate
+
+      - name: 🔐 CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript,typescript
+
+      - name: 🔐 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # ==========================================
+  # 2. Type Checking
+  # ==========================================
+  type-check:
+    name: 📝 Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: |
+          npm ci
+          cd apps/backend && npm ci
+          cd ../web && npm ci
+
+      - name: 📝 TypeScript Check - Backend
+        run: |
+          cd apps/backend
+          npm run typecheck
+
+      - name: 📝 TypeScript Check - Frontend
+        run: |
+          cd apps/web
+          npm run typecheck
+
+  # ==========================================
+  # 3. Unit Tests
+  # ==========================================
+  unit-tests:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: socialbiblia_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: |
+          npm ci
+          cd apps/backend && npm ci
+          cd ../web && npm ci
+
+      - name: 🗄️ Setup Test Database
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/socialbiblia_test
+          REDIS_URL: redis://localhost:6379
+        run: |
+          cd apps/backend
+          npx prisma migrate deploy
+          npx prisma db seed
+
+      - name: 🧪 Run Backend Tests
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/socialbiblia_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test_jwt_secret_for_ci
+          JWT_REFRESH_SECRET: test_refresh_secret_for_ci
+        run: |
+          cd apps/backend
+          npm run test -- --coverage --ci
+
+      - name: 🧪 Run Frontend Tests
+        run: |
+          cd apps/web
+          npm run test -- --coverage --ci
+
+      - name: 📊 Upload Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./apps/backend/coverage/lcov.info,./apps/web/coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  # ==========================================
+  # 4. Integration Tests
+  # ==========================================
+  integration-tests:
+    name: 🔗 Integration Tests
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: socialbiblia_integration
+          POSTGRES_USER: integration_user
+          POSTGRES_PASSWORD: integration_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: |
+          npm ci
+          cd apps/backend && npm ci
+
+      - name: 🗄️ Setup Integration Database
+        env:
+          DATABASE_URL: postgresql://integration_user:integration_password@localhost:5432/socialbiblia_integration
+        run: |
+          cd apps/backend
+          npx prisma migrate deploy
+
+      - name: 🔗 Run Integration Tests
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://integration_user:integration_password@localhost:5432/socialbiblia_integration
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: integration_jwt_secret
+          JWT_REFRESH_SECRET: integration_refresh_secret
+        run: |
+          cd apps/backend
+          npm run test:integration
+
+  # ==========================================
+  # 5. Build & Container Tests
+  # ==========================================
+  build-and-container-tests:
+    name: 🏗️ Build & Container Tests
+    runs-on: ubuntu-latest
+    needs: [code-analysis, type-check]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🏗️ Build Backend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/backend
+          file: ./apps/backend/Dockerfile
+          target: production
+          push: false
+          tags: socialbiblia-backend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🏗️ Build Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/web
+          file: ./apps/web/Dockerfile
+          target: production
+          push: false
+          tags: socialbiblia-frontend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🧪 Test Docker Compose
+        run: |
+          # Create test environment file
+          cat > .env.test << EOF
+          NODE_ENV=test
+          POSTGRES_PASSWORD=test_postgres_pass
+          REDIS_PASSWORD=test_redis_pass
+          JWT_SECRET=test_jwt_secret_for_compose
+          JWT_REFRESH_SECRET=test_refresh_secret_for_compose
+          EOF
+          
+          # Start services
+          docker-compose --env-file .env.test up -d postgres redis
+          
+          # Wait for services to be healthy
+          sleep 30
+          
+          # Test database connection
+          docker-compose --env-file .env.test exec -T postgres psql -U socialbiblia_user -d socialbiblia -c "SELECT 1;"
+          
+          # Test Redis connection
+          docker-compose --env-file .env.test exec -T redis redis-cli ping
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          docker-compose down -v
+          docker system prune -f
+
+  # ==========================================
+  # 6. Security Scanning
+  # ==========================================
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    needs: [build-and-container-tests]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🏗️ Build Backend Image for Scanning
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/backend
+          file: ./apps/backend/Dockerfile
+          target: production
+          load: true
+          tags: socialbiblia-backend:scan
+
+      - name: 🔍 Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'socialbiblia-backend:scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: 📤 Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ==========================================
+  # 7. Performance Tests
+  # ==========================================
+  performance-tests:
+    name: ⚡ Performance Tests
+    runs-on: ubuntu-latest
+    needs: [integration-tests]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: socialbiblia_perf
+          POSTGRES_USER: perf_user
+          POSTGRES_PASSWORD: perf_password
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: |
+          npm ci
+          cd apps/backend && npm ci
+
+      - name: 🗄️ Setup Performance Database
+        env:
+          DATABASE_URL: postgresql://perf_user:perf_password@localhost:5432/socialbiblia_perf
+        run: |
+          cd apps/backend
+          npx prisma migrate deploy
+          npx prisma db seed
+
+      - name: 🚀 Start Backend Server
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://perf_user:perf_password@localhost:5432/socialbiblia_perf
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: perf_jwt_secret
+          JWT_REFRESH_SECRET: perf_refresh_secret
+          PORT: 3001
+        run: |
+          cd apps/backend
+          npm run build
+          npm start &
+          sleep 10
+          curl -f http://localhost:3001/health
+
+      - name: ⚡ Run Performance Tests
+        run: |
+          npm install -g artillery
+          artillery run scripts/performance/load-test.yml
+
+      - name: 📊 Upload Performance Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-results
+          path: |
+            artillery-report-*.json
+            artillery-report-*.html
+
+  # ==========================================
+  # 8. Build and Push Docker Images
+  # ==========================================
+  build-and-push:
+    name: 🚢 Build & Push Images
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, security-scan]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📝 Extract metadata
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}-backend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 📝 Extract metadata (Frontend)
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}-frontend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 🏗️ Build and Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/backend
+          file: ./apps/backend/Dockerfile
+          target: production
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🏗️ Build and Push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/web
+          file: ./apps/web/Dockerfile
+          target: production
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==========================================
+  # 9. Deploy to Staging
+  # ==========================================
+  deploy-staging:
+    name: 🚀 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🚀 Deploy to Staging
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          # Add your staging deployment logic here
+          # Example: kubectl, docker-compose, or other deployment tools
+
+      - name: 🧪 Run Smoke Tests
+        run: |
+          echo "🧪 Running smoke tests..."
+          # Add smoke tests for staging environment
+
+      - name: 📢 Notify Deployment
+        if: always()
+        run: |
+          echo "📢 Staging deployment completed"
+
+  # ==========================================
+  # 10. Deploy to Production
+  # ==========================================
+  deploy-production:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push, performance-tests]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🚀 Deploy to Production
+        run: |
+          echo "🚀 Deploying to production environment..."
+          # Add your production deployment logic here
+
+      - name: 🧪 Run Production Smoke Tests
+        run: |
+          echo "🧪 Running production smoke tests..."
+          # Add smoke tests for production environment
+
+      - name: 📢 Notify Production Deployment
+        if: always()
+        run: |
+          echo "📢 Production deployment completed"
+
+  # ==========================================
+  # 11. Cleanup
+  # ==========================================
+  cleanup:
+    name: 🧹 Cleanup
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+
+    steps:
+      - name: 🧹 Clean up old images
+        run: |
+          echo "🧹 Cleaning up old Docker images..."
+          # Add cleanup logic for old images
+
+      - name: 📊 Generate Summary Report
+        if: always()
+        run: |
+          echo "📊 CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "=========================" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Pipeline completed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "📝 Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "👤 Author: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

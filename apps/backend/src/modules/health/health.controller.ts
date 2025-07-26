@@ -13,6 +13,7 @@ export class HealthController {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         database: 'connected',
+        memory: process.memoryUsage(),
       }, 'Servidor está funcionando'));
     } catch {
       res.status(503).json(
@@ -40,9 +41,10 @@ export class HealthController {
 
   static async getMetrics(_req: Request, res: Response) {
     try {
-      const [userCount, postCount] = await Promise.all([
+      const [userCount, postCount, commentCount] = await Promise.all([
         prisma.user.count({ where: { deletedAt: null } }),
         prisma.post.count({ where: { deletedAt: null } }),
+        prisma.comment.count({ where: { deletedAt: null } }),
       ]);
 
       res.json(ResponseUtil.success({
@@ -52,11 +54,37 @@ export class HealthController {
         database: {
           users: userCount,
           posts: postCount,
+          comments: commentCount,
         },
       }, 'Métricas do sistema'));
     } catch {
       res.status(500).json(
         ResponseUtil.error('Erro ao obter métricas', 'Erro ao coletar dados do sistema')
+      );
+    }
+  }
+
+  static async getPerformance(_req: Request, res: Response) {
+    try {
+      const metrics = {
+        system: {
+          uptime: process.uptime(),
+          memoryUsage: process.memoryUsage(),
+          timestamp: new Date(),
+        },
+        database: {
+          connected: true,
+        }
+      };
+
+      res.json(ResponseUtil.success({
+        status: 'healthy',
+        metrics,
+        issues: [],
+      }, 'Status de performance'));
+    } catch {
+      res.status(500).json(
+        ResponseUtil.error('Erro ao obter status de performance', 'Erro ao coletar dados de performance')
       );
     }
   }

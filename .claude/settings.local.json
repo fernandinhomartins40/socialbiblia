@@ -17,7 +17,8 @@
       "Bash(git commit:*)",
       "Bash(mv:*)",
       "Bash(npx tsc:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(touch:*)"
     ],
     "deny": []
   }

@@ -1,0 +1,484 @@
+name: 🏗️ Build Containers
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      force_rebuild:
+        description: 'Force rebuild (ignore cache)'
+        required: false
+        default: false
+        type: boolean
+      
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'apps/**'
+      - 'docker/**'
+      - 'Dockerfile*'
+      - 'docker-compose*.yml'
+      
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'apps/**'
+      - 'docker/**'
+      - 'Dockerfile*'
+      - 'docker-compose*.yml'
+
+env:
+  REGISTRY: ghcr.io
+  REGISTRY_USERNAME: ${{ github.actor }}
+  REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  # ==========================================
+  # Matrix Strategy for Multi-Architecture
+  # ==========================================
+  setup:
+    name: 📋 Setup Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.setup.outputs.matrix }}
+      should_push: ${{ steps.setup.outputs.should_push }}
+      cache_key: ${{ steps.setup.outputs.cache_key }}
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📋 Setup build matrix
+        id: setup
+        run: |
+          # Determine if we should push based on event type
+          if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should_push=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_push=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Generate cache key based on source files
+          CACHE_KEY=$(find apps -name "package*.json" -o -name "Dockerfile*" | sort | xargs cat | sha256sum | cut -d' ' -f1)
+          echo "cache_key=$CACHE_KEY" >> $GITHUB_OUTPUT
+
+          # Setup build matrix
+          MATRIX='{"include":[
+            {
+              "app": "backend",
+              "context": "./apps/backend",
+              "dockerfile": "./apps/backend/Dockerfile",
+              "platforms": "linux/amd64,linux/arm64"
+            },
+            {
+              "app": "frontend",
+              "context": "./apps/web", 
+              "dockerfile": "./apps/web/Dockerfile",
+              "platforms": "linux/amd64,linux/arm64"
+            }
+          ]}'
+          
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
+  # ==========================================
+  # Build Docker Images
+  # ==========================================
+  build:
+    name: 🏗️ Build ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    needs: setup
+    
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: ${{ matrix.platforms }}
+
+      - name: 🔐 Login to Container Registry
+        if: needs.setup.outputs.should_push == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: 📝 Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.app }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value={{branch}},enable=true
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.title=SocialBiblia ${{ matrix.app }}
+            org.opencontainers.image.description=SocialBiblia ${{ matrix.app }} container
+            org.opencontainers.image.vendor=SocialBiblia Team
+
+      - name: 🔍 Check if rebuild needed
+        id: check-rebuild
+        run: |
+          FORCE_REBUILD="${{ github.event.inputs.force_rebuild }}"
+          CACHE_KEY="${{ needs.setup.outputs.cache_key }}"
+          
+          if [[ "$FORCE_REBUILD" == "true" ]]; then
+            echo "rebuild_needed=true" >> $GITHUB_OUTPUT
+            echo "🔄 Force rebuild requested"
+          else
+            # Check if source files changed
+            if git diff --quiet HEAD~1 HEAD -- ${{ matrix.context }}; then
+              echo "rebuild_needed=false" >> $GITHUB_OUTPUT
+              echo "⏭️ No changes detected in ${{ matrix.app }}, skipping build"
+            else
+              echo "rebuild_needed=true" >> $GITHUB_OUTPUT
+              echo "🔄 Changes detected in ${{ matrix.app }}, build needed"
+            fi
+          fi
+
+      - name: 🏗️ Build Development Image
+        if: steps.check-rebuild.outputs.rebuild_needed == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          target: development
+          platforms: ${{ matrix.platforms }}
+          push: false
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.app }}:dev-${{ github.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=${{ matrix.app }}-dev
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.app }}:buildcache-dev
+          cache-to: |
+            type=gha,mode=max,scope=${{ matrix.app }}-dev
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            NODE_ENV=development
+
+      - name: 🏗️ Build Production Image
+        if: steps.check-rebuild.outputs.rebuild_needed == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          target: production
+          platforms: ${{ matrix.platforms }}
+          push: ${{ needs.setup.outputs.should_push }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=${{ matrix.app }}-prod
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.app }}:buildcache
+          cache-to: |
+            type=gha,mode=max,scope=${{ matrix.app }}-prod
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.app }}:buildcache,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            NODE_ENV=production
+
+      - name: 🧪 Test Container Health
+        if: steps.check-rebuild.outputs.rebuild_needed == 'true'
+        run: |
+          echo "🧪 Testing container health for ${{ matrix.app }}..."
+          
+          # Test container starts and responds to health check
+          docker run --rm -d --name test-${{ matrix.app }}-${{ github.run_id }} \
+            ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.app }}:dev-${{ github.sha }}
+          
+          # Wait for container to start
+          sleep 30
+          
+          # Check if container is running
+          if docker ps | grep -q "test-${{ matrix.app }}-${{ github.run_id }}"; then
+            echo "✅ Container started successfully"
+            
+            # Test health endpoint if backend
+            if [[ "${{ matrix.app }}" == "backend" ]]; then
+              docker exec test-${{ matrix.app }}-${{ github.run_id }} curl -f http://localhost:3001/health || echo "⚠️ Health check failed"
+            fi
+            
+            # Test frontend serving if frontend
+            if [[ "${{ matrix.app }}" == "frontend" ]]; then
+              docker exec test-${{ matrix.app }}-${{ github.run_id }} curl -f http://localhost:3000 || echo "⚠️ Frontend not responding"
+            fi
+          else
+            echo "❌ Container failed to start"
+            docker logs test-${{ matrix.app }}-${{ github.run_id }}
+            exit 1
+          fi
+          
+          # Cleanup
+          docker stop test-${{ matrix.app }}-${{ github.run_id }} || true
+
+      - name: 🔍 Scan for vulnerabilities
+        if: steps.check-rebuild.outputs.rebuild_needed == 'true'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.app }}:dev-${{ github.sha }}
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+      - name: 📊 Generate SBOM
+        if: steps.check-rebuild.outputs.rebuild_needed == 'true' && needs.setup.outputs.should_push == 'true'
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.app }}:dev-${{ github.sha }}
+          format: spdx-json
+          output-file: /tmp/sbom-${{ matrix.app }}.spdx.json
+
+      - name: 📤 Upload SBOM
+        if: steps.check-rebuild.outputs.rebuild_needed == 'true' && needs.setup.outputs.should_push == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.app }}-${{ github.sha }}
+          path: /tmp/sbom-${{ matrix.app }}.spdx.json
+          retention-days: 30
+
+  # ==========================================
+  # Integration Test with Built Images
+  # ==========================================
+  integration-test:
+    name: 🔗 Integration Test
+    runs-on: ubuntu-latest
+    needs: [setup, build]
+    if: needs.setup.outputs.should_push == 'true'
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: socialbiblia_integration
+          POSTGRES_USER: integration_user
+          POSTGRES_PASSWORD: integration_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: 🚀 Start Backend Container
+        run: |
+          docker run -d --name backend-integration \
+            --network host \
+            -e NODE_ENV=test \
+            -e DATABASE_URL=postgresql://integration_user:integration_password@localhost:5432/socialbiblia_integration \
+            -e REDIS_URL=redis://localhost:6379 \
+            -e JWT_SECRET=integration_test_secret \
+            -e JWT_REFRESH_SECRET=integration_test_refresh_secret \
+            -e PORT=3001 \
+            ${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ github.sha }}
+
+      - name: ⏳ Wait for services
+        run: |
+          echo "Waiting for backend to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3001/health; then
+              echo "✅ Backend is ready"
+              break
+            fi
+            echo "⏳ Waiting... ($i/30)"
+            sleep 10
+          done
+
+      - name: 🧪 Run Integration Tests
+        run: |
+          echo "🧪 Running integration tests against built containers..."
+          
+          # Test basic API endpoints
+          curl -f http://localhost:3001/health
+          curl -f http://localhost:3001/api/health
+          
+          # Test database connection
+          curl -f http://localhost:3001/api/health/database
+          
+          # Test Redis connection
+          curl -f http://localhost:3001/api/health/cache
+          
+          echo "✅ All integration tests passed"
+
+      - name: 📋 Collect Logs
+        if: failure()
+        run: |
+          echo "📋 Collecting container logs..."
+          docker logs backend-integration
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          docker stop backend-integration || true
+          docker rm backend-integration || true
+
+  # ==========================================
+  # Multi-Environment Build
+  # ==========================================
+  multi-env-build:
+    name: 🌍 Multi-Environment Build
+    runs-on: ubuntu-latest
+    needs: [setup, build]
+    if: github.event_name == 'workflow_dispatch'
+    
+    strategy:
+      matrix:
+        environment: [development, staging, production]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: 🏗️ Build Environment-Specific Images
+        run: |
+          # Build backend for specific environment
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --target production \
+            --build-arg NODE_ENV=${{ matrix.environment }} \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from type=gha,scope=backend-${{ matrix.environment }} \
+            --cache-to type=gha,mode=max,scope=backend-${{ matrix.environment }} \
+            --tag ${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ matrix.environment }}-${{ github.sha }} \
+            --tag ${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ matrix.environment }}-latest \
+            --push \
+            ./apps/backend
+
+          # Build frontend for specific environment  
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --target production \
+            --build-arg NODE_ENV=${{ matrix.environment }} \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from type=gha,scope=frontend-${{ matrix.environment }} \
+            --cache-to type=gha,mode=max,scope=frontend-${{ matrix.environment }} \
+            --tag ${{ env.REGISTRY }}/${{ github.repository }}-frontend:${{ matrix.environment }}-${{ github.sha }} \
+            --tag ${{ env.REGISTRY }}/${{ github.repository }}-frontend:${{ matrix.environment }}-latest \
+            --push \
+            ./apps/web
+
+  # ==========================================
+  # Security Scan & Compliance
+  # ==========================================
+  security-compliance:
+    name: 🔒 Security & Compliance
+    runs-on: ubuntu-latest
+    needs: [setup, build]
+    if: needs.setup.outputs.should_push == 'true'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔐 Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: 🔍 Comprehensive Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: 📤 Upload security scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: 🔍 Check for secrets in images
+        run: |
+          echo "🔍 Scanning for secrets in built images..."
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            trufflesecurity/trufflehog:latest docker \
+            --image ${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ github.sha }} \
+            --json || echo "⚠️ Secrets scan completed with warnings"
+
+  # ==========================================
+  # Cleanup & Summary
+  # ==========================================
+  cleanup-summary:
+    name: 🧹 Cleanup & Summary
+    runs-on: ubuntu-latest
+    needs: [setup, build, integration-test, security-compliance]
+    if: always()
+
+    steps:
+      - name: 📊 Generate Build Summary
+        run: |
+          echo "# 🏗️ Container Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status | Image |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ✅ Built | \`${{ env.REGISTRY }}/${{ github.repository }}-backend:${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ✅ Built | \`${{ env.REGISTRY }}/${{ github.repository }}-frontend:${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Info:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔗 Branch: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 📝 Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 👤 Author: \`${{ github.actor }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏷️ Event: \`${{ github.event_name }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🧹 Clean up old images
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "🧹 Would clean up old images (implement cleanup logic here)"

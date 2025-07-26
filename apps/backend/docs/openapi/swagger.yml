@@ -1,273 +1,566 @@
 openapi: 3.0.0
 info:
-  title: express-prisma-ts-boilerplate
-  description: >-
-    A starter project written in TypeScript for quickly building Express RESTful
-    APIs using ORM, loggers, schema validator, authentication, unit test
-    coverage, and much more.
-  version: 1.0.1
+  title: SocialBiblia API
+  description: API RESTful para a plataforma SocialBiblia - Estudo bíblico colaborativo
+  version: 1.0.0
   contact:
-    name: Vincent Jean
-    email: vincent.queimado@gmail.com
+    name: SocialBiblia Team
+    email: support@socialbiblia.com
   license:
-    name: ISC
-    url: https://github.com/vincent-queimado
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
 servers:
-  - url: /api/
-    description: Api Ver. 1
+  - url: http://localhost:3001/api
+    description: Development server
+  - url: https://api.socialbiblia.com/api
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Create a new user account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        201:
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        400:
+          $ref: '#/components/responses/ValidationError'
+        409:
+          $ref: '#/components/responses/ConflictError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user credentials
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        429:
+          $ref: '#/components/responses/RateLimitError'
+
+  /posts:
+    get:
+      tags:
+        - Posts
+      summary: List posts
+      description: Get paginated list of posts
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: tags
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        200:
+          description: Posts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostsResponse'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Posts
+      summary: Create post
+      description: Create a new post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+      responses:
+        201:
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        400:
+          $ref: '#/components/responses/ValidationError'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /posts/{id}:
+    get:
+      tags:
+        - Posts
+      summary: Get post
+      description: Get a specific post by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Post retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Posts
+      summary: Update post
+      description: Update an existing post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePostRequest'
+      responses:
+        200:
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        403:
+          $ref: '#/components/responses/ForbiddenError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Posts
+      summary: Delete post
+      description: Delete a post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: Post deleted successfully
+        403:
+          $ref: '#/components/responses/ForbiddenError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+
+  /storage/upload:
+    post:
+      tags:
+        - Storage
+      summary: Upload file
+      description: Upload a file to storage
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                folder:
+                  type: string
+      responses:
+        201:
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileUploadResponse'
+        400:
+          $ref: '#/components/responses/ValidationError'
+
+  /dashboard/stats:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard stats
+      description: Get platform statistics for admin dashboard
+      responses:
+        200:
+          description: Stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+
 components:
   securitySchemes:
-    noauthAuth:
-      type: http
-      scheme: noauth
     bearerAuth:
       type: http
       scheme: bearer
-tags:
-  - name: Api Info
-  - name: Api Logs
-  - name: Client
-  - name: Client > User
-  - name: Client > User > Auth
-  - name: Client > User > Auth > Register
-  - name: Client > User > Auth > Login
-  - name: Client > User > Auth > Forgot Password
-  - name: Client > User > Me
-  - name: Admin
-  - name: Admin > Users Management
-paths:
-  /info:
-    get:
-      tags:
-        - Api Info
-      summary: Info
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /logs:
-    get:
-      tags:
-        - Api Logs
-      summary: Logs
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /client/auth/register:
-    post:
-      tags:
-        - Client > User > Auth > Register
-      summary: Register
-      requestBody:
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        name:
+          type: string
+          minLength: 2
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            token:
+              type: string
+        message:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [USER, ADMIN]
+        createdAt:
+          type: string
+          format: date-time
+
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
         content:
-          application/json:
-            schema:
-              type: object
-              example:
-                email: vincent.queimado@gmail.com
-                name: vincent
-                phone: (81) 99999-9999
-                password: '1234'
-      security:
-        - noauthAuth: []
-      parameters:
-        - name: Content-Type
-          in: header
-          schema:
+          type: string
+        author:
+          $ref: '#/components/schemas/User'
+        tags:
+          type: array
+          items:
             type: string
-          example: application/json
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /client/auth/register/confirmation:
-    get:
-      tags:
-        - Client > User > Auth > Register
-      summary: Register Confirmation
-      parameters:
-        - name: Content-Type
-          in: header
-          schema:
-            type: string
-          example: application/json
-        - name: email
-          in: query
-          schema:
-            type: string
-          example: johndoe10@sample.com
-        - name: token
-          in: query
-          schema:
-            type: string
-          example: 0D0G9ts1mX3Rdd6JbT2tzuiZ
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /client/auth/login:
-    post:
-      tags:
-        - Client > User > Auth > Login
-      summary: Login
-      requestBody:
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreatePostRequest:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          minLength: 1
         content:
-          application/json:
-            schema:
-              type: object
-              example:
-                email: johndoe@sample.com
-                password: Johndoe@1234
-      parameters:
-        - name: Content-Type
-          in: header
-          schema:
+          type: string
+          minLength: 1
+        tags:
+          type: array
+          items:
             type: string
-          example: application/json
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /client/auth/logout:
-    get:
-      tags:
-        - Client > User > Auth > Login
-      summary: Logout
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: Content-Type
-          in: header
-          schema:
-            type: string
-          example: application/json
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /client/auth/forgotpassword/request:
-    post:
-      tags:
-        - Client > User > Auth > Forgot Password
-      summary: Request
-      requestBody:
+
+    UpdatePostRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
         content:
-          application/json:
-            schema:
-              type: object
-              example:
-                email: johndoe@sample.com
-      parameters:
-        - name: Content-Type
-          in: header
-          schema:
+          type: string
+          minLength: 1
+        tags:
+          type: array
+          items:
             type: string
-          example: application/json
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /client/auth/forgotpassword/reset:
-    post:
-      tags:
-        - Client > User > Auth > Forgot Password
-      summary: Reset
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example:
-                email: johndoe@sample.com
-                token: 0D0IB7oSsu4STEjsp5LjDtUj
-                password: Johndoe@1234
-      parameters:
-        - name: Content-Type
-          in: header
+
+    PostsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            posts:
+              type: array
+              items:
+                $ref: '#/components/schemas/Post'
+            total:
+              type: integer
+            page:
+              type: integer
+            limit:
+              type: integer
+
+    PostResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Post'
+
+    FileUploadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            fileId:
+              type: string
+            url:
+              type: string
+            filename:
+              type: string
+            size:
+              type: integer
+
+    DashboardStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalPosts:
+          type: integer
+        activeSessions:
+          type: integer
+        newUsersToday:
+          type: integer
+        newPostsToday:
+          type: integer
+        growthRate:
+          type: number
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
           schema:
-            type: string
-          example: application/json
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /client/user/me:
-    get:
-      tags:
-        - Client > User > Me
-      summary: Show Me
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: Content-Type
-          in: header
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: VALIDATION_ERROR
+                  message:
+                    type: string
+                  details:
+                    type: array
+                    items:
+                      type: object
+
+    UnauthorizedError:
+      description: Unauthorized
+      content:
+        application/json:
           schema:
-            type: string
-          example: application/json
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-    patch:
-      tags:
-        - Client > User > Me
-      summary: Update Me
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              example:
-                name: johndoe
-                email: johndoe@sample.com
-                password: Johndoe@1234
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: Content-Type
-          in: header
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: AUTHENTICATION_ERROR
+                  message:
+                    type: string
+
+    ForbiddenError:
+      description: Forbidden
+      content:
+        application/json:
           schema:
-            type: string
-          example: application/json
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-    delete:
-      tags:
-        - Client > User > Me
-      summary: Delete Me
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: Content-Type
-          in: header
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: FORBIDDEN_ERROR
+                  message:
+                    type: string
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
           schema:
-            type: string
-          example: application/json
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
-  /admin/users:
-    get:
-      tags:
-        - Admin > Users Management
-      summary: All Users
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json: {}
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: NOT_FOUND
+                  message:
+                    type: string
+
+    ConflictError:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: CONFLICT_ERROR
+                  message:
+                    type: string
+
+    RateLimitError:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: RATE_LIMIT_ERROR
+                  message:
+                    type: string
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: INTERNAL_ERROR
+                  message:
+                    type: string

@@ -5,8 +5,17 @@ import pkg from '../../package.json';
 import server from './http_server';
 import db from '../database/db_connection';
 import logger from '../utils/logger/winston/logger';
+import validateEnv from '../config/env-validator';
+import { handleUncaughtException } from '../middlewares/http_error_handler/error_handler';
 
 const startup = async (silent: boolean) => {
+    // PRIMEIRA COISA: Configurar handlers de erro não capturados
+    handleUncaughtException();
+    
+    // SEGUNDA COISA: Validar variáveis de ambiente
+    console.log(colorTxt.bgBlue.white('\n🔍 VALIDANDO CONFIGURAÇÕES DE AMBIENTE...'));
+    const env = validateEnv();
+    
     if (!silent) {
         /* eslint-disable no-console */
         // console.clear();
@@ -14,13 +23,13 @@ const startup = async (silent: boolean) => {
             colorTxt.bgWhite.black(`\n Starting ${pkg.name.toUpperCase()} `) +
                 colorTxt.bgMagenta.black(` v${pkg.version} `),
         );
-        console.log(colorTxt.white(`-> Running in ${process.env.NODE_ENV} environment`));
+        console.log(colorTxt.white(`-> Running in ${env.NODE_ENV} environment`));
         console.log(colorTxt.white(`-> Started at ${moment().format('YYYY-MM-DD HH:mm')}`));
         /* eslint-enable no-console */
     }
 
     logger.info(`Api starting ${pkg.name.toUpperCase()} v${pkg.version}`);
-    logger.info(`Api running in ${process.env.NODE_ENV} environment`);
+    logger.info(`Api running in ${env.NODE_ENV} environment`);
     logger.info(`Api started at ${moment().format('YYYY-MM-DD HH:mm')}`);
 
     await runServer(silent);

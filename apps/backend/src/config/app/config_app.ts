@@ -18,7 +18,7 @@ const testConfig = (env: IProcessEnv): IEnvConfig => {
             extUrlencoded: env.API_EXT_URLENCODED == 'false' || true,
         },
         cors: {
-            allowOrigin: env.CORS_ALLOW_ORIGIN || '*',
+            allowOrigin: env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001,http://localhost:5173',
         },
         jwt: {
             secretUser: env.JWT_SECRET_USER || '',
@@ -58,7 +58,7 @@ const devConfig = (env: IProcessEnv): IEnvConfig => {
             extUrlencoded: env.API_EXT_URLENCODED == 'false' || true,
         },
         cors: {
-            allowOrigin: env.CORS_ALLOW_ORIGIN || '*',
+            allowOrigin: env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001,http://localhost:5173',
         },
         jwt: {
             secretUser: env.JWT_SECRET_USER || '',
@@ -98,7 +98,7 @@ const stageConfig = (env: IProcessEnv): IEnvConfig => {
             extUrlencoded: env.API_EXT_URLENCODED == 'false' || true,
         },
         cors: {
-            allowOrigin: env.CORS_ALLOW_ORIGIN || '*',
+            allowOrigin: env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001,http://localhost:5173',
         },
         jwt: {
             secretUser: env.JWT_SECRET_USER || '',
@@ -138,7 +138,8 @@ const prodConfig = (env: IProcessEnv): IEnvConfig => {
             extUrlencoded: env.API_EXT_URLENCODED == 'false' || true,
         },
         cors: {
-            allowOrigin: env.CORS_ALLOW_ORIGIN || '*',
+            // Em produção, CORS_ORIGIN é obrigatório - não usar wildcard
+            allowOrigin: env.CORS_ORIGIN,
         },
         jwt: {
             secretUser: env.JWT_SECRET_USER || '',
