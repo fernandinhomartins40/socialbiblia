@@ -207,148 +207,57 @@ jobs:
           fi
         "
 
-    - name: 🔄 Atualização Incremental do Código
+    - name: 🐳 Instalar Docker e Docker Compose
       run: |
-        echo "🔄 Atualizando código via git pull incremental..."
+        echo "🐳 Garantindo Docker e Docker Compose..."
         sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
+          # Criar diretório se não existir
+          mkdir -p ${{ env.APP_DIR }}
           cd ${{ env.APP_DIR }}
           
-          # Detectar comando Docker Compose disponível
-          if command -v 'docker compose' >/dev/null 2>&1; then
-            export DOCKER_COMPOSE_CMD='docker compose'
-            echo '🐳 Usando Docker Compose V2: docker compose'
-          elif command -v 'docker-compose' >/dev/null 2>&1; then
-            export DOCKER_COMPOSE_CMD='docker-compose'
-            echo '🐳 Usando Docker Compose V1: docker-compose'
+          # Instalar Docker se não estiver instalado
+          if ! command -v docker >/dev/null 2>&1; then
+            echo '📦 Instalando Docker...'
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sh get-docker.sh
+            systemctl enable docker
+            systemctl start docker
+            echo '✅ Docker instalado'
           else
-            echo '❌ Docker Compose não encontrado!'
-            exit 1
+            echo '✅ Docker já instalado'
+            docker --version
           fi
           
-          # Verificar se repositório existe
-          if [ ! -d .git ]; then
-            echo '🆕 Primeira vez: clonando repositório...'
-            git clone https://github.com/${{ github.repository }}.git .
+          # Instalar Docker Compose standalone se não estiver disponível
+          if ! command -v 'docker compose' >/dev/null 2>&1 && ! command -v 'docker-compose' >/dev/null 2>&1; then
+            echo '📦 Instalando Docker Compose standalone...'
+            COMPOSE_VERSION=\$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d'\"' -f4)
+            curl -L \"https://github.com/docker/compose/releases/download/\${COMPOSE_VERSION}/docker-compose-\$(uname -s)-\$(uname -m)\" -o /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+            echo '✅ Docker Compose standalone instalado'
+            docker-compose --version
           else
-            echo '📥 Fazendo pull incremental das mudanças...'
-            
-            # Salvar status atual
-            git stash push -m 'Auto-stash before deploy' 2>/dev/null || true
-            
-            # Pull incremental
-            git fetch origin
-            BEFORE=\$(git rev-parse HEAD)
-            git pull origin main
-            AFTER=\$(git rev-parse HEAD)
-            
-            if [ \"\$BEFORE\" != \"\$AFTER\" ]; then
-              echo \"✅ Código atualizado: \$BEFORE -> \$AFTER\"
+            echo '✅ Docker Compose já disponível'
+            if command -v 'docker compose' >/dev/null 2>&1; then
+              docker compose version
             else
-              echo '📋 Código já atualizado'
+              docker-compose --version
             fi
           fi
         "
 
-    - name: 🔄 Restaurar Dados Preservados
+    - name: 🚀 Deploy usando Script de Produção
       run: |
-        echo "🔄 Garantindo preservação dos dados..."
+        echo "🚀 Executando deploy com script de produção..."
         sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-          cd ${{ env.APP_DIR }}
+          # Baixar e executar o script de deploy de produção
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/scripts/deploy-production.sh -o /tmp/deploy-production.sh
+          chmod +x /tmp/deploy-production.sh
           
-          # Restaurar .env.production se foi perdido no git pull
-          if [ ! -f .env.production ] && [ -f /tmp/env_backup.production ]; then
-            cp /tmp/env_backup.production .env.production
-            echo '✅ .env.production restaurado do backup rápido'
-          elif [ -f .env.production ]; then
-            echo '✅ .env.production já presente'
-          fi
-          
-          # Restaurar dados do Postgres se necessário
-          if [ -f /tmp/postgres_backup.tar.gz ] && [ ! -d data/postgres ]; then
-            mkdir -p data
-            tar -xzf /tmp/postgres_backup.tar.gz -C data/
-            echo '✅ Postgres data restaurado'
-          fi
-          
-          # Verificar se backup completo existe e restaurar se necessário
-          LATEST_BACKUP=\$(ls -t /opt/socialbiblia-backups/backup_* 2>/dev/null | head -1 || echo '')
-          if [ ! -f .env.production ] && [ -n \"\$LATEST_BACKUP\" ] && [ -f \"\$LATEST_BACKUP/.env.production\" ]; then
-            cp \"\$LATEST_BACKUP/.env.production\" .env.production
-            echo '✅ .env.production restaurado do backup completo'
-          fi
-          
-          echo '🛡️ Dados críticos preservados'
+          # Executar o script de deploy
+          /tmp/deploy-production.sh '${{ env.VPS_HOST }}' '${{ env.APP_DIR }}' 'https://github.com/${{ github.repository }}.git'
         "
 
-    - name: 📦 Instalar Dependências (somente se necessário)
-      if: needs.analyze-changes.outputs.has_package_changes == 'true'
-      run: |
-        echo "📦 Instalando dependências (package.json mudou)..."
-        sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-          cd ${{ env.APP_DIR }}
-          
-          # Detectar comando Docker Compose
-          if command -v 'docker compose' >/dev/null 2>&1; then
-            DOCKER_COMPOSE_CMD='docker compose'
-          elif command -v 'docker-compose' >/dev/null 2>&1; then
-            DOCKER_COMPOSE_CMD='docker-compose'
-          else
-            echo '❌ Docker Compose não encontrado!'
-            exit 1
-          fi
-          
-          # Build das imagens Docker com cache
-          echo '🔨 Rebuilding Docker images...'
-          \$DOCKER_COMPOSE_CMD -f docker-compose.yml build --no-cache
-          echo '✅ Dependências atualizadas via Docker build'
-        "
-
-    - name: 📦 Skip Dependências (não necessário)
-      if: needs.analyze-changes.outputs.has_package_changes == 'false'
-      run: |
-        echo "📦 Pulando instalação de dependências (package.json não mudou)"
-        echo "⚡ Deploy mais rápido!"
-
-    - name: 🔄 Restart Inteligente da Aplicação
-      if: needs.analyze-changes.outputs.needs_restart == 'true'
-      run: |
-        echo "🔄 Reiniciando aplicação (código/config mudou)..."
-        sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-          cd ${{ env.APP_DIR }}
-          
-          # Detectar comando Docker Compose
-          if command -v 'docker compose' >/dev/null 2>&1; then
-            DOCKER_COMPOSE_CMD='docker compose'
-          elif command -v 'docker-compose' >/dev/null 2>&1; then
-            DOCKER_COMPOSE_CMD='docker-compose'
-          else
-            echo '❌ Docker Compose não encontrado!'
-            exit 1
-          fi
-          
-          # Verificar se Docker Compose está rodando
-          if \$DOCKER_COMPOSE_CMD ps | grep -q 'Up'; then
-            echo '🔄 Fazendo restart dos containers (preserva dados)...'
-            \$DOCKER_COMPOSE_CMD restart
-          else
-            echo '🚀 Iniciando aplicação com Docker Compose...'
-            \$DOCKER_COMPOSE_CMD up -d
-          fi
-          
-          echo '✅ Aplicação atualizada via Docker'
-        "
-
-    - name: 📋 Skip Restart (não necessário)
-      if: needs.analyze-changes.outputs.needs_restart == 'false'
-      run: |
-        echo "📋 Restart não necessário (apenas docs/workflows mudaram)"
-        echo "⚡ Aplicação continua rodando sem interrupção!"
-
-    - name: ⏳ Aguardar Estabilização
-      if: needs.analyze-changes.outputs.needs_restart == 'true'
-      run: |
-        echo "⏳ Aguardando aplicação estabilizar após restart..."
-        sleep 10
 
     - name: 🔍 Verificação Rápida
       run: |
