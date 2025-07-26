@@ -301,7 +301,7 @@ jobs:
           
           # Aguardar inicialização
           echo '⏳ Aguardando inicialização...'
-          sleep 30
+          sleep 60
           
           echo '✅ Deploy concluído'
         "
@@ -324,18 +324,28 @@ jobs:
           fi
           
           # Verificar Docker containers
+          echo '🔍 Status dos containers:'
+          \$DOCKER_COMPOSE_CMD ps || echo 'Erro ao verificar containers'
+          
           if \$DOCKER_COMPOSE_CMD ps | grep -q 'Up'; then
             echo '✅ Docker containers rodando'
           else
-            echo '❌ Docker containers não encontrados'
-            echo '🔍 Status detalhado:'
+            echo '⚠️ Containers podem estar iniciando ainda...'
+            echo '🔍 Aguardando mais 30s...'
+            sleep 30
             \$DOCKER_COMPOSE_CMD ps
-            exit 1
+            if \$DOCKER_COMPOSE_CMD ps | grep -q 'Up'; then
+              echo '✅ Containers funcionando após aguardar'
+            else
+              echo '❌ Containers ainda não estão funcionando - verificar logs'
+              \$DOCKER_COMPOSE_CMD logs --tail 20
+              exit 1
+            fi
           fi
           
           # Verificar health check rápido
           for i in {1..3}; do
-            if curl -f -s http://localhost:3000/api/health >/dev/null 2>&1; then
+            if curl -f -s http://localhost:3001/health >/dev/null 2>&1; then
               echo '✅ Health check OK'
               break
             else
