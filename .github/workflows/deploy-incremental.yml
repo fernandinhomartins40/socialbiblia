@@ -250,12 +250,60 @@ jobs:
       run: |
         echo "🚀 Executando deploy com script de produção..."
         sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-          # Baixar e executar o script de deploy de produção
-          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/scripts/deploy-production.sh -o /tmp/deploy-production.sh
-          chmod +x /tmp/deploy-production.sh
+          # Garantir que o diretório existe
+          mkdir -p ${{ env.APP_DIR }}
+          cd ${{ env.APP_DIR }}
           
-          # Executar o script de deploy
-          /tmp/deploy-production.sh '${{ env.VPS_HOST }}' '${{ env.APP_DIR }}' 'https://github.com/${{ github.repository }}.git'
+          # Clonar ou atualizar o repositório primeiro
+          if [ ! -d .git ]; then
+            echo '🆕 Clonando repositório...'
+            git clone https://github.com/${{ github.repository }}.git .
+          else
+            echo '📥 Atualizando repositório...'
+            git fetch origin
+            git reset --hard origin/main
+          fi
+          
+          # Deploy simplificado e direto
+          echo '🚀 Executando deploy direto com Docker Compose...'
+          
+          # Detectar comando Docker Compose
+          if command -v 'docker compose' >/dev/null 2>&1; then
+            DOCKER_COMPOSE_CMD='docker compose'
+          elif command -v 'docker-compose' >/dev/null 2>&1; then
+            DOCKER_COMPOSE_CMD='docker-compose'
+          else
+            echo '❌ Docker Compose não encontrado!'
+            exit 1
+          fi
+          
+          # Verificar se docker-compose.yml existe
+          if [ ! -f docker-compose.yml ]; then
+            echo '❌ docker-compose.yml não encontrado no repositório!'
+            echo '📁 Arquivos no diretório:'
+            ls -la
+            exit 1
+          fi
+          
+          # Parar containers existentes
+          echo '🔄 Parando containers existentes...'
+          \$DOCKER_COMPOSE_CMD down || true
+          
+          # Limpar imagens antigas se necessário
+          if [[ '${{ needs.analyze-changes.outputs.has_package_changes }}' == 'true' ]]; then
+            echo '🧹 Limpando imagens antigas (dependências mudaram)...'
+            \$DOCKER_COMPOSE_CMD down --rmi all || true
+          fi
+          
+          # Iniciar aplicação
+          echo '🚀 Iniciando aplicação...'
+          \$DOCKER_COMPOSE_CMD up -d --build
+          
+          # Aguardar inicialização
+          echo '⏳ Aguardando inicialização...'
+          sleep 30
+          
+          echo '✅ Deploy concluído'
         "
 
 
