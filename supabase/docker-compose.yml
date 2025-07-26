@@ -43,8 +43,8 @@ services:
     # https://unix.stackexchange.com/a/294837
     entrypoint: bash -c 'eval "echo \"$$(cat ~/temp.yml)\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
     ports:
-      - 3001:8000/tcp
-      - 8443:8443/tcp
+      - "3001:8000/tcp"  # API SocialBiblia
+      - "8444:8443/tcp"  # HTTPS alterado para evitar conflito
     depends_on:
       analytics:
         condition: service_healthy
@@ -313,7 +313,7 @@ services:
       POSTGRES_BACKEND_SCHEMA: _analytics
       LOGFLARE_FEATURE_FLAG_OVERRIDE: multibackend=true
     ports:
-      - ":4000"
+      - "4001:4000"  # Analytics SocialBiblia (porta específica)
 
 
   db:
@@ -335,7 +335,7 @@ services:
       - log_min_messages=fatal
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5433:5432"  # Porta externa alterada para evitar conflito
     environment:
       POSTGRES_HOST: /var/run/postgresql
       PGPORT: 5432
@@ -390,8 +390,8 @@ services:
     image: supabase/supavisor:1.1.56
     restart: unless-stopped
     ports:
-      - 5432:5432
-      - :6543
+      - "5434:5432"  # Porta externa alterada para evitar conflito
+      - ":6543"
     volumes:
       - ./volumes/pooler/pooler.exs:/etc/pooler/pooler.exs:ro
     healthcheck:
