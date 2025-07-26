@@ -1,8 +1,8 @@
 name: 🚀 Deploy Incremental SocialBiblia
 
-# Controle de concorrência
+# Controle de concorrência - ÚNICO deploy por vez
 concurrency:
-  group: socialbiblia-deploy
+  group: socialbiblia-production-deploy
   cancel-in-progress: true
 
 on:

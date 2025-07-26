@@ -18,13 +18,14 @@ on:
         default: false
         type: boolean
       
-  push:
-    branches: [ main, develop ]
-    paths:
-      - 'apps/**'
-      - 'docker/**'
-      - 'Dockerfile*'
-      - 'docker-compose*.yml'
+  # PUSH DESABILITADO - Evitar conflito com deploy-incremental.yml
+  # push:
+  #   branches: [ main, develop ]
+  #   paths:
+  #     - 'apps/**'
+  #     - 'docker/**'
+  #     - 'Dockerfile*'
+  #     - 'docker-compose*.yml'
       
   pull_request:
     branches: [ main, develop ]

@@ -525,33 +525,33 @@ jobs:
           echo "📢 Staging deployment completed"
 
   # ==========================================
-  # 10. Deploy to Production
+  # 10. Deploy to Production (DISABLED - usar deploy-incremental.yml)
   # ==========================================
-  deploy-production:
-    name: 🚀 Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build-and-push, performance-tests]
-    if: github.ref == 'refs/heads/main'
-    environment: production
+  # deploy-production:
+  #   name: 🚀 Deploy to Production
+  #   runs-on: ubuntu-latest
+  #   needs: [build-and-push, performance-tests]
+  #   if: github.ref == 'refs/heads/main'
+  #   environment: production
 
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: 📥 Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: 🚀 Deploy to Production
-        run: |
-          echo "🚀 Deploying to production environment..."
-          # Add your production deployment logic here
+  #     - name: 🚀 Deploy to Production
+  #       run: |
+  #         echo "🚀 Deploying to production environment..."
+  #         # DESABILITADO: Usar deploy-incremental.yml
 
-      - name: 🧪 Run Production Smoke Tests
-        run: |
-          echo "🧪 Running production smoke tests..."
-          # Add smoke tests for production environment
+  #     - name: 🧪 Run Production Smoke Tests
+  #       run: |
+  #         echo "🧪 Running production smoke tests..."
+  #         # Add smoke tests for production environment
 
-      - name: 📢 Notify Production Deployment
-        if: always()
-        run: |
-          echo "📢 Production deployment completed"
+  #     - name: 📢 Notify Production Deployment
+  #       if: always()
+  #       run: |
+  #         echo "📢 Production deployment completed"
 
   # ==========================================
   # 11. Cleanup
@@ -559,7 +559,7 @@ jobs:
   cleanup:
     name: 🧹 Cleanup
     runs-on: ubuntu-latest
-    needs: [deploy-staging, deploy-production]
+    needs: [deploy-staging]  # Removido deploy-production
     if: always()
 
     steps:
