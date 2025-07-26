@@ -133,13 +133,30 @@ jobs:
         echo "🔍 Verificando estado atual..."
         sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
           echo '=== Estado Atual da VPS ==='
+          echo 'Docker version:'
+          docker --version || echo 'Docker não encontrado'
+          
+          echo ''
+          echo 'Docker Compose version:'
+          if command -v 'docker compose' >/dev/null 2>&1; then
+            docker compose version
+            DOCKER_COMPOSE_CMD='docker compose'
+          elif command -v 'docker-compose' >/dev/null 2>&1; then
+            docker-compose version
+            DOCKER_COMPOSE_CMD='docker-compose'
+          else
+            echo 'Docker Compose não encontrado'
+            DOCKER_COMPOSE_CMD='none'
+          fi
+          
+          echo ''
           echo 'Docker Containers:'
           docker ps --format 'table {{.Names}}\t{{.Status}}' | grep ${{ env.COMPOSE_PROJECT_NAME }} || echo 'Não rodando'
           
           echo ''
           echo 'Docker Compose status:'
-          if [ -f ${{ env.APP_DIR }}/docker-compose.yml ]; then
-            cd ${{ env.APP_DIR }} && docker-compose ps || echo 'Docker Compose não encontrado'
+          if [ -f ${{ env.APP_DIR }}/docker-compose.yml ] && [ \"\$DOCKER_COMPOSE_CMD\" != 'none' ]; then
+            cd ${{ env.APP_DIR }} && \$DOCKER_COMPOSE_CMD ps || echo 'Docker Compose não encontrado'
           else
             echo '📋 Docker Compose não configurado'
           fi
@@ -195,6 +212,18 @@ jobs:
         echo "🔄 Atualizando código via git pull incremental..."
         sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
           cd ${{ env.APP_DIR }}
+          
+          # Detectar comando Docker Compose disponível
+          if command -v 'docker compose' >/dev/null 2>&1; then
+            export DOCKER_COMPOSE_CMD='docker compose'
+            echo '🐳 Usando Docker Compose V2: docker compose'
+          elif command -v 'docker-compose' >/dev/null 2>&1; then
+            export DOCKER_COMPOSE_CMD='docker-compose'
+            echo '🐳 Usando Docker Compose V1: docker-compose'
+          else
+            echo '❌ Docker Compose não encontrado!'
+            exit 1
+          fi
           
           # Verificar se repositório existe
           if [ ! -d .git ]; then
@@ -258,9 +287,19 @@ jobs:
         sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
           cd ${{ env.APP_DIR }}
           
+          # Detectar comando Docker Compose
+          if command -v 'docker compose' >/dev/null 2>&1; then
+            DOCKER_COMPOSE_CMD='docker compose'
+          elif command -v 'docker-compose' >/dev/null 2>&1; then
+            DOCKER_COMPOSE_CMD='docker-compose'
+          else
+            echo '❌ Docker Compose não encontrado!'
+            exit 1
+          fi
+          
           # Build das imagens Docker com cache
           echo '🔨 Rebuilding Docker images...'
-          docker-compose -f docker-compose.yml build --no-cache
+          \$DOCKER_COMPOSE_CMD -f docker-compose.yml build --no-cache
           echo '✅ Dependências atualizadas via Docker build'
         "
 
@@ -277,13 +316,23 @@ jobs:
         sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
           cd ${{ env.APP_DIR }}
           
+          # Detectar comando Docker Compose
+          if command -v 'docker compose' >/dev/null 2>&1; then
+            DOCKER_COMPOSE_CMD='docker compose'
+          elif command -v 'docker-compose' >/dev/null 2>&1; then
+            DOCKER_COMPOSE_CMD='docker-compose'
+          else
+            echo '❌ Docker Compose não encontrado!'
+            exit 1
+          fi
+          
           # Verificar se Docker Compose está rodando
-          if docker-compose ps | grep -q 'Up'; then
+          if \$DOCKER_COMPOSE_CMD ps | grep -q 'Up'; then
             echo '🔄 Fazendo restart dos containers (preserva dados)...'
-            docker-compose restart
+            \$DOCKER_COMPOSE_CMD restart
           else
             echo '🚀 Iniciando aplicação com Docker Compose...'
-            docker-compose up -d
+            \$DOCKER_COMPOSE_CMD up -d
           fi
           
           echo '✅ Aplicação atualizada via Docker'
@@ -307,11 +356,23 @@ jobs:
         sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
           cd ${{ env.APP_DIR }}
           
+          # Detectar comando Docker Compose
+          if command -v 'docker compose' >/dev/null 2>&1; then
+            DOCKER_COMPOSE_CMD='docker compose'
+          elif command -v 'docker-compose' >/dev/null 2>&1; then
+            DOCKER_COMPOSE_CMD='docker-compose'
+          else
+            echo '❌ Docker Compose não encontrado!'
+            exit 1
+          fi
+          
           # Verificar Docker containers
-          if docker-compose ps | grep -q 'Up'; then
+          if \$DOCKER_COMPOSE_CMD ps | grep -q 'Up'; then
             echo '✅ Docker containers rodando'
           else
             echo '❌ Docker containers não encontrados'
+            echo '🔍 Status detalhado:'
+            \$DOCKER_COMPOSE_CMD ps
             exit 1
           fi
           
@@ -344,7 +405,15 @@ jobs:
           
           echo '=== Status da Aplicação ==='
           cd ${{ env.APP_DIR }}
-          docker-compose ps --no-trunc || echo 'Docker Compose não encontrado'
+          
+          # Detectar comando Docker Compose
+          if command -v 'docker compose' >/dev/null 2>&1; then
+            docker compose ps --no-trunc || echo 'Docker Compose não encontrado'
+          elif command -v 'docker-compose' >/dev/null 2>&1; then
+            docker-compose ps --no-trunc || echo 'Docker Compose não encontrado'
+          else
+            echo 'Docker Compose não encontrado!'
+          fi
           
           echo ''
           echo '=== Volumes Docker Preservados ==='
