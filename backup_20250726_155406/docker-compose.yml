@@ -1,0 +1,145 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: socialbiblia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: socialbiblia
+      POSTGRES_USER: socialbiblia_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-strong_dev_password_2024}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - socialbiblia-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U socialbiblia_user -d socialbiblia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: socialbiblia-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-dev_redis_2024} --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - socialbiblia-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Backend Application
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: socialbiblia-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      APP_NAME: SocialBiblia
+      DATABASE_URL: postgresql://socialbiblia_user:${POSTGRES_PASSWORD:-strong_dev_password_2024}@postgres:5432/socialbiblia
+      REDIS_URL: redis://:${REDIS_PASSWORD:-dev_redis_2024}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production_2024}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev_refresh_secret_change_in_production_2024}
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      PORT: 3001
+      CORS_ORIGIN: http://localhost:3000
+      UPLOAD_LIMIT: 10mb
+      RATE_LIMIT_MAX: 1000
+      RATE_LIMIT_WINDOW: 900000
+      LOG_LEVEL: debug
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+      - ./apps/backend/uploads:/app/uploads
+    networks:
+      - socialbiblia-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Application
+  frontend:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: development
+    container_name: socialbiblia-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://31.97.85.98:3001/api
+      VITE_APP_TITLE: SocialBiblia
+      VITE_APP_DESCRIPTION: Plataforma social cristã
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    networks:
+      - socialbiblia-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Nginx Reverse Proxy (Optional for production-like setup)
+  nginx:
+    image: nginx:alpine
+    container_name: socialbiblia-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - socialbiblia-network
+    depends_on:
+      - backend
+      - frontend
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  socialbiblia-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

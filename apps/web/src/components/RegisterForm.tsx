@@ -1,11 +1,13 @@
-import { useState } from "react";
-import { usePlugbaseAuth } from "@/hooks/usePlugbaseAuth.tsx";
+import { useState, useMemo } from "react";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Loader2, ArrowRight, Users, Shield } from "lucide-react";
+import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
+import { PasswordConfirmationIndicator } from "@/components/PasswordConfirmationIndicator";
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -14,14 +16,16 @@ interface RegisterFormProps {
 
 export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) {
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { register, isLoading } = usePlugbaseAuth();
+  const { signUp, isLoading } = useSupabaseAuth();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -31,7 +35,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
     e.preventDefault();
     
     // Validações
-    if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) {
+    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.username.trim() || !formData.email.trim() || !formData.password.trim()) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -40,10 +44,22 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
       return;
     }
 
-    if (formData.password.length < 6) {
+    // Validação do username
+    if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
       toast({
-        title: "Senha muito curta",
-        description: "A senha deve ter pelo menos 6 caracteres.",
+        title: "Username inválido",
+        description: "O username pode conter apenas letras, números e underscore (_).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validação rigorosa de senha conforme backend
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      toast({
+        title: "Senha não atende aos critérios",
+        description: "A senha deve ter pelo menos 8 caracteres, incluindo: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial (@$!%*?&).",
         variant: "destructive",
       });
       return;
@@ -59,15 +75,19 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
     }
 
     try {
-      await register({
-        name: formData.name.trim(),
+      await signUp({
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        username: formData.username.trim(),
         email: formData.email.trim(),
         password: formData.password,
       });
       
       // Resetar form
       setFormData({
-        name: "",
+        firstName: "",
+        lastName: "",
+        username: "",
         email: "",
         password: "",
         confirmPassword: "",
@@ -105,17 +125,51 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
       </CardHeader>
       <CardContent className="px-8 pb-8">
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-semibold text-deep-blue-gray">
-                Nome Completo *
+              <Label htmlFor="firstName" className="text-sm font-semibold text-deep-blue-gray">
+                Nome *
               </Label>
               <Input
-                id="name"
+                id="firstName"
                 type="text"
-                placeholder="Digite seu nome completo"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
+                placeholder="Seu primeiro nome"
+                value={formData.firstName}
+                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                disabled={isLoading}
+                className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lastName" className="text-sm font-semibold text-deep-blue-gray">
+                Sobrenome *
+              </Label>
+              <Input
+                id="lastName"
+                type="text"
+                placeholder="Seu sobrenome"
+                value={formData.lastName}
+                onChange={(e) => handleInputChange("lastName", e.target.value)}
+                disabled={isLoading}
+                className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5">
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-sm font-semibold text-deep-blue-gray">
+                Nome de Usuário *
+              </Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="Ex: usuario123 (apenas letras, números e _)"
+                value={formData.username}
+                onChange={(e) => handleInputChange("username", e.target.value)}
                 disabled={isLoading}
                 className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20"
                 required
@@ -137,11 +191,10 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                 required
               />
             </div>
-
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-2">
+          <div className="space-y-5">
+            <div className="space-y-3">
               <Label htmlFor="password" className="text-sm font-semibold text-deep-blue-gray">
                 Senha *
               </Label>
@@ -149,19 +202,19 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Crie uma senha forte"
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   disabled={isLoading}
-                  className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20 pr-11"
+                  className="h-12 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20 pr-12"
                   required
-                  minLength={6}
+                  minLength={8}
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 rounded-lg"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100 rounded-lg"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
                 >
@@ -172,9 +225,12 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                   )}
                 </Button>
               </div>
+              
+              {/* Indicador de força da senha */}
+              <PasswordStrengthIndicator password={formData.password} />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label htmlFor="confirmPassword" className="text-sm font-semibold text-deep-blue-gray">
                 Confirmar Senha *
               </Label>
@@ -182,18 +238,18 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Digite novamente"
+                  placeholder="Digite a senha novamente"
                   value={formData.confirmPassword}
                   onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                   disabled={isLoading}
-                  className="h-11 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20 pr-11"
+                  className="h-12 text-base rounded-xl border-gray-200 focus:border-divine-gold focus:ring-divine-gold/20 pr-12"
                   required
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 rounded-lg"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100 rounded-lg"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   disabled={isLoading}
                 >
@@ -204,6 +260,12 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                   )}
                 </Button>
               </div>
+              
+              {/* Indicador de confirmação de senha */}
+              <PasswordConfirmationIndicator 
+                password={formData.password}
+                confirmPassword={formData.confirmPassword}
+              />
             </div>
           </div>
 

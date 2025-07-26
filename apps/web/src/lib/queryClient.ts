@@ -38,20 +38,10 @@ export const cacheUtils = {
   },
 };
 
-// Função de requisição simples para compatibilidade
+// Função de requisição usando Supabase
 export const apiRequest = async (method: string, url: string, data?: any) => {
-  const { apiClient } = await import('./unified-api');
+  const { supabase } = await import('./supabase');
   
-  switch (method.toUpperCase()) {
-    case 'GET':
-      return apiClient.get(url);
-    case 'POST':
-      return apiClient.post(url, data);
-    case 'PUT':
-      return apiClient.put(url, data);
-    case 'DELETE':
-      return apiClient.delete(url);
-    default:
-      throw new Error('Método não suportado: ' + method);
-  }
+  // Para o Supabase, usamos métodos específicos
+  throw new Error('Use Supabase client diretamente via hooks/useSupabaseAuth');
 };

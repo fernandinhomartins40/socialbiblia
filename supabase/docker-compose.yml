@@ -1,0 +1,443 @@
+name: supabase-socialbiblia_20250726_154309
+
+services:
+  studio:
+    container_name: supabase-studio-socialbiblia_20250726_154309
+    image: supabase/studio:20250113-83c9420
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/api/profile', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+        ]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    depends_on:
+      analytics:
+        condition: service_healthy
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: admin
+      DEFAULT_ORGANIZATION_NAME: SocialBiblia
+      DEFAULT_PROJECT_NAME: SocialBiblia Production
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: http://localhost:3001
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogImFub24iLAogICJpc3MiOiAic3VwYWJhc2UiLAogICJpYXQiOiAxNzI3MjMzMjAwLAogICJleHAiOiAxODg0OTk5NjAwCn0.O0qBbl300xfJrhmW3YktijUJQ5ZW6OXVyZjnSwSCzCg
+      SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogInNlcnZpY2Vfcm9sZSIsCiAgImlzcyI6ICJzdXBhYmFzZSIsCiAgImlhdCI6IDE3MjcyMzMyMDAsCiAgImV4cCI6IDE4ODQ5OTk2MDAKfQ.7KpglgDbGij2ich1kiVbzBj6Znz_S5anWm0iOemyS18
+      AUTH_JWT_SECRET: 9f878Nhjk3TJyVKgyaGh83hh6Pu9j9yfxnZSuphb
+      LOGFLARE_API_KEY: 
+      LOGFLARE_URL: http://analytics:4000
+      NEXT_PUBLIC_ENABLE_LOGS: true
+      NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
+    #ports:
+    #  - ":3000"
+
+  kong:
+    container_name: supabase-kong-socialbiblia_20250726_154309
+    image: kong:2.8.1
+    restart: unless-stopped
+    # https://unix.stackexchange.com/a/294837
+    entrypoint: bash -c 'eval "echo \"$$(cat ~/temp.yml)\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
+    ports:
+      - 3001:8000/tcp
+      - 8443:8443/tcp
+    depends_on:
+      analytics:
+        condition: service_healthy
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      # https://github.com/supabase/cli/issues/14
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogImFub24iLAogICJpc3MiOiAic3VwYWJhc2UiLAogICJpYXQiOiAxNzI3MjMzMjAwLAogICJleHAiOiAxODg0OTk5NjAwCn0.O0qBbl300xfJrhmW3YktijUJQ5ZW6OXVyZjnSwSCzCg
+      SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogInNlcnZpY2Vfcm9sZSIsCiAgImlzcyI6ICJzdXBhYmFzZSIsCiAgImlhdCI6IDE3MjcyMzMyMDAsCiAgImV4cCI6IDE4ODQ5OTk2MDAKfQ.7KpglgDbGij2ich1kiVbzBj6Znz_S5anWm0iOemyS18
+      DASHBOARD_USERNAME: admin
+      DASHBOARD_PASSWORD: admin
+      KONG_LOG_LEVEL: debug
+    volumes:
+      # https://github.com/supabase/supabase/issues/12661
+      - ./volumes-socialbiblia_20250726_154309/api/kong.yml:/home/kong/temp.yml:ro
+
+  auth:
+    container_name: supabase-auth-socialbiblia_20250726_154309
+    image: supabase/gotrue:v2.167.0
+    depends_on:
+      db:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9999/health"
+        ]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    restart: unless-stopped
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: http://localhost:3001
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:admin@db:5432/socialbiblia
+      GOTRUE_SITE_URL: http://localhost:3000
+      GOTRUE_URI_ALLOW_LIST: 
+      GOTRUE_DISABLE_SIGNUP: false
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_SECRET: 9f878Nhjk3TJyVKgyaGh83hh6Pu9j9yfxnZSuphb
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: true
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: false
+      GOTRUE_MAILER_AUTOCONFIRM: true
+      GOTRUE_SMTP_ADMIN_EMAIL: admin@socialbiblia.com
+      GOTRUE_SMTP_HOST: localhost
+      GOTRUE_SMTP_PORT: 1025
+      GOTRUE_SMTP_USER: admin
+      GOTRUE_SMTP_PASS: admin
+      GOTRUE_SMTP_SENDER_NAME: SocialBiblia
+      GOTRUE_MAILER_URLPATHS_INVITE: 
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: 
+      GOTRUE_MAILER_URLPATHS_RECOVERY: 
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: 
+      GOTRUE_EXTERNAL_PHONE_ENABLED: 
+      GOTRUE_SMS_AUTOCONFIRM: 
+    #ports:
+    #  - ":9999"
+
+  rest:
+    container_name: supabase-rest-socialbiblia_20250726_154309
+    image: postgrest/postgrest:v12.2.0
+    depends_on:
+      db:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      PGRST_DB_URI: postgres://authenticator:admin@db:5432/socialbiblia
+      PGRST_DB_SCHEMAS: public,storage,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: 9f878Nhjk3TJyVKgyaGh83hh6Pu9j9yfxnZSuphb
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: 9f878Nhjk3TJyVKgyaGh83hh6Pu9j9yfxnZSuphb
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
+   # ports:
+   #   - ":3000"
+
+  realtime:
+    container_name: realtime-dev.supabase-realtime-socialbiblia_20250726_154309
+    image: supabase/realtime:v2.34.7
+    depends_on:
+      db:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-sSfL",
+          "--head",
+          "-o",
+          "/dev/null",
+          "-H",
+          "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogImFub24iLAogICJpc3MiOiAic3VwYWJhc2UiLAogICJpYXQiOiAxNzI3MjMzMjAwLAogICJleHAiOiAxODg0OTk5NjAwCn0.O0qBbl300xfJrhmW3YktijUJQ5ZW6OXVyZjnSwSCzCg",
+          "http://localhost:4000/api/tenants/realtime/health"
+        ]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    restart: unless-stopped
+    environment:
+      PORT: 
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: supabase_admin
+      DB_PASSWORD: admin
+      DB_NAME: socialbiblia
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: 9f878Nhjk3TJyVKgyaGh83hh6Pu9j9yfxnZSuphb
+      SECRET_KEY_BASE: UpNVntn3cDxHJpq99YMc1T1AQgQpc8kfYTuRgBiYa15BLrx8etQoXz3gZv1/u2oq
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DNS_NODES: "''"
+      RLIMIT_NOFILE: "10000"
+      APP_NAME: realtime
+      SEED_SELF_HOST: true
+    #ports:
+    #  - ":4000"
+
+  storage:
+    container_name: supabase-storage-socialbiblia_20250726_154309
+    image: supabase/storage-api:v1.14.5
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+      imgproxy:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:5000/status"
+        ]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    restart: unless-stopped
+    environment:
+      ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogImFub24iLAogICJpc3MiOiAic3VwYWJhc2UiLAogICJpYXQiOiAxNzI3MjMzMjAwLAogICJleHAiOiAxODg0OTk5NjAwCn0.O0qBbl300xfJrhmW3YktijUJQ5ZW6OXVyZjnSwSCzCg
+      SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogInNlcnZpY2Vfcm9sZSIsCiAgImlzcyI6ICJzdXBhYmFzZSIsCiAgImlhdCI6IDE3MjcyMzMyMDAsCiAgImV4cCI6IDE4ODQ5OTk2MDAKfQ.7KpglgDbGij2ich1kiVbzBj6Znz_S5anWm0iOemyS18
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: 9f878Nhjk3TJyVKgyaGh83hh6Pu9j9yfxnZSuphb
+      DATABASE_URL: postgres://supabase_storage_admin:admin@db:5432/socialbiblia
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: stub
+      GLOBAL_S3_BUCKET: stub
+      ENABLE_IMAGE_TRANSFORMATION: "true"
+      IMGPROXY_URL: http://imgproxy:5001
+    volumes:
+      - ./volumes-socialbiblia_20250726_154309/storage:/var/lib/storage:z
+    #ports:
+    #  - ":5000"
+
+  imgproxy:
+    container_name: supabase-imgproxy-socialbiblia_20250726_154309
+    image: darthsim/imgproxy:v3.8.0
+    healthcheck:
+      test: [ "CMD", "imgproxy", "health" ]
+      timeout: 5s
+      interval: 5s
+      retries: 3
+    environment:
+      IMGPROXY_BIND: ":5001"
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
+      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_ENABLE_WEBP_DETECTION: true
+    volumes:
+      - ./volumes-socialbiblia_20250726_154309/storage:/var/lib/storage:z
+    #ports:
+    #  - ":5001"
+
+  meta:
+    container_name: supabase-meta-socialbiblia_20250726_154309
+    image: supabase/postgres-meta:v0.84.2
+    depends_on:
+      db:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: socialbiblia
+      PG_META_DB_USER: supabase_admin
+      PG_META_DB_PASSWORD: admin
+    #ports:
+    #  - ":8080"
+
+  functions:
+    container_name: supabase-edge-functions-socialbiblia_20250726_154309
+    image: supabase/edge-runtime:v1.67.0
+    restart: unless-stopped
+    depends_on:
+      analytics:
+        condition: service_healthy
+    environment:
+      JWT_SECRET: 9f878Nhjk3TJyVKgyaGh83hh6Pu9j9yfxnZSuphb
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogImFub24iLAogICJpc3MiOiAic3VwYWJhc2UiLAogICJpYXQiOiAxNzI3MjMzMjAwLAogICJleHAiOiAxODg0OTk5NjAwCn0.O0qBbl300xfJrhmW3YktijUJQ5ZW6OXVyZjnSwSCzCg
+      SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJyb2xlIjogInNlcnZpY2Vfcm9sZSIsCiAgImlzcyI6ICJzdXBhYmFzZSIsCiAgImlhdCI6IDE3MjcyMzMyMDAsCiAgImV4cCI6IDE4ODQ5OTk2MDAKfQ.7KpglgDbGij2ich1kiVbzBj6Znz_S5anWm0iOemyS18
+      SUPABASE_DB_URL: postgresql://postgres:admin@:5432/socialbiblia
+      VERIFY_JWT: "false"
+    volumes:
+      - ./volumes-socialbiblia_20250726_154309/functions:/home/deno/functions:Z
+    command:
+      - start
+      - --main-service
+      - /home/deno/functions/main
+
+  analytics:
+    container_name: supabase-analytics-socialbiblia_20250726_154309
+    image: supabase/logflare:1.4.0
+    healthcheck:
+      test: [ "CMD", "curl", "http://localhost:4000/health" ]
+      timeout: 10s
+      interval: 10s
+      retries: 15
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      LOGFLARE_NODE_HOST: 127.0.0.1
+      DB_USERNAME: supabase_admin
+      DB_DATABASE: socialbiblia
+      DB_HOSTNAME: db
+      DB_PORT: 5432
+      DB_PASSWORD: admin
+      DB_SCHEMA: _analytics
+      LOGFLARE_API_KEY: 
+      LOGFLARE_SINGLE_TENANT: true
+      LOGFLARE_SUPABASE_MODE: true
+      LOGFLARE_MIN_CLUSTER_SIZE: 1
+      POSTGRES_BACKEND_URL: postgresql://supabase_admin:admin@db:5432/socialbiblia
+      POSTGRES_BACKEND_SCHEMA: _analytics
+      LOGFLARE_FEATURE_FLAG_OVERRIDE: multibackend=true
+    ports:
+      - ":4000"
+
+
+  db:
+    container_name: supabase-db-socialbiblia_20250726_154309
+    image: supabase/postgres:15.1.1.78
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      vector:
+        condition: service_healthy
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - log_min_messages=fatal
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      PGPORT: 5432
+      POSTGRES_PORT: 5432
+      PGPASSWORD: admin
+      POSTGRES_PASSWORD: admin
+      PGDATABASE: socialbiblia
+      POSTGRES_DB: socialbiblia
+      JWT_SECRET: 9f878Nhjk3TJyVKgyaGh83hh6Pu9j9yfxnZSuphb
+      JWT_EXP: 3600
+    volumes:
+      - ./volumes-socialbiblia_20250726_154309/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
+      # Must be superuser to create event trigger
+      - ./volumes-socialbiblia_20250726_154309/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
+      # Must be superuser to alter reserved role
+      - ./volumes-socialbiblia_20250726_154309/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+      # Initialize the database settings with JWT_SECRET and JWT_EXP
+      - ./volumes-socialbiblia_20250726_154309/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
+      # PGDATA directory is persisted between restarts
+      - ./volumes-socialbiblia_20250726_154309/db/data:/var/lib/postgresql/data:Z
+      # Changes required for Analytics support
+      - ./volumes-socialbiblia_20250726_154309/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
+      # Use named volume to persist pgsodium decryption key between restarts
+      #- ./volumes-socialbiblia_20250726_154309/db/config:/etc/postgresql-custom
+
+  vector:
+      container_name: supabase-vector-socialbiblia_20250726_154309
+      image: timberio/vector:0.28.1-alpine
+      healthcheck:
+        test:
+            [
+              "CMD",
+              "wget",
+              "--no-verbose",
+              "--tries=1",
+              "--spider",
+              "http://vector:9001/health"
+            ]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+        start_period: 60s
+      volumes:
+        - ./volumes-socialbiblia_20250726_154309/logs/vector.yml:/etc/vector/vector.yml:ro
+        - /var/run/docker.sock:/var/run/docker.sock:ro
+      environment:
+        LOGFLARE_API_KEY: 
+      command: [ "--config", "/etc/vector/vector.yml" ]
+ # Update the DATABASE_URL if you are using an external Postgres database
+  supavisor:
+    container_name: supabase-pooler-socialbiblia_20250726_154309
+    image: supabase/supavisor:1.1.56
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+      - :6543
+    volumes:
+      - ./volumes/pooler/pooler.exs:/etc/pooler/pooler.exs:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-sSfL",
+          "--head",
+          "-o",
+          "/dev/null",
+          "http://localhost:4000/api/health"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: socialbiblia
+      POSTGRES_PASSWORD: admin
+      DATABASE_URL: ecto://supabase_admin:admin@db:5432/_supabase
+      CLUSTER_POSTGRES: true
+      SECRET_KEY_BASE: 
+      VAULT_ENC_KEY: 
+      API_JWT_SECRET: 9f878Nhjk3TJyVKgyaGh83hh6Pu9j9yfxnZSuphb
+      METRICS_JWT_SECRET: 9f878Nhjk3TJyVKgyaGh83hh6Pu9j9yfxnZSuphb
+      REGION: local
+      ERL_AFLAGS: -proto_dist inet_tcp
+      POOLER_TENANT_ID: 
+      POOLER_DEFAULT_POOL_SIZE: 
+      POOLER_MAX_CLIENT_CONN: 
+      POOLER_POOL_MODE: transaction
+    command:
+      [
+        "/bin/sh",
+        "-c",
+        "/app/bin/migrate && /app/bin/supavisor eval \"$$(cat /etc/pooler/pooler.exs)\" && /app/bin/server"
+      ]
+
+volumes:
+  db-data-socialbiblia_20250726_154309:
+
+

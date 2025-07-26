@@ -1,0 +1,38 @@
+{
+  "name": "socialbiblia",
+  "version": "1.0.0",
+  "description": "Plataforma de estudo bíblico colaborativo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:backend": "npm run test --workspace=apps/backend",
+    "test:web": "npm run test --workspace=apps/web",
+    "test:coverage": "turbo run test:coverage",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "db:migrate": "npm run db:migrate --workspace=apps/backend",
+    "db:seed": "npm run db:seed --workspace=apps/backend",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "health-check": "node scripts/health-check.js",
+    "security-audit": "npm audit --audit-level=high",
+    "performance-test": "artillery run tests/performance/load-test.yml",
+    "deploy:staging": "./scripts/deploy-staging.sh",
+    "deploy:production": "./scripts/deploy-production.sh",
+    "rollback": "./scripts/rollback.sh"
+  },
+  "devDependencies": {
+    "@turbo/gen": "^1.10.12",
+    "turbo": "^1.10.12"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

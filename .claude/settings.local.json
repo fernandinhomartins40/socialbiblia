@@ -19,7 +19,8 @@
       "Bash(npx tsc:*)",
       "Bash(mkdir:*)",
       "Bash(touch:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }

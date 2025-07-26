@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { usePlugbaseAuth } from "@/hooks/usePlugbaseAuth.tsx";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isLoading } = usePlugbaseAuth();
+  const { signIn, isLoading } = useSupabaseAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,10 +30,10 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
     }
     
     try {
-      await login({ email: email.trim(), password });
+      await signIn(email.trim(), password);
       onSuccess?.();
     } catch (error) {
-      // Erro já tratado pelo hook usePlugbaseAuth
+      // Erro já tratado pelo hook useSupabaseAuth
     }
   };
 
@@ -65,7 +65,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-3">
             <Label htmlFor="email" className="text-sm font-semibold text-deep-blue-gray">
-              Endereço de Email
+              Endereço de Email *
             </Label>
             <Input
               id="email"
@@ -76,12 +76,16 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
               disabled={isLoading}
               className="h-12 text-base rounded-xl border-gray-200 focus:border-spiritual-blue focus:ring-spiritual-blue/20"
               required
+              autoComplete="email"
             />
+            {email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && (
+              <p className="text-sm text-red-600">Digite um email válido</p>
+            )}
           </div>
           
           <div className="space-y-3">
             <Label htmlFor="password" className="text-sm font-semibold text-deep-blue-gray">
-              Senha
+              Senha *
             </Label>
             <div className="relative">
               <Input
@@ -93,6 +97,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
                 disabled={isLoading}
                 className="h-12 text-base rounded-xl border-gray-200 focus:border-spiritual-blue focus:ring-spiritual-blue/20 pr-12"
                 required
+                autoComplete="current-password"
               />
               <Button
                 type="button"
@@ -101,6 +106,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
                 className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100 rounded-lg"
                 onClick={() => setShowPassword(!showPassword)}
                 disabled={isLoading}
+                tabIndex={-1}
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4 text-gray-500" />
