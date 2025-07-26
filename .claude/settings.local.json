@@ -18,7 +18,8 @@
       "Bash(mv:*)",
       "Bash(npx tsc:*)",
       "Bash(mkdir:*)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(powershell:*)"
     ],
     "deny": []
   }

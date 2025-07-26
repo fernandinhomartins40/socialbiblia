@@ -29,7 +29,7 @@ COPY prisma ./prisma/
 FROM base AS deps
 
 # Install dependencies
-RUN npm ci --only=production --silent && \
+RUN npm install --only=production --silent && \
     npm cache clean --force
 
 # ==========================================
@@ -38,7 +38,7 @@ RUN npm ci --only=production --silent && \
 FROM base AS development
 
 # Install all dependencies (including dev)
-RUN npm ci --silent
+RUN npm install --silent
 
 # Copy source code
 COPY . .

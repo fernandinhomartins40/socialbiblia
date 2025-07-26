@@ -4,7 +4,7 @@ const testConfig = (env: IProcessEnv): IEnvConfig => {
     return {
         app: {
             host: env.APP_URL_HOST || 'localhost',
-            port: (env.APP_URL_PORT && parseInt(env.APP_URL_PORT, 10)) || 10030,
+            port: (env.PORT && parseInt(env.PORT, 10)) || (env.APP_URL_PORT && parseInt(env.APP_URL_PORT, 10)) || 3001,
         },
         ssl: {
             isHttps: env.SSL_ALLOW == 'true' || false,
@@ -44,7 +44,7 @@ const devConfig = (env: IProcessEnv): IEnvConfig => {
     return {
         app: {
             host: env.APP_URL_HOST || 'localhost',
-            port: (env.APP_URL_PORT && parseInt(env.APP_URL_PORT, 10)) || 10030,
+            port: (env.PORT && parseInt(env.PORT, 10)) || (env.APP_URL_PORT && parseInt(env.APP_URL_PORT, 10)) || 3001,
         },
         ssl: {
             isHttps: env.SSL_ALLOW == 'true' || false,
@@ -84,7 +84,7 @@ const stageConfig = (env: IProcessEnv): IEnvConfig => {
     return {
         app: {
             host: env.APP_URL_HOST || 'localhost',
-            port: (env.APP_URL_PORT && parseInt(env.APP_URL_PORT, 10)) || 10030,
+            port: (env.PORT && parseInt(env.PORT, 10)) || (env.APP_URL_PORT && parseInt(env.APP_URL_PORT, 10)) || 3001,
         },
         ssl: {
             isHttps: env.SSL_ALLOW == 'true' || false,
@@ -124,7 +124,7 @@ const prodConfig = (env: IProcessEnv): IEnvConfig => {
     return {
         app: {
             host: env.APP_URL_HOST || 'localhost',
-            port: (env.APP_URL_PORT && parseInt(env.APP_URL_PORT, 10)) || 10030,
+            port: (env.PORT && parseInt(env.PORT, 10)) || (env.APP_URL_PORT && parseInt(env.APP_URL_PORT, 10)) || 3001,
         },
         ssl: {
             isHttps: env.SSL_ALLOW == 'true' || false,

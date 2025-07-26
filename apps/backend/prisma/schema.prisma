@@ -98,10 +98,6 @@ model Post {
   comments    Comment[]
 
   // Constraints
-  @@check([length(title)] > 0, name: "title_not_empty")
-  @@check([length(content)] > 0, name: "content_not_empty")
-  @@check([length(slug)] > 0, name: "slug_not_empty")
-  @@check([views] >= 0, name: "views_non_negative")
 
   // Índices para performance
   @@index([authorId])
@@ -133,8 +129,6 @@ model Comment {
   deletedAt DateTime?
 
   // Constraints
-  @@check([length(content)] > 0, name: "content_not_empty")
-  @@check([length(content)] <= 5000, name: "content_max_length")
 
   // Índices para performance
   @@index([postId])
@@ -164,11 +158,6 @@ model Category {
   products    Product[]
 
   // Constraints
-  @@check([length(name)] > 0, name: "name_not_empty")
-  @@check([length(name)] <= 100, name: "name_max_length")
-  @@check([length(slug)] > 0, name: "slug_not_empty")
-  @@check([length(slug)] <= 120, name: "slug_max_length")
-  @@check([parentId] != [id], name: "no_self_reference")
 
   // Índices para performance
   @@index([parentId])
@@ -213,15 +202,6 @@ model Product {
   deletedAt         DateTime?
 
   // Constraints
-  @@check([length(name)] > 0, name: "name_not_empty")
-  @@check([length(name)] <= 200, name: "name_max_length")
-  @@check([length(slug)] > 0, name: "slug_not_empty")
-  @@check([length(slug)] <= 250, name: "slug_max_length")
-  @@check([price] >= 0, name: "price_non_negative")
-  @@check([stock] >= 0, name: "stock_non_negative")
-  @@check([minStock] >= 0, name: "min_stock_non_negative")
-  @@check([comparePrice] >= 0, name: "compare_price_non_negative")
-  @@check([costPrice] >= 0, name: "cost_price_non_negative")
 
   // Índices para performance
   @@index([userId])

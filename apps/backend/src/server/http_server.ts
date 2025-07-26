@@ -14,7 +14,7 @@ export default async (silent: boolean) => {
     let serverConnections: any;
     serverConnections = [];
 
-    const server = createServer(app());
+    const server = createServer(app);
 
     server.listen(serverPort);
 
