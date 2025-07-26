@@ -9,21 +9,18 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/backend/src/**'
       - 'apps/web/src/**'
-      - 'apps/backend/package*.json'
       - 'apps/web/package*.json'
       - 'package*.json'
-      - 'docker-compose.yml'
-      - 'docker-compose.new.yml'
+      - 'supabase/**'
       - '.github/workflows/deploy-incremental.yml'
   workflow_dispatch:
 
 env:
   VPS_HOST: '31.97.85.98'
   VPS_USER: 'root'
-  APP_DIR: '/opt/biblicai'
-  COMPOSE_PROJECT_NAME: 'socialbiblia'
+  APP_DIR: '/root/socialbiblia'
+  COMPOSE_PROJECT_NAME: 'supabase'
 
 jobs:
   analyze-changes:
@@ -58,10 +55,10 @@ jobs:
         HAS_CONFIG=false
         NEEDS_RESTART=false
         
-        # Analisar tipos de mudanças para SocialBiblia
-        if echo "$CHANGED_FILES" | grep -E "(apps/backend/src/.*\.(js|ts|json)|apps/web/src/.*\.(js|ts|tsx|json))" > /dev/null; then
+        # Analisar tipos de mudanças para SocialBiblia + Supabase
+        if echo "$CHANGED_FILES" | grep -E "(apps/web/src/.*\.(js|ts|tsx|json))" > /dev/null; then
           HAS_CODE=true
-          echo "✅ Mudanças de código detectadas"
+          echo "✅ Mudanças de código frontend detectadas"
         fi
         
         if echo "$CHANGED_FILES" | grep -E "package(-lock)?\.json" > /dev/null; then
@@ -69,9 +66,9 @@ jobs:
           echo "📦 Mudanças em dependências detectadas"
         fi
         
-        if echo "$CHANGED_FILES" | grep -E "(docker|prisma|\.env|nginx\.conf)" > /dev/null; then
+        if echo "$CHANGED_FILES" | grep -E "(supabase/.*\.(yml|env|sql)|docker)" > /dev/null; then
           HAS_CONFIG=true
-          echo "⚙️ Mudanças de configuração detectadas"
+          echo "⚙️ Mudanças de configuração Supabase detectadas"
         fi
         
         # Determinar se precisa restart
@@ -264,8 +261,18 @@ jobs:
             git reset --hard origin/main
           fi
           
-          # Deploy simplificado e direto
-          echo '🚀 Executando deploy direto com Docker Compose...'
+          # Deploy SocialBiblia + Supabase
+          echo '🚀 Executando deploy SocialBiblia + Supabase...'
+          
+          # Build do frontend primeiro
+          echo '📦 Building frontend...'
+          cd apps/web
+          npm ci --only=production
+          npm run build
+          cd ../..
+          
+          # Navegar para Supabase
+          cd supabase
           
           # Detectar comando Docker Compose
           if command -v 'docker compose' >/dev/null 2>&1; then
@@ -279,8 +286,8 @@ jobs:
           
           # Verificar se docker-compose.yml existe
           if [ ! -f docker-compose.yml ]; then
-            echo '❌ docker-compose.yml não encontrado no repositório!'
-            echo '📁 Arquivos no diretório:'
+            echo '❌ docker-compose.yml não encontrado em supabase/!'
+            echo '📁 Arquivos no diretório supabase:'
             ls -la
             exit 1
           fi
@@ -311,7 +318,7 @@ jobs:
       run: |
         echo "🔍 Verificação final..."
         sshpass -p '${{ secrets.VPS_PASSWORD }}' ssh -o StrictHostKeyChecking=no ${{ env.VPS_USER }}@${{ env.VPS_HOST }} "
-          cd ${{ env.APP_DIR }}
+          cd ${{ env.APP_DIR }}/supabase
           
           # Detectar comando Docker Compose
           if command -v 'docker compose' >/dev/null 2>&1; then
@@ -370,8 +377,8 @@ jobs:
           echo 'Dependências Atualizadas: ${{ needs.analyze-changes.outputs.has_package_changes }}'
           echo ''
           
-          echo '=== Status da Aplicação ==='
-          cd ${{ env.APP_DIR }}
+          echo '=== Status da Aplicação Supabase ==='
+          cd ${{ env.APP_DIR }}/supabase
           
           # Detectar comando Docker Compose
           if command -v 'docker compose' >/dev/null 2>&1; then
@@ -383,8 +390,8 @@ jobs:
           fi
           
           echo ''
-          echo '=== Volumes Docker Preservados ==='
-          docker volume ls | grep ${{ env.COMPOSE_PROJECT_NAME }} || echo 'Nenhum volume encontrado'
+          echo '=== Volumes Supabase Preservados ==='
+          docker volume ls | grep socialbiblia || echo 'Nenhum volume encontrado'
           
           echo ''
           echo '=== Último Commit ==='
@@ -392,15 +399,15 @@ jobs:
           
           echo ''
           echo '🎯 Frontend: http://${{ env.VPS_HOST }}:3000'
-          echo '🎯 Backend API: http://${{ env.VPS_HOST }}:3001/api'
-          echo '🎯 Swagger Docs: http://${{ env.VPS_HOST }}:3001/api/docs'
-          echo '⚡ Deploy incremental concluído!'
+          echo '🎯 Supabase API: http://${{ env.VPS_HOST }}:3001'
+          echo '🎯 PostgreSQL: http://${{ env.VPS_HOST }}:5433'
+          echo '⚡ Deploy incremental Supabase concluído!'
         "
 
     - name: 🎉 Deploy Incremental Concluído
       run: |
-        echo "🎉 DEPLOY INCREMENTAL REALIZADO COM SUCESSO!"
+        echo "🎉 DEPLOY INCREMENTAL SUPABASE REALIZADO COM SUCESSO!"
         echo "⚡ Tipo: ${{ needs.analyze-changes.outputs.deploy_type }}"
         echo "🛡️ Dados preservados: SIM"
         echo "🚀 Frontend: http://${{ env.VPS_HOST }}:3000"
-        echo "🚀 Backend API: http://${{ env.VPS_HOST }}:3001/api"
+        echo "🚀 Supabase API: http://${{ env.VPS_HOST }}:3001"
