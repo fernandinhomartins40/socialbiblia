@@ -151,9 +151,9 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
     };
 
     if (error.statusCode >= 500) {
-        logger.error('Server Error:', logData);
+        console.error('Server Error:', logData);
     } else if (error.statusCode >= 400) {
-        logger.warn('Client Error:', logData);
+        console.warn('Client Error:', logData);
     }
 
     // Construir resposta
@@ -198,7 +198,7 @@ export const requestIdMiddleware = (req: Request, res: Response, next: NextFunct
 // Handler para erros não capturados
 export const handleUncaughtException = () => {
     process.on('uncaughtException', (err: Error) => {
-        logger.error('Uncaught Exception:', {
+        console.error('Uncaught Exception:', {
             message: err.message,
             stack: err.stack,
             name: err.name,
@@ -211,7 +211,7 @@ export const handleUncaughtException = () => {
     });
 
     process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
-        logger.error('Unhandled Rejection:', {
+        console.error('Unhandled Rejection:', {
             reason: reason.message || reason,
             stack: reason.stack,
             promise: promise.toString(),

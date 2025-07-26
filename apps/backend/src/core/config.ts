@@ -9,7 +9,7 @@ export type { IDatabase } from '../config/database/types';
 // Centralizar todas as configurações em um objeto
 export const config = {
     ...appConfig,
-    database: databaseConfig.database,
+    database: databaseConfig,
     email: emailConfig,
     
     // Configurações adicionais que podem ser referenciadas

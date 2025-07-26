@@ -61,7 +61,7 @@ class DatabaseManager {
         
         // Log queries que demoram mais de 100ms
         if (duration > 100) {
-          logger.logPerformance('slow_query', {
+          console.log('slow_query', {
             model: params.model,
             action: params.action,
             duration: `${duration}ms`,
@@ -115,7 +115,7 @@ class DatabaseManager {
       // Event listeners para monitoramento
       DatabaseManager.instance.$on('query', (e) => {
         if (NODE_ENV === 'development') {
-          logger.debug(`Query: ${e.query}`, {
+          console.log(`Query: ${e.query}`, {
             params: e.params,
             duration: `${e.duration}ms`,
             target: e.target,
@@ -124,21 +124,21 @@ class DatabaseManager {
       });
 
       DatabaseManager.instance.$on('error', (e) => {
-        logger.logError('database_error', e.message, {
+        console.error('database_error', e.message, {
           target: e.target,
           timestamp: e.timestamp,
         });
       });
 
       DatabaseManager.instance.$on('warn', (e) => {
-        logger.warn(`Database warning: ${e.message}`, {
+        console.warn(`Database warning: ${e.message}`, {
           target: e.target,
           timestamp: e.timestamp,
         });
       });
 
       DatabaseManager.instance.$on('info', (e) => {
-        logger.info(`Database info: ${e.message}`, {
+        console.log(`Database info: ${e.message}`, {
           target: e.target,
           timestamp: e.timestamp,
         });
@@ -164,13 +164,13 @@ class DatabaseManager {
       
       DatabaseManager.isConnected = true;
       
-      logger.logSecurity('database_connected', 'Database connection established', {
+      console.log('database_connected', 'Database connection established', {
         provider: 'postgresql',
         environment: NODE_ENV,
       });
       
     } catch (error) {
-      logger.logError('database_connection_error', 'Failed to connect to database', {
+      console.error('database_connection_error', 'Failed to connect to database', {
         error: error instanceof Error ? error.message : 'Unknown error',
         databaseUrl: DATABASE_URL ? 'configured' : 'missing',
       });
@@ -184,7 +184,7 @@ class DatabaseManager {
       await DatabaseManager.instance.$disconnect();
       DatabaseManager.isConnected = false;
       
-      logger.info('Database disconnected');
+      console.log('Database disconnected');
     }
   }
 
@@ -302,7 +302,7 @@ process.on('SIGTERM', async () => {
 // Auto-connect em desenvolvimento
 if (NODE_ENV === 'development') {
   DatabaseManager.connect().catch((error) => {
-    logger.logError('auto_connect_failed', 'Failed to auto-connect in development', {
+    console.error('auto_connect_failed', 'Failed to auto-connect in development', {
       error: error.message,
     });
   });

@@ -37,3 +37,21 @@ export const cacheUtils = {
     queryClient.clear();
   },
 };
+
+// Função de requisição simples para compatibilidade
+export const apiRequest = async (method: string, url: string, data?: any) => {
+  const { apiClient } = await import('./unified-api');
+  
+  switch (method.toUpperCase()) {
+    case 'GET':
+      return apiClient.get(url);
+    case 'POST':
+      return apiClient.post(url, data);
+    case 'PUT':
+      return apiClient.put(url, data);
+    case 'DELETE':
+      return apiClient.delete(url);
+    default:
+      throw new Error('Método não suportado: ' + method);
+  }
+};

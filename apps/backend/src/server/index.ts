@@ -28,9 +28,9 @@ const startup = async (silent: boolean) => {
         /* eslint-enable no-console */
     }
 
-    logger.info(`Api starting ${pkg.name.toUpperCase()} v${pkg.version}`);
-    logger.info(`Api running in ${env.NODE_ENV} environment`);
-    logger.info(`Api started at ${moment().format('YYYY-MM-DD HH:mm')}`);
+    console.log(`Api starting ${pkg.name.toUpperCase()} v${pkg.version}`);
+    console.log(`Api running in ${env.NODE_ENV} environment`);
+    console.log(`Api started at ${moment().format('YYYY-MM-DD HH:mm')}`);
 
     await runServer(silent);
     await checkDatabase(silent);
@@ -46,10 +46,10 @@ const checkDatabase = async (silent: boolean) => {
     /* eslint-disable no-console */
     if (res.success) {
         if (!silent) console.log(colorTxt.white(`-> Connected on database`));
-        logger.info(`Database connection has been established successfully.`);
+        console.log(`Database connection has been established successfully.`);
     } else {
         if (!silent) console.log(colorTxt.red(`-> Unable to connect to the database`));
-        logger.error(`Unable to connect to the database: ${res.error}`);
+        console.error(`Unable to connect to the database: ${res.error}`);
     }
     /* eslint-enable no-console */
 };
@@ -57,7 +57,7 @@ const checkDatabase = async (silent: boolean) => {
 // Iniciar a aplicação
 startup(false).catch((error) => {
     console.error('❌ Falha crítica na inicialização:', error);
-    logger.error('Falha crítica na inicialização:', error);
+    console.error('Falha crítica na inicialização:', error);
     process.exit(1);
 });
 
