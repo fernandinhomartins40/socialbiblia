@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { logger } from '../utils/logger/winston/logger';
+// import { logger } from '../utils/logger/winston/logger';
 
 // Configuração de connection pooling para PostgreSQL
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -288,13 +288,13 @@ export const db = {
 
 // Configuração de graceful shutdown
 process.on('SIGINT', async () => {
-  logger.info('SIGINT received, closing database connection...');
+  console.log('SIGINT received, closing database connection...');
   await DatabaseManager.disconnect();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, closing database connection...');
+  console.log('SIGTERM received, closing database connection...');
   await DatabaseManager.disconnect();
   process.exit(0);
 });

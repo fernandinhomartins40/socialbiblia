@@ -2,7 +2,7 @@ import { Strategy as JWTStrategy, ExtractJwt } from 'passport-jwt';
 import { Strategy as LocalStrategy } from 'passport-local';
 
 import config from '../../../config/app';
-import logger from '../../../utils/logger/winston/logger';
+// import logger from '../../../utils/logger/winston/logger';
 import servFindOneUser from '../../../dao/users/user_get_one_dao';
 import servCheckPassword from '../../../functions/check_password';
 import { refreshTokenService } from '../refresh-token';
@@ -26,7 +26,7 @@ const jwtUserStrategy = async (passport: any) => {
             try {
                 // Verificar se é um access token válido
                 if (payload.type !== 'access') {
-                    logger.warn('Tentativa de uso de token não-access como access token');
+                    console.warn('Tentativa de uso de token não-access como access token');
                     return done(errorMsg, {});
                 }
 
@@ -37,13 +37,13 @@ const jwtUserStrategy = async (passport: any) => {
                 });
                 
                 if (!newUser.success) {
-                    logger.warn(`Usuário não encontrado para JWT: ${payload.id}`);
+                    console.warn(`Usuário não encontrado para JWT: ${payload.id}`);
                     return done(errorMsg, {});
                 }
 
                 newUser.data ? done(null, newUser.data) : done(null, {});
             } catch (err) {
-                logger.error(`JWT passport strategy error: ${err})`);
+                console.error(`JWT passport strategy error: ${err})`;
                 return done(err, {});
             }
         }),
@@ -75,7 +75,7 @@ const localUserStrategy = async (passport: any) => {
 
                 return done(errorMsg, {});
             } catch (err) {
-                logger.error(`JWT passport strategy error: ${err})`);
+                console.error(`JWT passport strategy error: ${err})`;
                 return done(err, {});
             }
         }),

@@ -1,5 +1,5 @@
 import { createClient, RedisClientType } from 'redis';
-import { logger } from '../utils/logger/winston/logger';
+// import { logger } from '../utils/logger/winston/logger';
 
 // Configurações do Redis
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
@@ -47,7 +47,7 @@ class RedisManager {
       
       // Event listeners
       RedisManager.instance.on('connect', () => {
-        logger.logSecurity('redis_connected', 'Redis connection established', {
+        console.log('Redis connection established', {
           url: REDIS_URL.replace(/\/\/.*@/, '//***@'), // Mask credentials
           environment: NODE_ENV,
         });
@@ -56,11 +56,11 @@ class RedisManager {
       });
 
       RedisManager.instance.on('ready', () => {
-        logger.info('Redis client ready');
+        console.log('Redis client ready');
       });
 
       RedisManager.instance.on('error', (error) => {
-        logger.logError('redis_error', 'Redis connection error', {
+        console.error('Redis connection error', {
           error: error.message,
           retryCount: RedisManager.retryCount,
         });
@@ -68,13 +68,13 @@ class RedisManager {
       });
 
       RedisManager.instance.on('end', () => {
-        logger.info('Redis connection ended');
+        console.log('Redis connection ended');
         RedisManager.isConnected = false;
       });
 
       RedisManager.instance.on('reconnecting', () => {
         RedisManager.retryCount++;
-        logger.info(`Redis reconnecting (attempt ${RedisManager.retryCount})...`);
+        console.log(`Redis reconnecting (attempt ${RedisManager.retryCount})...`);
       });
     }
 
@@ -96,7 +96,7 @@ class RedisManager {
         throw new Error('Redis ping test failed');
       }
 
-      logger.logSecurity('redis_connected', 'Redis connection verified', {
+      console.log('Redis connection verified', {
         status: 'connected',
         environment: NODE_ENV,
       });
@@ -104,7 +104,7 @@ class RedisManager {
     } catch (error) {
       RedisManager.isConnected = false;
       
-      logger.logError('redis_connection_error', 'Failed to connect to Redis', {
+      console.error('Failed to connect to Redis', {
         error: error instanceof Error ? error.message : 'Unknown error',
         redisUrl: REDIS_URL ? 'configured' : 'missing',
         retryCount: RedisManager.retryCount,
@@ -112,7 +112,7 @@ class RedisManager {
 
       // Se não conseguir conectar e for ambiente de desenvolvimento, continuar sem Redis
       if (NODE_ENV === 'development') {
-        logger.warn('Redis unavailable in development - continuing without cache');
+        console.warn('Redis unavailable in development - continuing without cache');
         return;
       }
 
@@ -125,7 +125,7 @@ class RedisManager {
       await RedisManager.instance.quit();
       RedisManager.isConnected = false;
       
-      logger.info('Redis disconnected');
+      console.log('Redis disconnected');
     }
   }
 
@@ -203,7 +203,7 @@ export class CacheService {
       const value = await this.redis.get(key);
       return value ? JSON.parse(value) : null;
     } catch (error) {
-      logger.logError('cache_get_error', 'Failed to get from cache', {
+      console.error('Failed to get from cache', {
         key,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -216,10 +216,10 @@ export class CacheService {
       const serialized = JSON.stringify(value);
       await this.redis.setEx(key, ttl, serialized);
       
-      logger.debug(`Cache set: ${key}`, { ttl, size: serialized.length });
+      console.log(`Cache set: ${key}`, { ttl, size: serialized.length });
       return true;
     } catch (error) {
-      logger.logError('cache_set_error', 'Failed to set cache', {
+      console.error('Failed to set cache', {
         key,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -232,7 +232,7 @@ export class CacheService {
       const result = await this.redis.del(key);
       return result > 0;
     } catch (error) {
-      logger.logError('cache_del_error', 'Failed to delete from cache', {
+      console.error('Failed to delete from cache', {
         key,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -245,7 +245,7 @@ export class CacheService {
       const result = await this.redis.exists(key);
       return result === 1;
     } catch (error) {
-      logger.logError('cache_exists_error', 'Failed to check cache existence', {
+      console.error('Failed to check cache existence', {
         key,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -256,10 +256,10 @@ export class CacheService {
   async flush(): Promise<boolean> {
     try {
       await this.redis.flushDb();
-      logger.info('Cache flushed');
+      console.log('Cache flushed');
       return true;
     } catch (error) {
-      logger.logError('cache_flush_error', 'Failed to flush cache', {
+      console.error('Failed to flush cache', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
       return false;
@@ -272,7 +272,7 @@ export class CacheService {
       const values = await this.redis.mGet(keys);
       return values.map(value => value ? JSON.parse(value) : null);
     } catch (error) {
-      logger.logError('cache_mget_error', 'Failed to get multiple keys', {
+      console.error('Failed to get multiple keys', {
         keys: keys.slice(0, 5), // Log apenas as primeiras 5 chaves
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -292,7 +292,7 @@ export class CacheService {
       await pipeline.exec();
       return true;
     } catch (error) {
-      logger.logError('cache_mset_error', 'Failed to set multiple keys', {
+      console.error('Failed to set multiple keys', {
         keyCount: Object.keys(keyValuePairs).length,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -305,7 +305,7 @@ export class CacheService {
     try {
       return await this.redis.keys(pattern);
     } catch (error) {
-      logger.logError('cache_keys_error', 'Failed to get keys by pattern', {
+      console.error('Failed to get keys by pattern', {
         pattern,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -319,10 +319,10 @@ export class CacheService {
       if (keys.length === 0) return 0;
 
       const result = await this.redis.del(keys);
-      logger.info(`Deleted ${result} keys matching pattern: ${pattern}`);
+      console.log(`Deleted ${result} keys matching pattern: ${pattern}`);
       return result;
     } catch (error) {
-      logger.logError('cache_del_pattern_error', 'Failed to delete by pattern', {
+      console.error('Failed to delete by pattern', {
         pattern,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -386,19 +386,19 @@ export const redisUtils = {
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  logger.info('SIGINT received, closing Redis connection...');
+  console.log('SIGINT received, closing Redis connection...');
   await RedisManager.disconnect();
 });
 
 process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, closing Redis connection...');
+  console.log('SIGTERM received, closing Redis connection...');
   await RedisManager.disconnect();
 });
 
 // Auto-connect em desenvolvimento (opcional)
 if (NODE_ENV === 'development') {
   RedisManager.connect().catch((error) => {
-    logger.warn('Failed to auto-connect to Redis in development', {
+    console.warn('Failed to auto-connect to Redis in development', {
       error: error.message,
     });
   });

@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import logger from '../../utils/logger/winston/logger';
+// import logger from '../../utils/logger/winston/logger';
 
 export interface RefreshTokenPayload {
   id: string;
@@ -83,7 +83,7 @@ class RefreshTokenService {
 
       return decoded;
     } catch (error) {
-      logger.warn('Access token inválido:', error);
+      console.warn('Access token inválido:', error);
       return null;
     }
   }
@@ -102,7 +102,7 @@ class RefreshTokenService {
 
       return decoded;
     } catch (error) {
-      logger.warn('Refresh token inválido:', error);
+      console.warn('Refresh token inválido:', error);
       return null;
     }
   }
@@ -159,7 +159,7 @@ class RefreshTokenService {
         },
       });
     } catch (error) {
-      logger.error('Erro no refresh token middleware:', error);
+      console.error('Erro no refresh token middleware:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor',
@@ -197,7 +197,7 @@ class RefreshTokenService {
 
       next();
     } catch (error) {
-      logger.error('Erro no middleware de validação de token:', error);
+      console.error('Erro no middleware de validação de token:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor',

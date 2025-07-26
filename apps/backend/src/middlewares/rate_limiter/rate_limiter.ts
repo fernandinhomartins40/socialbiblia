@@ -1,6 +1,6 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
-import logger from '../../utils/logger/winston/logger';
+// import logger from '../../utils/logger/winston/logger';
 import config from '../../config/app';
 
 const standardHeaders = true;
@@ -18,7 +18,7 @@ const basicLimiter = rateLimit({
     standardHeaders,
     legacyHeaders,
     onLimitReached: (req: Request) => {
-        logger.warn(`Rate limit atingido - IP: ${req.ip}, User-Agent: ${req.get('User-Agent')}`);
+        console.warn(`Rate limit atingido - IP: ${req.ip}, User-Agent: ${req.get('User-Agent')}`);
     },
 });
 
@@ -35,7 +35,7 @@ const loginLimiter = rateLimit({
     legacyHeaders,
     skipSuccessfulRequests: true, // Não contar requests bem-sucedidos
     onLimitReached: (req: Request) => {
-        logger.warn(`Login rate limit atingido - IP: ${req.ip}, Email tentativa: ${req.body?.email}`);
+        console.warn(`Login rate limit atingido - IP: ${req.ip}, Email tentativa: ${req.body?.email}`);
     },
 });
 
@@ -56,9 +56,9 @@ const createUserLimiter = (windowMs: number = 15 * 60 * 1000, max: number = 100)
             
             // Log para monitoramento
             if (userId) {
-                logger.debug(`Rate limit check - User ID: ${userId}`);
+                console.log(`Rate limit check - User ID: ${userId}`);
             } else {
-                logger.debug(`Rate limit check - IP: ${req.ip}`);
+                console.log(`Rate limit check - IP: ${req.ip}`);
             }
             
             return `user_${clientId}`;
@@ -68,7 +68,7 @@ const createUserLimiter = (windowMs: number = 15 * 60 * 1000, max: number = 100)
         onLimitReached: (req: Request) => {
             const userId = req.user?.id;
             const identifier = userId ? `User ID: ${userId}` : `IP: ${req.ip}`;
-            logger.warn(`User rate limit atingido - ${identifier}`);
+            console.warn(`User rate limit atingido - ${identifier}`);
         },
     });
 };
@@ -88,7 +88,7 @@ const uploadLimiter = rateLimit({
     standardHeaders,
     legacyHeaders,
     onLimitReached: (req: Request) => {
-        logger.warn(`Upload rate limit atingido - IP: ${req.ip}, User: ${req.user?.id || 'N/A'}`);
+        console.warn(`Upload rate limit atingido - IP: ${req.ip}, User: ${req.user?.id || 'N/A'}`);
     },
 });
 

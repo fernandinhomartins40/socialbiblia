@@ -5,7 +5,7 @@ import colorTxt from 'ansi-colors';
 
 import app from './app';
 import config from '../config/app';
-import logger from '../utils/logger/winston/logger';
+// import logger from '../utils/logger/winston/logger';
 
 export default async (silent: boolean) => {
     const serverHost = config.app.host;
@@ -51,8 +51,8 @@ const createServer = (app: any) => {
                 cert: fs.readFileSync(`${config.ssl.certificate}`),
             };
         } catch (err) {
-            logger.error(`Http server error - SSL certificate files is not found`);
-            logger.error(`Http server error - Shutting down gracefully (SHUTDOWN)`);
+            console.error(`Http server error - SSL certificate files is not found`);
+            console.error(`Http server error - Shutting down gracefully (SHUTDOWN)`);
             process.exit(0);
         }
         httpserver = https.createServer(options, app);
@@ -79,7 +79,7 @@ const onListening = (host: string, port: number, silent: boolean) => {
         }
     }
 
-    logger.info(`Api status: Ready (listening on ${host}:${port})`);
+    console.log(`Api status: Ready (listening on ${host}:${port})`);
 };
 
 const onError = (
@@ -97,7 +97,7 @@ const onError = (
                 `Http server error - Host ${host}:${port} requires elevated privileges (${error.code})`,
             );
             /* eslint-enable no-console */
-            logger.error(
+            console.error(
                 `Http server error - Host ${host}:${port} requires elevated privileges (${error.code})`,
             );
             shutDown(server, connections);
@@ -108,7 +108,7 @@ const onError = (
                 `Http server error - Host ${host}:${port} is already in use (${error.code})`,
             );
             /* eslint-enable no-console */
-            logger.error(
+            console.error(
                 `Http server error - Host ${host}:${port} is already in use (${error.code})`,
             );
             shutDown(server, connections);
@@ -117,11 +117,11 @@ const onError = (
             /* eslint-disable no-console */
             console.log(`Http server error - Host ${host}:${port} not available (${error.code})`);
             /* eslint-enable no-console */
-            logger.error(`Http server error - Host ${host}:${port} not available (${error.code})`);
+            console.error(`Http server error - Host ${host}:${port} not available (${error.code})`);
             shutDown(server, connections);
             break;
         default:
-            logger.error(`Http server error - Host ${host}:${port} not available (${error})`);
+            console.error(`Http server error - Host ${host}:${port} not available (${error})`);
             throw error;
     }
 };
@@ -129,12 +129,12 @@ const shutDown = (server: any, connections: any) => {
     /* eslint-disable no-console */
     console.log('Http server error - Received kill signal, shutting down gracefully (SHUTDOWN)');
     /* eslint-enable no-console */
-    logger.error('Http server error - Received kill signal, shutting down gracefully (SHUTDOWN)');
+    console.error('Http server error - Received kill signal, shutting down gracefully (SHUTDOWN)');
     server.close(() => {
         /* eslint-disable no-console */
         console.log('Http server error - Closed out remaining connections (SHUTDOWN)');
         /* eslint-enable no-console */
-        logger.error('Http server error - Closed out remaining connections (SHUTDOWN)');
+        console.error('Http server error - Closed out remaining connections (SHUTDOWN)');
         process.exit(0);
     });
     setTimeout(() => {
@@ -143,7 +143,7 @@ const shutDown = (server: any, connections: any) => {
             'Http server error - Could not close connections in time, forcefully shutting down (SHUTDOWN)',
         );
         /* eslint-enable no-console */
-        logger.error(
+        console.error(
             'Http server error - Could not close connections in time, forcefully shutting down (SHUTDOWN)',
         );
         process.exit(1);
@@ -156,7 +156,7 @@ const getConnections = (server: any) => {
     setInterval(
         () =>
             server.getConnections((err: any, count: any) => {
-                if (err) logger.error(`Http server connections logs error. ${err}`);
+                if (err) console.error(`Http server connections logs error. ${err}`);
                 if (!err)
                     /* eslint-disable no-console */
                     console.log(`${count} connections currently open`);
