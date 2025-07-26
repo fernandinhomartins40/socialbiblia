@@ -6,14 +6,8 @@ Uma aplicação de rede social cristã com integração de IA para orientação 
 
 ```
 socialbiblia/                          # 📦 Monorepo Root
-├── 📱 apps/                           # Applications
-│   ├── 🔧 backend/                    # Vincent Queimado Express + Prisma + TypeScript
-│   │   ├── src/                       # Source code
-│   │   ├── prisma/                    # Database schema & migrations  
-│   │   ├── __test__/                  # Unit tests
-│   │   └── docs/                      # API documentation (Swagger)
-│   │
-│   └── 🌐 web/                        # React + Vite Frontend
+├── 📱 apps/                           # Applications  
+│   └── 🌐 web/                        # React + Vite Frontend com Supabase
 │       ├── src/                       # Source code
 │       │   ├── components/            # React components
 │       │   ├── pages/                 # Route pages  
