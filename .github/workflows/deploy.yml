@@ -1,10 +1,14 @@
-name: Deploy SocialBiblia
+name: 🚀 Deploy SocialBiblia + Supabase
+
+# Controle de concorrência - apenas um deploy por vez
+concurrency:
+  group: socialbiblia-deploy
+  cancel-in-progress: true
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -45,18 +49,38 @@ jobs:
           # Pull das mudanças
           git pull origin main
           
-          # Instalar dependências se necessário
+          # Instalar dependências frontend
           cd apps/web
           npm ci --only=production
           
           # Build do frontend
           npm run build
           
-          # Restart containers
+          # Iniciar/reiniciar Supabase
           cd ../../supabase
-          docker compose restart
+          
+          # Verificar se Supabase está rodando
+          if docker compose ps | grep -q "Up"; then
+            echo "🔄 Reiniciando Supabase..."
+            docker compose restart
+          else
+            echo "🚀 Iniciando Supabase..."
+            docker compose up -d
+          fi
+          
+          # Aguardar inicialização
+          sleep 30
+          
+          # Verificar se está funcionando
+          if curl -f http://31.97.85.98:3001/health 2>/dev/null; then
+            echo "✅ Supabase API funcionando!"
+          else
+            echo "⚠️ API ainda inicializando..."
+          fi
           
           echo "✅ Deploy realizado com sucesso!"
+          echo "🌐 Frontend: http://31.97.85.98:3000"
+          echo "🔧 Supabase: http://31.97.85.98:3001"
 
   notify:
     needs: deploy
