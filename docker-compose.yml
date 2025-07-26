@@ -93,7 +93,7 @@ services:
     container_name: socialbiblia-frontend
     restart: unless-stopped
     environment:
-      VITE_API_URL: http://localhost:3001/api
+      VITE_API_URL: http://31.97.85.98:3001/api
       VITE_APP_TITLE: SocialBiblia
       VITE_APP_DESCRIPTION: Plataforma social cristã
     ports:
