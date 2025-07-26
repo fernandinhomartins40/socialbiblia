@@ -269,6 +269,13 @@ jobs:
           cd apps/web
           npm ci --only=production
           npm run build
+          
+          # Deploy do frontend no nginx
+          echo '🚀 Deploying frontend to nginx...'
+          docker rm -f nginx-socialbiblia 2>/dev/null || true
+          docker run -d --name nginx-socialbiblia -p 3000:80 -v "$(pwd)/dist:/usr/share/nginx/html:ro" nginx:alpine
+          echo '✅ Frontend deployed to nginx'
+          
           cd ../..
           
           # Navegar para Supabase
