@@ -271,10 +271,31 @@ jobs:
           npm run build
           
           # Deploy do frontend no nginx
-          echo '🚀 Deploying frontend to nginx...'
+          echo '🚀 Deploying React frontend to nginx...'
           docker rm -f nginx-socialbiblia 2>/dev/null || true
-          docker run -d --name nginx-socialbiblia -p 3000:80 -v "$(pwd)/dist:/usr/share/nginx/html:ro" nginx:alpine
-          echo '✅ Frontend deployed to nginx'
+          
+          # Verificar se o build existe e tem conteúdo
+          if [ ! -f "dist/index.html" ]; then
+            echo '❌ Build não encontrado! Executando build novamente...'
+            npm run build
+          fi
+          
+          echo '📁 Conteúdo do build:'
+          ls -la dist/
+          
+          # Iniciar nginx com React app
+          docker run -d --name nginx-socialbiblia -p 3000:80 \
+            -v "$(pwd)/dist:/usr/share/nginx/html:ro" \
+            nginx:alpine
+          
+          # Aguardar nginx inicializar
+          sleep 5
+          
+          # Verificar se está funcionando
+          echo '🔍 Testando React app...'
+          curl -I http://localhost:3000/ || echo 'Erro ao acessar React app'
+          
+          echo '✅ React frontend deployed to nginx'
           
           cd ../..
           
