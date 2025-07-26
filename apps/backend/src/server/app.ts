@@ -18,7 +18,7 @@ app.use(helmet());
 app.use(cors({
   origin: env.NODE_ENV === 'production' 
     ? [env.CORS_ORIGIN || 'http://localhost:3000'] 
-    : ['http://localhost:3000', 'http://localhost:5173'],
+    : ['http://localhost:3000', 'http://localhost:5173', 'http://31.97.85.98:3000'],
   credentials: true,
 }));
 
